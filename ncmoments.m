@@ -63,9 +63,8 @@ Feqconstr = set([]); % initialize constraint set (for SOLVESDP.m)
 for i = 1:length(equalities)
      % add all possible equality constraints of degree smaller or equal
      % to t
-     % XXXX Localizer = pol(i)*monolist(X,2*t-degree(pol(i)));     
-     tmpMonolist=monolist(X,order-ceil(1/2*degree(equalities(i))));
-     Localizer = tmpMonolist*equalities(i)*tmpMonolist';
+     index=n_i(order-ceil(1/2*degree(equalities(i)))+1);
+     Localizer = mon(1:index)*equalities(i)*mon(1:index)';
      
      Feqconstr = Feqconstr + set(Localizer==0); % and add as constraints
 end
