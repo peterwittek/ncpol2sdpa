@@ -21,15 +21,17 @@ function [Fmoments, M]=ncmoments(X, inequalities, equalities, order)
 %
 
 % Author: Philipp Rostalski, Peter Wittek
-% December 2012; Last revision: 04-Apr-2013
+% December 2012; Last revision: 03-May-2013
 
 %------------- BEGIN CODE --------------
 
 % Noncommutative monomial vectors needed to set up moment matrices
 mon = monolist(X,order);
     
+tempMon=mon*mon';
+
 % Define the highest order moment matrix (symmetric part)
-Maux = 1/2*(mon*mon'+(mon*mon').'); % I
+Maux = 1/2*(tempMon+(tempMon).'); % I
 
 % Construct all submatrices of Maux, s.t. 'M_s(y)' is stored in M{s+1}
 for i=0:order
@@ -41,7 +43,7 @@ end
 F = set(M{order+1} > 0); 
 
 % ...but we also want M to be a symmetric matrix.
-F = F+ set(mon*mon'==(mon*mon').');
+F = F+ set(tempMon==(tempMon).');
 
 for j=1:length(inequalities)
     % Define the localization matrix for the inequality constraint
@@ -62,7 +64,8 @@ for i = 1:length(equalities)
      % add all possible equality constraints of degree smaller or equal
      % to t
      % XXXX Localizer = pol(i)*monolist(X,2*t-degree(pol(i)));     
-     Localizer = monolist(X,order-ceil(1/2*degree(equalities(i))))*equalities(i)*monolist(X,order-ceil(1/2*degree(equalities(i))))';
+     tmpMonolist=monolist(X,order-ceil(1/2*degree(equalities(i))));
+     Localizer = tmpMonolist*equalities(i)*tmpMonolist';
      
      Feqconstr = Feqconstr + set(Localizer==0); % and add as constraints
 end
