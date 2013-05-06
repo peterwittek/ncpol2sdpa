@@ -38,12 +38,8 @@ for i=0:order
     n_i(i+1) = 2^(i+1)-1;
     M{i+1} = Maux(1:n_i(i+1),1:n_i(i+1)); % compute moment matrices of lower order
 end
-% Add semidefinite constraints for the moment matrix
-% (a nonsymetric moment matrix is PSD iff its symmetric part is).
+% Add semidefinite constraints for the symmetric moment matrix
 F = set(M{order+1} > 0); 
-
-% ...but we also want M to be a symmetric matrix.
-F = F+ set(tempMon==(tempMon).');
 
 for j=1:length(inequalities)
     % Define the localization matrix for the inequality constraint
