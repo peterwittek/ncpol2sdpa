@@ -40,6 +40,8 @@ for i=0:order
 end
 % Add semidefinite constraints for the symmetric moment matrix
 F = set(M{order+1} > 0); 
+% ...but we also want M to be a symmetric matrix.
+F = F+ set(tempMon==(tempMon).');
 
 for j=1:length(inequalities)
     % Define the localization matrix for the inequality constraint
