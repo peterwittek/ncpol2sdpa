@@ -1,15 +1,16 @@
-%Hamiltonian - The Hamiltonian described in [1] solved with SeDuMi
+%Hamiltonian - Solving a Hamiltonian ground state problem with SeDuMi. The
+% Hamiltonian is described in the following paper:
 %
-%[1] Corboz, P.; Evenbly, G.; Verstraete, F. & Vidal, G. (2009), 
-%    Simulation of interacting fermions with entanglement renormalization.
-%    arXiv:0904.4151
+% Corboz, P.; Evenbly, G.; Verstraete, F. & Vidal, G. (2009), 
+% Simulation of interacting fermions with entanglement renormalization.
+% arXiv:0904.4151
 %
 % Other m-files required: Yalmip, SeDuMi, ncmoments.m, momentstosdpa.m
 %                         getneighbors.m lineartolattice.m
 % MAT-files required: none
 %
 % Author: Peter Wittek
-% April 2013; Last revision: 11-Apr-2013
+% April 2013; Last revision: 31-May-2013
 
 
 %------------- BEGIN CODE --------------

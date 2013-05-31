@@ -1,16 +1,17 @@
-%EXAMPLE - The example described in [1] solved with SeDuMi or exported to
-%sparse SDPA format for scalable computation
+%EXAMPLE - An example solved with SeDuMi or exported to
+% sparse SDPA format for scalable computation. The description 
+% of the example is in the following paper:
 %
-%[1] Pironio, S.; Navascues, M. & Acín, A. Convergent relaxations of 
-%polynomial optimization problems with noncommuting variables SIAM Journal
-%on Optimization, SIAM, 2010, 20, 2157-2180
+% Pironio, S.; Navascués, M. & Acín, A. Convergent relaxations of 
+% polynomial optimization problems with noncommuting variables SIAM Journal
+% on Optimization, SIAM, 2010, 20, 2157-2180
 
 % Other m-files required: Yalmip, SeDuMi, ncmoments.m, momentstosdpa.m
 % MAT-files required: none
 %
 
 % Author: Peter Wittek
-% December 2012; Last revision: 13-Dec-2012
+% December 2012; Last revision: 31-May-2012
 
 %------------- BEGIN CODE --------------
 
