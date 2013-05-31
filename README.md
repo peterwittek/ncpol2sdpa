@@ -8,7 +8,7 @@ Two implementations are provided, one in Python and one in Matlab. The Python im
 
 Dependencies
 ==
-The Python code requires [PICOS](http://picos.zib.de/) and [SymPy >=0.7.2](http://sympy.org/) in the Python search path. The code is known to work with Python 2.6.8 and 2.7.5.
+The Python code requires [PICOS](http://picos.zib.de/) and [SymPy](http://sympy.org/)>=0.7.2 in the Python search path. The code is known to work with Python 2.6.8 and 2.7.5.
 
 The Matlab code requires [SeDuMi](http://sedumi.ie.lehigh.edu/) and [Yalmip](http://users.isy.liu.se/johanl/yalmip/) in the Matlab search path.
 
