@@ -88,7 +88,6 @@ def get_relaxation(variables, obj, inequalities, equalities,
                                    (eqmoncount, eqmoncount), 
                                    vtype = 'symmetric')
         prob.add_constraint(Meq[k] == 0)
-        print equalities[k]
         for i in xrange(eqmoncount):
             for j in xrange(i, eqmoncount):
                 polynomial = Dagger(monomials[i]) * equalities[k] * monomials[j]
