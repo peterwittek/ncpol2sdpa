@@ -48,7 +48,7 @@ def get_relaxation(variables, obj, inequalities, equalities,
     monomial_dictionary = {}
     for i in xrange(moncount):
         for j in xrange(i, moncount):
-            monomial = monomials[i] * Dagger(monomials[j])
+            monomial = Dagger(monomials[i]) * monomials[j]
             monomial = _apply_substitions(monomial, monomial_substitution)
             if monomial.as_coeff_Mul()[0] < 0:
                 monomial = -monomial
@@ -72,7 +72,7 @@ def get_relaxation(variables, obj, inequalities, equalities,
         prob.add_constraint(Mineq[k] >> 0)
         for i in xrange(ineqmoncount):
             for j in xrange(i, ineqmoncount):
-                polynomial = monomials[i] * ineq * Dagger(monomials[j])
+                polynomial = Dagger(monomials[i]) * ineq * monomials[j]
                 ineqrelax = _sympy2picos(M, monomial_substitution, 
                                         monomial_dictionary, polynomial)
                 prob.add_constraint(Mineq[k][i, j] == ineqrelax)
@@ -88,9 +88,10 @@ def get_relaxation(variables, obj, inequalities, equalities,
                                    (eqmoncount, eqmoncount), 
                                    vtype = 'symmetric')
         prob.add_constraint(Meq[k] == 0)
+        print equalities[k]
         for i in xrange(eqmoncount):
             for j in xrange(i, eqmoncount):
-                polynomial = monomials[i] * equalities[k] * Dagger(monomials[j])
+                polynomial = Dagger(monomials[i]) * equalities[k] * monomials[j]
                 eqrelax = _sympy2picos(M, monomial_substitution, 
                                       monomial_dictionary, polynomial)
                 prob.add_constraint(Meq[k][i, j] == eqrelax)
