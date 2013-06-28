@@ -16,16 +16,6 @@ from ncutils import get_ncmonomials, count_ncmonomials, ncdegree
 def _apply_substitions(monomial, monomial_substitution):
     """Helper function to remove monomials from the basis."""
     originalMonomial = monomial
-    for lhs, rhs in monomial_substitution.iteritems():
-        monomial = monomial.subs(lhs, rhs)
-    if (originalMonomial == monomial):
-        return monomial
-    else:
-        return _apply_substitions(monomial, monomial_substitution)
-
-def _apply_substitions2(monomial, monomial_substitution):
-    """Helper function to remove monomials from the basis."""
-    originalMonomial = monomial
     changed = True
     while changed:
         for lhs, rhs in monomial_substitution.iteritems():
@@ -34,7 +24,6 @@ def _apply_substitions2(monomial, monomial_substitution):
             changed = False
         originalMonomial = monomial
     return monomial
-
 
 def get_relaxation(variables, obj, inequalities, equalities, 
                    monomial_substitution, order):
