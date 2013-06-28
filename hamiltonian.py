@@ -43,7 +43,7 @@ for r in xrange(n_vars):
 monomial_substitution = {}
 equalities = []
 for r in xrange(n_vars):
-    for s in xrange(n_vars):
+    for s in xrange(r, n_vars):
         if not r == s:
             monomial_substitution[C[r] * C[s]] = -C[s] * C[r]
         else:
