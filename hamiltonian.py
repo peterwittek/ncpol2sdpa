@@ -6,7 +6,7 @@ is described in the following paper:
 Corboz, P.; Evenbly, G.; Verstraete, F. & Vidal, G. (2009), 
 Simulation of interacting fermions with entanglement renormalization.
 arXiv:0904.4151
-%
+
 Created on Fri May 10 09:45:11 2013
 
 @author: Peter Wittek
@@ -19,7 +19,7 @@ from sdprelaxation import get_relaxation
 from ncutils import get_neighbors
 
 #Lattice dimension
-lattice_dimension = 3
+lattice_dimension = 2
 n_vars = lattice_dimension * lattice_dimension
 #Order of relaxation
 order = 2
@@ -45,11 +45,7 @@ equalities = []
 for r in xrange(n_vars):
     for s in xrange(n_vars):
         if not r == s:
-            equalities.append(C[r] * C[s] - C[s] * C[r])
-            equalities.append(C[r] * Dagger(C[s]) - Dagger(C[s]) * C[r])
-            #Monomial substitutions do not work well
-            #monomial_substitution[C[r] * C[s]] = -C[s] * C[r]
-            #monomial_substitution[C[r] * Dagger(C[s])] = -Dagger(C[s]) * C[r]
+            monomial_substitution[C[r] * C[s]] = -C[s] * C[r]
         else:
             equalities.append(C[r]*Dagger(C[s]) + Dagger(C[s])*C[r] - S.One)
 

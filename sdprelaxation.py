@@ -15,9 +15,26 @@ from ncutils import get_ncmonomials, count_ncmonomials, ncdegree
 
 def _apply_substitions(monomial, monomial_substitution):
     """Helper function to remove monomials from the basis."""
+    originalMonomial = monomial
     for lhs, rhs in monomial_substitution.iteritems():
         monomial = monomial.subs(lhs, rhs)
+    if (originalMonomial == monomial):
+        return monomial
+    else:
+        return _apply_substitions(monomial, monomial_substitution)
+
+def _apply_substitions2(monomial, monomial_substitution):
+    """Helper function to remove monomials from the basis."""
+    originalMonomial = monomial
+    changed = True
+    while changed:
+        for lhs, rhs in monomial_substitution.iteritems():
+            monomial = monomial.subs(lhs, rhs)
+        if (originalMonomial == monomial):
+            changed = False
+        originalMonomial = monomial
     return monomial
+
 
 def get_relaxation(variables, obj, inequalities, equalities, 
                    monomial_substitution, order):
@@ -35,7 +52,6 @@ def get_relaxation(variables, obj, inequalities, equalities,
     
     Returns an SDP problem in PICOS format.
     """
-    
     monomials = get_ncmonomials(variables, order)
     for monomial in monomial_substitution.keys():
         monomials.remove(monomial)
@@ -114,13 +130,5 @@ def _sympy2picos(M, monomial_substitution, monomial_dictionary, polynomial):
             coeff = -1.0 * coeff
         if monomial in monomial_dictionary:
             indices = monomial_dictionary[monomial]
-        else:
-            monomial = Dagger(monomial)
-            monomial = _apply_substitions(monomial, monomial_substitution)
-            if monomial.as_coeff_Mul()[0] < 0:
-                monomial = -monomial
-                coeff = -1.0*coeff
-            indices = monomial_dictionary[monomial]
-            indices[0], indices[1] = indices[1], indices[0]
         picos_pol += coeff * M[indices[0], indices[1]]
     return picos_pol
