@@ -12,7 +12,6 @@ Created on Fri May 10 09:45:11 2013
 @author: Peter Wittek
 """
 import time
-from sympy.core import S
 from sympy.physics.quantum.operator import HermitianOperator
 from sympy.physics.quantum.dagger import Dagger
 from sdprelaxation import get_relaxation
@@ -47,7 +46,7 @@ for r in xrange(n_vars):
         if not r == s:
             monomial_substitution[C[r] * C[s]] = -C[s] * C[r]
         else:
-            equalities.append(C[r]*Dagger(C[s]) + Dagger(C[s])*C[r] - S.One)
+            equalities.append(C[r]*Dagger(C[s]) + Dagger(C[s])*C[r] - 1.0)
 
 inequalities = []
 
