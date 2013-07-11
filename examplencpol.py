@@ -13,7 +13,7 @@ Created on Fri May 10 09:45:11 2013
 """
 
 from ncutils import generate_ncvariables
-from sdprelaxation import get_relaxation
+from sdprelaxation import SdpRelaxation
 
 #Number of Hermitian variables    
 n_vars = 2
@@ -27,19 +27,25 @@ X = generate_ncvariables(n_vars)
 obj = X[0] * X[1] + X[1] * X[0]
 
 # Inequality constraints
+#inequalities = []
 inequalities = [0] * 1
 inequalities[0] = -X[1]**2 + X[1] + 0.5 
 
 # Equality constraints
 equalities = []
+#equalities = [0] * 1
+#equalities[0] = X[0]**2 - X[0]
+
 
 #Simple monomial substitutions
 monomial_substitution = {}
 monomial_substitution[X[0]**2] = X[0]
 
 #Obtain SDP relaxation
-prob = get_relaxation(X, obj, inequalities, equalities, 
+sdpRelaxation = SdpRelaxation(X)
+sdpRelaxation.get_relaxation(obj, inequalities, equalities, 
                       monomial_substitution, order)
+sdpRelaxation.write_to_sdpa('examplenc.dat-s')                      
 
 #Export relaxation to SDPA format
-prob.write_to_file('examplenc.dat-s')
+#prob.write_to_file('examplenc.dat-s')
