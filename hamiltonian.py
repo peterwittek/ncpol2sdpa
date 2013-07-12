@@ -44,8 +44,8 @@ equalities = []
 for r in xrange(n_vars):
     for s in xrange(r, n_vars):
         if not r == s:
-#            monomial_substitution[C[r] * C[s]] = -C[s] * C[r]
-            equalities.append(C[r]*C[s] + C[s]*C[r])
+            monomial_substitution[C[r] * C[s]] = -C[s] * C[r]
+#            equalities.append(C[r]*C[s] + C[s]*C[r])
         else:
             equalities.append(C[r]*Dagger(C[s]) + Dagger(C[s])*C[r] - 1.0)
 

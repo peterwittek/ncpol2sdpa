@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 The module converts a noncommutative optimization problem provided in SymPy 
-format to a PICOS semidefinite programming problem.
+format to an SDPA semidefinite programming problem.
 
 Created on Sun May 26 15:06:17 2013
 
