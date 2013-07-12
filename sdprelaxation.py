@@ -34,7 +34,7 @@ class SdpRelaxation:
     def __init__(self, variables):
         self.variables=variables
     
-    def __apply_substitions(self, monomial):
+    def __apply_substitutions(self, monomial):
         """Helper function to remove monomials from the basis."""
         originalMonomial = monomial
         changed = True
@@ -66,7 +66,7 @@ class SdpRelaxation:
                 else:
                     coeff = float(var)
             coeff = float(element.as_coeff_mul()[0]) * coeff
-            monomial = self.__apply_substitions(monomial)
+            monomial = self.__apply_substitutions(monomial)
             if monomial.as_coeff_Mul()[0] < 0:
                 monomial = -monomial
                 coeff = -1.0 * coeff
@@ -99,7 +99,7 @@ class SdpRelaxation:
         for i in xrange(self.n_monomials):        
             for j in xrange(i, self.n_monomials):
                 monomial = Dagger(monomials[i]) * monomials[j]
-                monomial = self.__apply_substitions(monomial)
+                monomial = self.__apply_substitutions(monomial)
                 if monomial.as_coeff_Mul()[0] < 0:
                     monomial = -monomial
                 if monomial in self.monomial_dictionary:
@@ -133,7 +133,7 @@ class SdpRelaxation:
                 else:
                     coeff = float(var)
             coeff = float(element.as_coeff_mul()[0]) * coeff
-            monomial = self.__apply_substitions(monomial)
+            monomial = self.__apply_substitutions(monomial)
             if monomial.as_coeff_Mul()[0] < 0:
                 monomial = -monomial
                 coeff = -1.0 * coeff
