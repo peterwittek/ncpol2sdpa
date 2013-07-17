@@ -57,7 +57,7 @@ class SdpRelaxation:
     def __get_facvar(self, polynomial):
         """Returns a dense vector representation of a polynomial"""
         facvar = [ 0 ] * self.n_vars
-        for element in polynomial.expand().as_coeff_factors()[1]:
+        for element in polynomial.expand().as_coeff_mul()[1][0].as_coeff_add()[1]:
             coeff = 1.0
             monomial = S.One
             for var in element.as_coeff_mul()[1]:
@@ -124,7 +124,7 @@ class SdpRelaxation:
         """Calculates the sparse vector representation of a polynomial
         and pushes it to the F structure.
         """
-        for element in polynomial.expand().as_coeff_factors()[1]:
+        for element in polynomial.expand().as_coeff_mul()[1][0].as_coeff_add()[1]:
             coeff = 1.0
             monomial = S.One
             for var in element.as_coeff_mul()[1]:
