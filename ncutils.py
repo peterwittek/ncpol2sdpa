@@ -8,8 +8,8 @@ Created on Thu May  2 16:03:05 2013
 @author: Peter Wittek
 """
 from math import floor
-from sympy.core import S
-from sympy.physics.quantum.operator import HermitianOperator
+from sympy.core import S, Symbol, Pow
+from sympy.physics.quantum.operator import HermitianOperator, Operator
 
 def count_ncmonomials(variables, monomials, degree):
     """Given a list of monomials, it counts those that have a certain degree,
@@ -30,6 +30,58 @@ def count_ncmonomials(variables, monomials, degree):
         else:
             break
     return ncmoncount
+                    
+def fastSubstitute(monomial, oldSub, newSub):
+    oldFactors = oldSub.as_coeff_mul()[1]
+    factors = monomial.as_coeff_mul()[1]
+    newVarList = []
+    newMonomial = 1
+    match = False
+    leftRemainder = 1
+    rightRemainder = 1
+    for i in xrange(len(factors)-len(oldFactors)+1):
+        for j in xrange(len(oldFactors)):
+            if isinstance(factors[i+j],Operator) and isinstance(oldFactors[j],Operator) and factors[i+j] != oldFactors[j]:
+                break
+            if isinstance(factors[i+j],Pow):
+                oldDeg = 1
+                oldBase = 1
+                if isinstance(oldFactors[j],Pow):
+                    oldBase = oldFactors[j].base
+                    oldDeg = oldFactors[j].exp
+                else:
+                    oldBase = oldFactors[j]
+                if oldBase != factors[i+j].base:
+                    break
+                if oldDeg > factors[i+j].exp:
+                    break
+                if oldDeg < factors[i+j].exp:
+                    if j!=len(oldFactors)-1:
+                        if j!=0:
+                            break
+                        else:
+                            leftRemainder = oldBase**(factors[i+j].exp - oldDeg)
+                    else:
+                        rightRemainder = oldBase**(factors[i+j].exp - oldDeg)
+            if isinstance(factors[i+j],Operator) and isinstance(oldFactors[j],Pow):
+                break
+        else:
+            match = True
+        if not match:
+            newVarList.append(factors[i])
+        else:
+            newMonomial = monomial.as_coeff_mul()[0]
+            for var in newVarList:
+                newMonomial *= var
+            newMonomial *= leftRemainder * newSub * rightRemainder
+            for j in range(i+len(oldFactors), len(factors)):
+                newMonomial *= factors[j]
+            break
+    else:
+        return monomial
+    return newMonomial
+
+
 
 def generate_ncvariables(n_vars):
     """Generates a number of noncommutative variables

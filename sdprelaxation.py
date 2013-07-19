@@ -9,7 +9,7 @@ Created on Sun May 26 15:06:17 2013
 """
 from sympy import S
 from sympy.physics.quantum.dagger import Dagger
-from ncutils import get_ncmonomials, count_ncmonomials
+from ncutils import get_ncmonomials, count_ncmonomials, fastSubstitute
 
 class entry:
     def __init__(self, block_index, row, column, value):
@@ -40,7 +40,8 @@ class SdpRelaxation:
         changed = True
         while changed:
             for lhs, rhs in self.monomial_substitutions.iteritems():
-                monomial = monomial.subs(lhs, rhs)
+                #monomial = monomial.subs(lhs, rhs)
+                monomial = fastSubstitute(monomial, lhs, rhs)
             if (originalMonomial == monomial):
                 changed = False
             originalMonomial = monomial
