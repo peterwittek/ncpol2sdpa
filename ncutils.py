@@ -39,8 +39,8 @@ def fastSubstitute(monomial, oldSub, newSub):
     match = False
     leftRemainder = 1
     rightRemainder = 1
-    for i in xrange(len(factors)-len(oldFactors)+1):
-        for j in xrange(len(oldFactors)):
+    for i in range(len(factors)-len(oldFactors)+1):
+        for j in range(len(oldFactors)):
             if isinstance(factors[i+j],Operator) and isinstance(oldFactors[j],Operator) and factors[i+j] != oldFactors[j]:
                 break
             if isinstance(factors[i+j],Pow):
@@ -93,7 +93,7 @@ def generate_ncvariables(n_vars):
     """
 
     variables = [0]*n_vars
-    for i in xrange(n_vars):
+    for i in range(n_vars):
         variables[i] = HermitianOperator('X%s' % i)
     return variables
 
@@ -112,7 +112,7 @@ def get_ncmonomials(variables, degree):
         _variables = variables[:]
         _variables.insert(0, 1)
         ncmonomials = [ S.One ]
-        for _ in xrange(degree):
+        for _ in range(degree):
             temp = []
             for var in _variables:
                 for new_var in ncmonomials:
@@ -152,7 +152,7 @@ def _linear2lattice(index, dimension):
 def ncdegree(variables, polynomial):
     """Returns the degree of a noncommutative polynomial."""
     degree = 0
-    if isinstance(polynomial, (int, long, float, complex)):
+    if isinstance(polynomial, (int, float, complex)):
         return degree
     
     for element in polynomial.as_coefficients_dict():

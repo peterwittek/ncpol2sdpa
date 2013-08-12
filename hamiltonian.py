@@ -18,7 +18,7 @@ from sdprelaxation import SdpRelaxation
 from ncutils import get_neighbors
 
 #Lattice dimension
-lattice_dimension = 4
+lattice_dimension = 3
 n_vars = lattice_dimension * lattice_dimension
 #Order of relaxation
 order = 2
@@ -28,11 +28,11 @@ gam, lam = 1, 2
 
 #Get Hermitian variables
 C = [0]*n_vars
-for i in xrange(n_vars):
+for i in range(n_vars):
     C[i] = HermitianOperator('C%s' % i)
 
 hamiltonian = 0
-for r in xrange(n_vars):
+for r in range(n_vars):
     hamiltonian -= 2*lam*Dagger(C[r])*C[r]
     neighbors = get_neighbors(r, lattice_dimension)
     for s in neighbors:
@@ -41,8 +41,8 @@ for r in xrange(n_vars):
 
 monomial_substitution = {}
 equalities = []
-for r in xrange(n_vars):
-    for s in xrange(r, n_vars):
+for r in range(n_vars):
+    for s in range(r, n_vars):
         if not r == s:
             monomial_substitution[C[r] * C[s]] = -C[s] * C[r]
 #            equalities.append(C[r]*C[s] + C[s]*C[r])
@@ -53,12 +53,12 @@ inequalities = []
 
 time0 = time.time()
 #Obtain SDP relaxation
-print "Obtaining SDP relaxation..."
+print("Obtaining SDP relaxation...")
 sdpRelaxation = SdpRelaxation(C)
 sdpRelaxation.get_relaxation(hamiltonian, inequalities, equalities, 
                       monomial_substitution, order)
 #Export relaxation to SDPA format
-print "Writing to disk..."
+print("Writing to disk...")
 sdpRelaxation.write_to_sdpa('hamiltonian.dat-s')                      
 
-print '%d %0.2f s' % (lattice_dimension, (time.time()-time0))
+print('%d %0.2f s' % (lattice_dimension, (time.time()-time0)))
