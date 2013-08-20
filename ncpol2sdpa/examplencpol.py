@@ -46,6 +46,3 @@ sdpRelaxation = SdpRelaxation(X)
 sdpRelaxation.get_relaxation(obj, inequalities, equalities, 
                       monomial_substitution, order)
 sdpRelaxation.write_to_sdpa('examplenc.dat-s')                      
-
-#Export relaxation to SDPA format
-#prob.write_to_file('examplenc.dat-s')
