@@ -8,10 +8,16 @@ The implementation has an intuitive syntax for entering Hamiltonians and it scal
 
 Dependencies
 ==
-The code requires [SymPy](http://sympy.org/)>=0.7.2 in the Python search path. The code is known to work with Python 2.6.8 and 2.7.5, and also with Pypy 2.0.2. 
+The code requires [SymPy](http://sympy.org/)>=0.7.2 in the Python search path. The code is known to work with Python 2.6.8 and 2.7.5, and also with Pypy 1.8 and 2.0.2. Using Pypy is highly recommended, as execution time is several times faster and memory use is reduced. The code is compatible with Python 3, but using Python 3.3.2 incurs a major decrease in performance; the case is likely to be similar in with other Python 3 versions.
 
 Usage
 ==
 A simple usage example is included in examplencpol.py. A more sophisticated application is given in hamiltonian.py, which implements the Hamiltonian of a fermionic system in a 2D grid.
 
-Using Pypy is recommended, as execution time is several times faster and memory use is reduced.
+Installation
+==
+Follow the standard procedure for installing Python modules:
+
+    $ sudo python_interpreter setup.py install
+
+If you install the module to your CPython library, but you want to use Pypy, please ensure that the PYTHONPATH variable is set up correctly, otherwise Pypy will not find the relevant modules.
