@@ -21,3 +21,9 @@ Follow the standard procedure for installing Python modules:
     $ sudo python_interpreter setup.py install
 
 If you install the module to your CPython library, but you want to use Pypy, please ensure that the PYTHONPATH variable is set up correctly, otherwise Pypy will not find the relevant modules.
+
+More Information
+==
+For more information refer to the following manuscript:
+
+[http://arxiv.org/abs/1308.6029](http://arxiv.org/abs/1308.6029)
