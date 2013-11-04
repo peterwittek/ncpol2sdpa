@@ -9,7 +9,7 @@ Created on Sun May 26 15:06:17 2013
 """
 from sympy import S
 from sympy.physics.quantum.dagger import Dagger
-from ncutils import get_ncmonomials, count_ncmonomials, fastSubstitute
+from ncutils import get_ncmonomials, count_ncmonomials, fastSubstitute, ncdegree
 
 class entry:
     def __init__(self, block_index, row, column, value):
@@ -58,6 +58,10 @@ class SdpRelaxation:
     def __get_facvar(self, polynomial):
         """Returns a dense vector representation of a polynomial"""
         facvar = [ 0 ] * self.n_vars
+        if isinstance( polynomial, int ):
+            indices = self.monomial_dictionary[S.One]
+            facvar[self.__index2linear(indices[0],indices[1])-1] = polynomial
+            return facvar
         for element in polynomial.expand().as_coeff_mul()[1][0].as_coeff_add()[1]:
             coeff = 1.0
             monomial = S.One
@@ -151,7 +155,12 @@ class SdpRelaxation:
     def __process_inequalities(self, inequalities, monomials, block_index, order):
         global block_struct
         global F
-        ineq_n_monomials = count_ncmonomials(self.variables, monomials, order - 1)
+        max_order = 0
+        for ineq in inequalities:
+            if ncdegree(self.variables, ineq)>max_order:
+                max_order = ncdegree(self.variables, ineq)
+        max_order = order - (max_order-1)
+        ineq_n_monomials = count_ncmonomials(self.variables, monomials, max_order)
         for ineq in inequalities:
              self.block_struct.append(ineq_n_monomials)
              block_index+=1
@@ -176,9 +185,9 @@ class SdpRelaxation:
         order -- the order of the relaxation
         """
         self.monomial_substitutions = monomial_substitutions
-    
         # Generate monomials and remove substituted ones    
         monomials = get_ncmonomials(self.variables, order)
+                
         for monomial in list(self.monomial_substitutions.keys()):
             if monomials.__contains__(monomial):
                 monomials.remove(monomial)
@@ -186,6 +195,8 @@ class SdpRelaxation:
         self.n_monomials = len(monomials)
         self.n_vars = int(self.n_monomials*(self.n_monomials+1)/2)
     
+        print('Number of monomials: %d' % self.n_monomials)
+        print('Generating moment matrix...');
         # The diagonal part of the SDP problem contains equalities on symmetry 
         # constraints encoded as pairs of inequalities
         self.F = [0] * (self.n_vars+1)
@@ -204,8 +215,9 @@ class SdpRelaxation:
             inequalities.append(-eq)
     
         print('Processing %d inequalities...' % len(inequalities))
+
         block_index = self.__process_inequalities(inequalities, monomials, block_index, order)
-    
+   
         block_index+=1        
         for i in range(self.n_monomials):
             for j in range(i,self.n_monomials):
