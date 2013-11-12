@@ -160,7 +160,6 @@ class SdpRelaxation:
                 localization_matrix_order = floor((2*order-max_order)/2)
                 if localization_matrix_order >= 0:
                     ineq_n_monomials = count_ncmonomials(self.variables, monomials, localization_matrix_order)
-                    print max_order, ineq_n_monomials, ineq
                     self.block_struct.append(ineq_n_monomials)
                     block_index+=1
                     for i in range(ineq_n_monomials):
