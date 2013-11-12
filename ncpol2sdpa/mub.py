@@ -1,8 +1,13 @@
 # -*- coding: utf-8 -*-
 """
+Generating relaxations for finding mutually unbiased bases based on the 
+following paper:
+
+Navascués, M.; Pironio, S. & Acín, A. SDP Relaxations for Non-Commutative Polynomial Optimization. In Anjos, M. F. & Lasserre, J. B. (Eds.) Handbook on Semidefinite, Conic and Polynomial Optimization. Springer, 2012, pp. 601--634.
+
 Created on Thu Oct  3 10:30:58 2013
 
-@author: wittek
+@author: Peter Wittek
 """
 from sympy.physics.quantum.operator import HermitianOperator
 from sdprelaxation import SdpRelaxation
