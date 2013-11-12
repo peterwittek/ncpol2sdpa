@@ -161,13 +161,14 @@ class SdpRelaxation:
                 max_order = ncdegree(self.variables, ineq)
         max_order = order - (max_order-1)
         ineq_n_monomials = count_ncmonomials(self.variables, monomials, max_order)
-        for ineq in inequalities:
-             self.block_struct.append(ineq_n_monomials)
-             block_index+=1
-             for i in range(ineq_n_monomials):
-                for j in range(i, ineq_n_monomials):
-                    polynomial = Dagger(monomials[i]) * ineq * monomials[j]
-                    self.__push_facvar_sparse(polynomial, block_index, i, j)
+        if ineq_n_monomials > 0:
+          for ineq in inequalities:
+               self.block_struct.append(ineq_n_monomials)
+               block_index+=1
+               for i in range(ineq_n_monomials):
+                  for j in range(i, ineq_n_monomials):
+                      polynomial = Dagger(monomials[i]) * ineq * monomials[j]
+                      self.__push_facvar_sparse(polynomial, block_index, i, j)
         return block_index
         
     
