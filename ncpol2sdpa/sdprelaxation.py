@@ -155,22 +155,19 @@ class SdpRelaxation:
     def __process_inequalities(self, inequalities, monomials, block_index, order):
         global block_struct
         global F
-        max_order = 0
         for ineq in inequalities:
-            if ncdegree(self.variables, ineq)>max_order:
                 max_order = ncdegree(self.variables, ineq)
-        max_order = order - (max_order-1)
-        ineq_n_monomials = count_ncmonomials(self.variables, monomials, max_order)
-        if ineq_n_monomials > 0:
-          for ineq in inequalities:
-               self.block_struct.append(ineq_n_monomials)
-               block_index+=1
-               for i in range(ineq_n_monomials):
-                  for j in range(i, ineq_n_monomials):
-                      polynomial = Dagger(monomials[i]) * ineq * monomials[j]
-                      self.__push_facvar_sparse(polynomial, block_index, i, j)
+                localization_matrix_order = floor((2*order-max_order)/2)
+                if localization_matrix_order >= 0:
+                    ineq_n_monomials = count_ncmonomials(self.variables, monomials, localization_matrix_order)
+                    print max_order, ineq_n_monomials, ineq
+                    self.block_struct.append(ineq_n_monomials)
+                    block_index+=1
+                    for i in range(ineq_n_monomials):
+                        for j in range(i, ineq_n_monomials):
+                            polynomial = Dagger(monomials[i]) * ineq * monomials[j]
+                            self.__push_facvar_sparse(polynomial, block_index, i, j)
         return block_index
-        
     
     def get_relaxation(self, obj, inequalities, equalities, 
                        monomial_substitutions, order):
