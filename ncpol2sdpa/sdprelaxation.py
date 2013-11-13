@@ -7,6 +7,7 @@ Created on Sun May 26 15:06:17 2013
 
 @author: Peter Wittek
 """
+from math import floor
 from sympy import S
 from sympy.physics.quantum.dagger import Dagger
 from ncutils import get_ncmonomials, count_ncmonomials, fastSubstitute, ncdegree
@@ -26,6 +27,7 @@ class SdpRelaxation:
     monomial_dictionary = {}
     n_monomials = 0
     n_vars = 0
+    blacklist = []    
     F = []
     block_struct = []
     obj_facvar = 0
@@ -107,21 +109,23 @@ class SdpRelaxation:
                 monomial = self.__apply_substitutions(monomial)
                 if monomial.as_coeff_Mul()[0] < 0:
                     monomial = -monomial
-                if monomial in self.monomial_dictionary:
-                    indices = self.monomial_dictionary[monomial]
-                    e = entry(block_index, n_eq, n_eq, 1)
-                    self.F[self.__index2linear(indices[0],indices[1])].append(e)
-                    e = entry(block_index, n_eq, n_eq, -1)
-                    self.F[self.__index2linear(i,j)].append(e)
-                    n_eq+=1
-                    e = entry(block_index, n_eq, n_eq, -1)
-                    self.F[self.__index2linear(indices[0],indices[1])].append(e)
-                    e = entry(block_index, n_eq, n_eq, 1)
-                    self.F[self.__index2linear(i,j)].append(e)
-                    n_eq+=1
+                if monomial != 0:
+                    if monomial in self.monomial_dictionary:
+                        indices = self.monomial_dictionary[monomial]
+                        e = entry(block_index, n_eq, n_eq, 1)
+                        self.F[self.__index2linear(indices[0],indices[1])].append(e)
+                        e = entry(block_index, n_eq, n_eq, -1)
+                        self.F[self.__index2linear(i,j)].append(e)
+                        n_eq+=1
+                        e = entry(block_index, n_eq, n_eq, -1)
+                        self.F[self.__index2linear(indices[0],indices[1])].append(e)
+                        e = entry(block_index, n_eq, n_eq, 1)
+                        self.F[self.__index2linear(i,j)].append(e)
+                        n_eq+=1
+                    else:
+                        self.monomial_dictionary[monomial] = [i, j]
                 else:
-                    self.monomial_dictionary[monomial] = [i, j]
-    
+                    self.blacklist.append(self.__index2linear(i,j))
         n_eq-=1
         self.block_struct=[-n_eq]
     
@@ -219,9 +223,10 @@ class SdpRelaxation:
         for i in range(self.n_monomials):
             for j in range(i,self.n_monomials):
                 k=self.__index2linear(i,j)
-                e = entry(block_index, i+1, j+1, 1)
-                self.F[k].append(e)
-        
+                if k not in self.blacklist:
+                    e = entry(block_index, i+1, j+1, 1)
+                    self.F[k].append(e)
+                            
         self.block_struct.append(self.n_monomials)
         
         
