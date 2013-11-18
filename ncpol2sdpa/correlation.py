@@ -53,9 +53,9 @@ def correl_qubits(psi, sett):
     B[0,:,:] = id
     C[0,:,:] = id
     for i in range(nbInputs):
-        A[1+i,:,:] = s[6*i]*c[6*i+1]*sx + s[6*i]*s[6*i+1]*sy + c[6*i]*sz
-        B[1+i,:,:] = s[6*i+2]*c[6*i+3]*sx + s[6*i+2]*s[6*i+3]*sy + c[6*i+2]*sz
-        C[1+i,:,:] = s[6*i+4]*c[6*i+5]*sx + s[6*i+4]*s[6*i+5]*sy + c[6*i+4]*sz
+        A[1+i,:,:] = s[2*i]*c[2*i+1]*sx + s[2*i]*s[2*i+1]*sy + c[2*i]*sz
+        B[1+i,:,:] = s[2*i+2*nbInputs]*c[2*i+2*nbInputs+1]*sx +         s[2*i+2*nbInputs]*s[2*i+2*nbInputs+1]*sy + c[2*i+2*nbInputs]*sz
+        C[1+i,:,:] = s[2*i+4*nbInputs]*c[2*i+4*nbInputs+1]*sx +         s[2*i+4*nbInputs]*s[2*i+4*nbInputs+1]*sy + c[2*i+4*nbInputs]*sz
     
     # Now we compute the multipartite operators.
     operators = kron(kron(A,B),C)
