@@ -12,14 +12,14 @@ Created on Tue Nov 12 10:29:54 2013
 @author: Jean-Daniel Bancal
 """
 import csv, sys, warnings
-from numpy import array, cos, dot, equal, kron, mod, random, real, reshape, sin, sqrt, zeros
+from numpy import array, cos, dot, equal, kron, mod, pi, random, real, reshape, sin, sqrt, zeros
 
 '''
 Global variables
 '''
 parties = ['A', 'B', 'C']
 N = len(parties) # Number of parties
-M = 4 # Number of measuerment settings
+M = 2 # Number of measuerment settings
 K = 2 # Number of outcomes
 
 '''
@@ -72,16 +72,19 @@ def main(argv=sys.argv):
     # Here we try the function with some states and measurements:
     psi = array([[1,0,0,0,0,0,0,1]]/sqrt(2)).T+0j # The GHZ state
     #psi = array([[0,1,1,0,1,0,0,0]]/sqrt(3)).T # The W state
-    sett = random.rand(2*M*N)#array([1,2,3,4,5,6,7,8,9,10,11,12])# the settings
+    #sett = random.rand(2*M*N)#array([1,2,3,4,5,6,7,8,9,10,11,12])# the settings
     #sett = array([pi/2, 0, pi/2, pi/4, pi/2, 0, pi/2, pi/4, pi/2, 0, pi/2, pi/4]) # Settings of the GHZ paradox
+    sett = array([pi/2, -pi/12, pi/2, -pi/12+pi/2, pi/2, -pi/12, pi/2, -pi/12+pi/2, pi/2, -pi/12, pi/2, -pi/12+pi/2])
+    print len(sett)
+
     Prob = correl_qubits(psi, sett)
 
     print Prob    
-    
+
     with open('correlations.csv', 'wb') as csvfile:
-        spamwriter = csv.writer(csvfile, delimiter=' ',
+        writer = csv.writer(csvfile, delimiter=' ',
                                 quotechar='|', quoting=csv.QUOTE_MINIMAL)
-        spamwriter.writerow(Prob)
+        writer.writerow(Prob)
 
 if __name__ == "__main__":
     main()
