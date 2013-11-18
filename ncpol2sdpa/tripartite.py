@@ -20,7 +20,7 @@ Global variables
 '''
 parties = ['A', 'B', 'C']
 N = len(parties) # Number of parties
-M = 4 # Number of measuerment settings
+M = 2 # Number of measuerment settings
 K = 2 # Number of outcomes
 partitions = ['BC|A', 'AC|B', 'AB|C']
 S = len(partitions) # Number of possible partitions
