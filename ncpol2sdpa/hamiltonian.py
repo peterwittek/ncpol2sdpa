@@ -12,15 +12,15 @@ Created on Fri May 10 09:45:11 2013
 @author: Peter Wittek
 """
 import time
-from sympy.physics.quantum.operator import HermitianOperator
+from sympy.physics.quantum.operator import Operator
 from sympy.physics.quantum.dagger import Dagger
 from sdprelaxation import SdpRelaxation
 from ncutils import get_neighbors
 
-#Lattice dimension
+# Lattice dimension
 lattice_dimension = 3
 n_vars = lattice_dimension * lattice_dimension
-#Order of relaxation
+# Order of relaxation
 order = 2
 
 # Parameters for the Hamiltonian
@@ -29,7 +29,7 @@ gam, lam = 1, 2
 #Get Hermitian variables
 C = [0]*n_vars
 for i in range(n_vars):
-    C[i] = HermitianOperator('C%s' % i)
+    C[i] = Operator('C%s' % i)
 
 hamiltonian = 0
 for r in range(n_vars):
@@ -54,9 +54,10 @@ inequalities = []
 time0 = time.time()
 #Obtain SDP relaxation
 print("Obtaining SDP relaxation...")
+verbose = 1
 sdpRelaxation = SdpRelaxation(C)
 sdpRelaxation.get_relaxation(hamiltonian, inequalities, equalities, 
-                      monomial_substitution, order)
+                      monomial_substitution, order, verbose)
 #Export relaxation to SDPA format
 print("Writing to disk...")
 sdpRelaxation.write_to_sdpa('hamiltonian.dat-s')                      
