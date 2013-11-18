@@ -10,6 +10,7 @@ Created on Thu May  2 16:03:05 2013
 from math import floor
 from sympy.core import S, Symbol, Pow
 from sympy.physics.quantum.operator import HermitianOperator, Operator
+from sympy.physics.quantum.dagger import Dagger
 
 def count_ncmonomials(variables, monomials, degree):
     """Given a list of monomials, it counts those that have a certain degree,
@@ -99,11 +100,11 @@ def generate_ncvariables(n_vars):
 
 def get_ncmonomials(variables, degree):
     """Generates all noncommutative monomials up to a degree
-    
+
     Arguments:
     variables -- the noncommutative variables to generate monomials from
     degree -- the maximum degree
-    
+
     Returns a list of monomials
     """
     if not variables:
@@ -117,6 +118,8 @@ def get_ncmonomials(variables, degree):
             for var in _variables:
                 for new_var in ncmonomials:
                     temp.append(var * new_var)
+                    if var != 1 and not var.is_hermitian:
+                        temp.append(Dagger(var) * new_var)
             ncmonomials = unique(temp[:])
         return ncmonomials
 
