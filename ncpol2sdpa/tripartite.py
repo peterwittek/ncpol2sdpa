@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Script to generate the SDP relaxation of the bipartite separation problem of 
+Script to generate the SDP relaxation of the tripartite separation problem of 
 the following paper:
 
 Bancal, J.-D.; Gisin, N.; Liang, Y.-C. & Pironio, S. Device-Independent 
@@ -11,7 +11,7 @@ Created on Thu Oct 31 09:38:12 2013
 
 @author: Peter Wittek and Jean-Daniel Bancal
 """
-import csv, sys, warnings
+import csv, sys
 from sympy.physics.quantum.operator import HermitianOperator
 from sdprelaxation import SdpRelaxation
 
@@ -139,8 +139,8 @@ def generate_equality_constraints(A, lamb, Prob):
                             counter+=1
     return equalities
 
-def main(argv=sys.argv):
 
+def get_relaxation(correlations_filename, sdpa_filename, verbose=0):
     # Noncommuting variables
     A = [0]*(N*M*(K-1)*S+1)
     for n in range(N):
@@ -156,24 +156,22 @@ def main(argv=sys.argv):
     
     # Obtain monomial substitutions to simplify the monomial basis     
     monomial_substitution = generate_monomial_substitutions(A)
-    print('Total number of substitutions: %s' % len(monomial_substitution))
+    if verbose>0:
+        print('Total number of substitutions: %s' % len(monomial_substitution))
 
-    with open('correlations.csv', 'rb') as csvfile:
+    with open(correlations_filename, 'rb') as csvfile:
         reader = csv.reader(csvfile, delimiter=' ', quotechar='|')
         for row in reader:
             Prob = [ float(i) for i in row ]
 
-    # Input check : the probabilities should be normalized, otherwise issue a warning:
-    if Prob[0] != 1.0:
-        warnings.warn('Warning: probabilities not normalized. They will be assumed to be normalized in the SDP.', UserWarning)
-
     # The probabilities enter the problem through equality constraints
     equalities = generate_equality_constraints(A, A[lambda_index], Prob)
-    print('Total number of equality constraints: %s' % len(equalities))
+    if verbose>0:
+        print('Total number of equality constraints: %s' % len(equalities))
     
     objective = -A[lambda_index]
-    
-    print('Objective function: %s' % objective)
+    if verbose>0:    
+        print('Objective function: %s' % objective)
     
     # There are no inequalities
     inequalities = []
@@ -185,9 +183,12 @@ def main(argv=sys.argv):
     sdpRelaxation = SdpRelaxation(A)
     sdpRelaxation.get_relaxation(objective, inequalities, equalities, 
                           monomial_substitution, order)
-    sdpRelaxation.write_to_sdpa('tripartite.dat-s')
+    sdpRelaxation.write_to_sdpa(sdpa_filename)
 
     return 0
+
+def main(argv=sys.argv):
+    get_relaxation('correlations.csv', 'tripartite.dat-s', 1)
 
 if __name__ == "__main__":
     main()
