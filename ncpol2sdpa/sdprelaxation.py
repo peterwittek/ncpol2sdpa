@@ -64,7 +64,12 @@ class SdpRelaxation:
             indices = self.monomial_dictionary[S.One]
             facvar[self.__index2linear(indices[0],indices[1])-1] = polynomial
             return facvar
-        for element in polynomial.expand().as_coeff_mul()[1][0].as_coeff_add()[1]:
+        # Is this a monomial?
+        if polynomial.is_Mul:
+            elements = [ polynomial ]
+        else:
+            elements = polynomial.expand().as_coeff_mul()[1][0].as_coeff_add()[1]            
+        for element in elements:
             coeff = 1.0
             monomial = S.One
             for var in element.as_coeff_mul()[1]:
@@ -133,7 +138,11 @@ class SdpRelaxation:
         """Calculates the sparse vector representation of a polynomial
         and pushes it to the F structure.
         """
-        for element in polynomial.expand().as_coeff_mul()[1][0].as_coeff_add()[1]:
+        if polynomial.is_Mul:
+            elements = [ polynomial ]
+        else:
+            elements = polynomial.expand().as_coeff_mul()[1][0].as_coeff_add()[1]            
+        for element in elements:
             coeff = 1.0
             monomial = S.One
             for var in element.as_coeff_mul()[1]:
@@ -143,17 +152,18 @@ class SdpRelaxation:
                     coeff = float(var)
             coeff = float(element.as_coeff_mul()[0]) * coeff
             monomial = self.__apply_substitutions(monomial)
-            if monomial.as_coeff_Mul()[0] < 0:
-                monomial = -monomial
-                coeff = -1.0 * coeff
-            if monomial in self.monomial_dictionary:
-                indices = self.monomial_dictionary[monomial]
-            else:
-                indices = self.monomial_dictionary[Dagger(monomial)]
-                indices[0], indices[1] = indices[1], indices[0]
-            e=entry(block_index, i+1, j+1, coeff)
-            k=self.__index2linear(indices[0],indices[1])
-            self.F[k].append(e)
+            if monomial != 0:
+                if monomial.as_coeff_Mul()[0] < 0:
+                    monomial = -monomial
+                    coeff = -1.0 * coeff
+                if monomial in self.monomial_dictionary:
+                    indices = self.monomial_dictionary[monomial]
+                else:
+                    indices = self.monomial_dictionary[Dagger(monomial)]
+                    indices[0], indices[1] = indices[1], indices[0]
+                e=entry(block_index, i+1, j+1, coeff)
+                k=self.__index2linear(indices[0],indices[1])
+                self.F[k].append(e)
     
     
     def __process_inequalities(self, inequalities, monomials, block_index, order):
