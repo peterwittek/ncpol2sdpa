@@ -12,7 +12,7 @@ from sympy.core import S, Symbol, Pow
 from sympy.physics.quantum.operator import HermitianOperator, Operator
 from sympy.physics.quantum.dagger import Dagger
 
-def count_ncmonomials(variables, monomials, degree):
+def count_ncmonomials(monomials, degree):
     """Given a list of monomials, it counts those that have a certain degree,
     or less. The function is useful when certain monomials were eliminated
     from the basis.
@@ -26,7 +26,7 @@ def count_ncmonomials(variables, monomials, degree):
     """    
     ncmoncount = 0
     for monomial in monomials:
-        if ncdegree(variables, monomial) <= degree:
+        if ncdegree(monomial) <= degree:
             ncmoncount += 1
         else:
             break
@@ -152,17 +152,18 @@ def _linear2lattice(index, dimension):
     coords[1] = int(floor(index/dimension))
     return coords  
 
-def ncdegree(variables, polynomial):
+def ncdegree(polynomial):
     """Returns the degree of a noncommutative polynomial."""
     degree = 0
     if isinstance(polynomial, (int, float, complex)):
         return degree
-    
-    for element in polynomial.as_coefficients_dict():
+    for monomial in polynomial.as_coefficients_dict():
         subdegree = 0
-        for monomial in element.as_coeff_mul()[1]:
-            for var in variables:
-                subdegree += monomial.as_coeff_exponent(var)[1]
+        for variable in monomial.as_coeff_mul()[1]:
+            if isinstance(variable, Pow):
+                subdegree+=variable.exp
+            else:
+                subdegree+=1
         if subdegree > degree:
             degree = subdegree
     return degree

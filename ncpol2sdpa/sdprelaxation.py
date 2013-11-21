@@ -174,10 +174,10 @@ class SdpRelaxation:
         global block_struct
         global F
         for ineq in inequalities:
-                max_order = ncdegree(self.variables, ineq)
+                max_order = ncdegree(ineq)
                 localization_matrix_order = floor((2*order-max_order)/2)
                 if localization_matrix_order >= 0:
-                    ineq_n_monomials = count_ncmonomials(self.variables, monomials, localization_matrix_order)
+                    ineq_n_monomials = count_ncmonomials(monomials, localization_matrix_order)
                     self.block_struct.append(ineq_n_monomials)
                     block_index+=1
                     for i in range(ineq_n_monomials):
