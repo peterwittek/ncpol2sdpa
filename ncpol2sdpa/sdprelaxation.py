@@ -65,10 +65,12 @@ class SdpRelaxation:
             facvar[self.__index2linear(indices[0],indices[1])-1] = polynomial
             return facvar
         # Is this a monomial?
+        polynomial = polynomial.expand()
         if polynomial.is_Mul:
+            print polynomial
             elements = [ polynomial ]
         else:
-            elements = polynomial.expand().as_coeff_mul()[1][0].as_coeff_add()[1]            
+            elements = polynomial.as_coeff_mul()[1][0].as_coeff_add()[1]            
         for element in elements:
             coeff = 1.0
             monomial = S.One
@@ -138,10 +140,12 @@ class SdpRelaxation:
         """Calculates the sparse vector representation of a polynomial
         and pushes it to the F structure.
         """
+        polynomial = polynomial.expand()
         if polynomial.is_Mul:
+            print polynomial
             elements = [ polynomial ]
         else:
-            elements = polynomial.expand().as_coeff_mul()[1][0].as_coeff_add()[1]            
+            elements = polynomial.as_coeff_mul()[1][0].as_coeff_add()[1]            
         for element in elements:
             coeff = 1.0
             monomial = S.One
