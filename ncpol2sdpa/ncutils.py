@@ -8,7 +8,7 @@ Created on Thu May  2 16:03:05 2013
 @author: Peter Wittek
 """
 from math import floor
-from sympy.core import S, Symbol, Pow
+from sympy.core import S, Symbol, Pow, Number
 from sympy.physics.quantum.operator import HermitianOperator, Operator
 from sympy.physics.quantum.dagger import Dagger
 
@@ -38,10 +38,14 @@ def fastSubstitute(monomial, oldSub, newSub):
     newVarList = []
     newMonomial = 1
     match = False
+    if isinstance(monomial, Number):
+        return monomial
     leftRemainder = 1
     rightRemainder = 1
     for i in range(len(factors)-len(oldFactors)+1):
         for j in range(len(oldFactors)):
+            if isinstance(factors[i+j],Symbol) and (not isinstance(oldFactors[j],Operator) or (isinstance(oldFactors[j],Symbol) and factors[i+j] != oldFactors[j]) ):
+                break
             if isinstance(factors[i+j],Operator) and isinstance(oldFactors[j],Operator) and factors[i+j] != oldFactors[j]:
                 break
             if isinstance(factors[i+j],Pow):
