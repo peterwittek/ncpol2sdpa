@@ -8,9 +8,10 @@ Created on Sun May 26 15:06:17 2013
 @author: Peter Wittek
 """
 from math import floor
-from sympy import S
+from sympy import S, Symbol
 from sympy.physics.quantum.dagger import Dagger
-from ncutils import get_ncmonomials, count_ncmonomials, fastSubstitute, ncdegree
+from sympy.physics.quantum.operator import HermitianOperator
+from ncutils import get_ncmonomials, get_variables_of_polynomial, count_ncmonomials, fastSubstitute, ncdegree
 
 class entry:
     def __init__(self, block_index, row, column, value):
@@ -51,8 +52,8 @@ class SdpRelaxation:
         changed = True
         while changed:
             for lhs, rhs in self.monomial_substitutions.items():
-                #monomial = monomial.subs(lhs, rhs)
-                monomial = fastSubstitute(monomial, lhs, rhs)
+                monomial = monomial.subs(lhs, rhs)
+                #monomial = fastSubstitute(monomial, lhs, rhs)
             if (originalMonomial == monomial):
                 changed = False
             originalMonomial = monomial
@@ -149,47 +150,78 @@ class SdpRelaxation:
         """
         # Adding symmetry constraints of momentum matrix and generating 
         # monomial dictionary
-        for i in range(len(monomials)):
-            for j in range(i, len(monomials)):
-                monomial = Dagger(monomials[i]) * monomials[j]
+        for row in range(len(monomials)):
+            for column in range(row, len(monomials)):
+                monomial = Dagger(monomials[row]) * monomials[column]
                 monomial = self.__apply_substitutions(monomial)
                 if monomial.as_coeff_Mul()[0] < 0:
                     monomial = -monomial
                 if monomial != 0:
-                    if monomial in self.monomial_dictionary and monomial != 1:
+                    if monomial in self.monomial_dictionary:
                         indices = self.monomial_dictionary[monomial]
                         e = entry(block_index, n_eq, n_eq, 1)
                         self.F[self.__index2linear(indices[0],indices[1], indices[2])].append(e)
                         e = entry(block_index, n_eq, n_eq, -1)
-                        self.F[self.__index2linear(i,j,monomial_block_index)].append(e)
+                        self.F[self.__index2linear(row,column,monomial_block_index)].append(e)
                         n_eq+=1
                         e = entry(block_index, n_eq, n_eq, -1)
                         self.F[self.__index2linear(indices[0],indices[1], indices[2])].append(e)
                         e = entry(block_index, n_eq, n_eq, 1)
-                        self.F[self.__index2linear(i,j,monomial_block_index)].append(e)
+                        self.F[self.__index2linear(row,column,monomial_block_index)].append(e)
                         n_eq+=1
                     else:
-                        self.monomial_dictionary[monomial] = [i, j, monomial_block_index]
+                        self.monomial_dictionary[monomial] = [row, column, monomial_block_index]
                 else:
-                    self.blacklist.append(self.__index2linear(i,j,monomial_block_index))
+                    self.blacklist.append(self.__index2linear(row,column,monomial_block_index))
         n_eq-=1
         self.block_struct=[-n_eq]
         return n_eq+1
             
-    def __process_inequalities(self, inequalities, monomials, block_index, order):
+    def __get_monomial_block_index(self, polynomial):
+        if len(self.variable_blocks) == 1:
+            return [ 0 ]
+        polynomial_variables = get_variables_of_polynomial(polynomial.expand())
+        block_index_list = [ ]
+        block_index = 0
+        for variables in self.variable_blocks:
+            if any([i in polynomial_variables for i in variables]):
+                block_index_list.append(block_index)
+            block_index+=1    
+        return block_index_list
+
+    def __pick_monomials_of_degree(self, monomials, degree):
+        selected_monomials = []
+        for monomial in monomials:
+            # Expectation value of the identity operator for the block
+            if degree == 0 and monomial.is_commutative:
+                selected_monomials.append(monomial)
+            elif ncdegree(monomial) == degree:
+                selected_monomials.append(monomial)
+        return selected_monomials        
+        
+    def __pick_monomials_up_to_degree_in_order(self, monomial_blocks, monomial_block_index_list, degree):
+        ordered_monomials = []
+        for monomial_block_index in monomial_block_index_list:
+            for d in range(degree+1):
+                ordered_monomials.extend(self.__pick_monomials_of_degree(monomial_blocks[monomial_block_index], d))
+        return ordered_monomials
+                            
+    
+    def __process_inequalities(self, inequalities, monomial_blocks, block_index, order):
         global block_struct
         global F
         for ineq in inequalities:
-                max_order = ncdegree(ineq)
-                localization_matrix_order = floor((2*order-max_order)/2)
-                if localization_matrix_order >= 0:
-                    ineq_n_monomials = count_ncmonomials(monomials, localization_matrix_order)
-                    self.block_struct.append(ineq_n_monomials)
-                    block_index+=1
-                    for i in range(ineq_n_monomials):
-                        for j in range(i, ineq_n_monomials):
-                            polynomial = Dagger(monomials[i]) * ineq * monomials[j]
-                            self.__push_facvar_sparse(polynomial, block_index, i, j)
+            max_order = ncdegree(ineq)
+            localization_matrix_order = int(floor((2*order-max_order)/2))
+            if localization_matrix_order >= 0:
+                monomial_block_index_list = self.__get_monomial_block_index(ineq)
+                monomials = self.__pick_monomials_up_to_degree_in_order(monomial_blocks,monomial_block_index_list,localization_matrix_order)
+                self.block_struct.append(len(monomials))
+                block_index+=1
+                for row in range(len(monomials)):
+                    for column in range(row, len(monomials)):
+                        polynomial = Dagger(monomials[row]) * ineq * monomials[column]
+                        self.__push_facvar_sparse(polynomial, block_index, row, column)
         return block_index
     
     def get_relaxation(self, obj, inequalities, equalities, 
@@ -211,14 +243,18 @@ class SdpRelaxation:
         for variables in self.variable_blocks:
             monomial_blocks.append(get_ncmonomials(variables, order))
 
+        monomial_block_index = 0
         for monomials in monomial_blocks:
+            if len(monomial_blocks)>1:
+                identityOperator = HermitianOperator("1_%s" % (monomial_block_index))
+                identityOperator.is_commutative = True
+                monomials[0] = identityOperator
+                self.monomial_substitutions[identityOperator*identityOperator] = identityOperator
             for monomial in list(self.monomial_substitutions.keys()):
                 if monomials.__contains__(monomial):
                     monomials.remove(monomial)
-
-    
+            monomial_block_index+=1
         self.n_vars = 0
-        #self.n_monomials_in_blocks = [0] * len(monomial_blocks)
         self.offsets = [ 0 ]
         for monomials in monomial_blocks:
             n_monomials = len(monomials)
@@ -253,7 +289,6 @@ class SdpRelaxation:
        # Generate moment matrices for each sets of variables
         for monomial_block_index in range(len(monomial_blocks)):
             n_eq = self.__generate_moment_matrix(n_eq, monomial_blocks[monomial_block_index], block_index, monomial_block_index)
-        
         # Objective function
         self.obj_facvar=self.__get_facvar(obj)
         
@@ -264,7 +299,7 @@ class SdpRelaxation:
         if verbose>0:
             print('Processing %d inequalities...' % len(inequalities))
 
-        block_index = self.__process_inequalities(inequalities, monomials, block_index, order)
+        block_index = self.__process_inequalities(inequalities, monomial_blocks, block_index, order)
 
         for monomial_block_index in range(len(monomial_blocks)):
             block_index+=1

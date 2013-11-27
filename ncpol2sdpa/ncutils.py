@@ -156,6 +156,19 @@ def _linear2lattice(index, dimension):
     coords[1] = int(floor(index/dimension))
     return coords  
 
+def get_variables_of_polynomial(polynomial):
+    """Returns the degree of a noncommutative polynomial."""
+    if isinstance(polynomial, (int, float, complex)):
+        return []
+    result = []
+    for monomial in polynomial.as_coefficients_dict():
+        for variable in monomial.as_coeff_mul()[1]:
+            if isinstance(variable, Pow):
+                result.append(variable.base)
+            else:
+                result.append(variable)
+    return result
+
 def ncdegree(polynomial):
     """Returns the degree of a noncommutative polynomial."""
     degree = 0
