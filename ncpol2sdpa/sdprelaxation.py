@@ -215,7 +215,21 @@ class SdpRelaxation:
                         polynomial = Dagger(monomials[row]) * ineq * monomials[column]
                         self.__push_facvar_sparse(polynomial, block_index, row, column)
         return block_index
-        
+    
+    def __save_monomial_dictionary(self,filename):
+        monomial_translation = [''] * (self.n_vars + 1)
+        for key, indices in self.monomial_dictionary.iteritems():
+            monomial = ('%s' % key)
+            monomial = monomial.replace('Dagger(', '')
+            monomial = monomial.replace(')', 'T')
+            monomial = monomial.replace('**', '^')
+            k = self.__index2linear(indices[0],indices[1],indices[2])
+            monomial_translation[k] = monomial
+        f = open(filename, 'w')
+        for k in range(len(monomial_translation)):
+            f.write('%s %s\n' % (k, monomial_translation[k]))
+        f.close()
+    
     def get_relaxation(self, obj, inequalities, equalities, 
                        monomial_substitutions, order, verbose=0):
         """Gets the SDP relaxation of a noncommutative polynomial optimization
