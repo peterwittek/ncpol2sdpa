@@ -26,6 +26,7 @@ class SdpRelaxation:
 
     monomial_substitutions = {}
     monomial_dictionary = {}
+    sdp_variable_subsitutions = {}
     n_vars = 0
     blacklist = []    
     F = []
@@ -159,16 +160,7 @@ class SdpRelaxation:
                 if monomial != 0:
                     if monomial in self.monomial_dictionary:
                         indices = self.monomial_dictionary[monomial]
-                        e = entry(block_index, n_eq, n_eq, 1)
-                        self.F[self.__index2linear(indices[0],indices[1], indices[2])].append(e)
-                        e = entry(block_index, n_eq, n_eq, -1)
-                        self.F[self.__index2linear(row,column,monomial_block_index)].append(e)
-                        n_eq+=1
-                        e = entry(block_index, n_eq, n_eq, -1)
-                        self.F[self.__index2linear(indices[0],indices[1], indices[2])].append(e)
-                        e = entry(block_index, n_eq, n_eq, 1)
-                        self.F[self.__index2linear(row,column,monomial_block_index)].append(e)
-                        n_eq+=1
+                        self.sdp_variable_subsitutions[self.__index2linear(row,column,monomial_block_index)] = self.__index2linear(indices[0],indices[1], indices[2])
                     else:
                         self.monomial_dictionary[monomial] = [row, column, monomial_block_index]
                 else:
@@ -223,7 +215,7 @@ class SdpRelaxation:
                         polynomial = Dagger(monomials[row]) * ineq * monomials[column]
                         self.__push_facvar_sparse(polynomial, block_index, row, column)
         return block_index
-    
+        
     def get_relaxation(self, obj, inequalities, equalities, 
                        monomial_substitutions, order, verbose=0):
         """Gets the SDP relaxation of a noncommutative polynomial optimization
@@ -254,6 +246,7 @@ class SdpRelaxation:
                 if monomials.__contains__(monomial):
                     monomials.remove(monomial)
             monomial_block_index+=1
+            
         self.n_vars = 0
         self.offsets = [ 0 ]
         for monomials in monomial_blocks:
@@ -289,6 +282,7 @@ class SdpRelaxation:
        # Generate moment matrices for each sets of variables
         for monomial_block_index in range(len(monomial_blocks)):
             n_eq = self.__generate_moment_matrix(n_eq, monomial_blocks[monomial_block_index], block_index, monomial_block_index)
+        
         # Objective function
         self.obj_facvar=self.__get_facvar(obj)
         
@@ -306,6 +300,8 @@ class SdpRelaxation:
             for i in range(self.n_monomials_in_blocks[monomial_block_index]):
                 for j in range(i,self.n_monomials_in_blocks[monomial_block_index]):
                     k=self.__index2linear(i,j, monomial_block_index)
+                    if k in self.sdp_variable_subsitutions:
+                        k = self.sdp_variable_subsitutions[k]
                     if k not in self.blacklist:
                         e = entry(block_index, i+1, j+1, 1)
                         self.F[k].append(e)
