@@ -57,16 +57,11 @@ class SdpRelaxation:
                 changed = False
             originalMonomial = monomial
         return monomial
-    
-    
-    def __index2linear(self, i, j, monomial_block_index):
+        
+    def __index2linear(self, i, j, monomial_block_index):    
         n_monomials = self.n_monomials_in_blocks[monomial_block_index]
-        if i==0:
-            return self.offsets[monomial_block_index] + j + 1
-        else:
-            skew = int(i * (i + 1) / 2)
-            return self.offsets[monomial_block_index] + i * n_monomials-skew + j + 1
-    
+        return self.offsets[monomial_block_index] + i*n_monomials + j + 1
+        
     def __get_facvar(self, polynomial):
         """Returns a dense vector representation of a polynomial"""
         facvar = [ 0 ] * self.n_vars
@@ -165,6 +160,7 @@ class SdpRelaxation:
                         k = self.__index2linear(row, column, monomial_block_index)
                     e = entry(block_index, row+1, column+1, 1)
                     self.F[k].append(e)
+
         self.block_struct.append(len(monomials))
         return block_index
 
@@ -267,7 +263,7 @@ class SdpRelaxation:
         for monomials in monomial_blocks:
             n_monomials = len(monomials)
             self.n_monomials_in_blocks.append(n_monomials)
-            self.n_vars += int(n_monomials*(n_monomials+1)/2)
+            self.n_vars += n_monomials**2
             self.offsets.append(self.n_vars)
         self.n_vars += len(self.extra_variables)
     
@@ -309,7 +305,21 @@ class SdpRelaxation:
             print('Processing %d inequalities...' % len(inequalities))
 
         block_index = self.__process_inequalities(inequalities, monomial_blocks, block_index, order)
+        self.__compact_sdp_variables()
 
+    def __compact_sdp_variables(self):
+        new_n_vars = 0
+        new_F = []
+        new_obj_facvar = []
+        for i in range(self.n_vars+1):
+            if len(self.F[i])>0:
+                new_n_vars += 1
+                new_F.append(self.F[i])
+                if i>0:
+                    new_obj_facvar.append(self.obj_facvar[i-1])
+        self.n_vars = new_n_vars -1
+        self.F = new_F
+        self.obj_facvar = new_obj_facvar
         
     def write_to_sdpa(self, filename):
         """Writes the SDP relaxation to SDPA format.
