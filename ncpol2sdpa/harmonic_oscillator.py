@@ -22,7 +22,6 @@ hbar, omega = 1, 1
 a = Operator('a')   # Annihilation
 
 hamiltonian = hbar*omega*(Dagger(a)*a+0.5)
-print hamiltonian
 
 monomial_substitution = {}
 
