@@ -11,7 +11,6 @@ import time
 from sympy.physics.quantum.operator import Operator
 from sympy.physics.quantum.dagger import Dagger
 from sdprelaxation import SdpRelaxation
-from ncutils import get_neighbors
 
 # Order of relaxation
 order = 2
