@@ -130,10 +130,6 @@ class SdpRelaxation:
                     if monomial in self.monomial_dictionary:
                         indices = self.monomial_dictionary[monomial]
                         k = self.__index2linear(indices[0],indices[1],indices[2])
-                    elif Dagger(monomial) in self.monomial_dictionary:
-                        indices = self.monomial_dictionary[Dagger(monomial)]
-                        indices[0], indices[1] = indices[1], indices[0]
-                        k = self.__index2linear(indices[0],indices[1],indices[2])
                 if k > -1:
                     e=entry(block_index, i+1, j+1, coeff)
                     self.F[k].append(e)
@@ -158,7 +154,29 @@ class SdpRelaxation:
                     else:
                         self.monomial_dictionary[monomial] = [row, column, monomial_block_index]
                         k = self.__index2linear(row, column, monomial_block_index)
-                    e = entry(block_index, row+1, column+1, 1)
+                    if row == column:
+                        value = 1
+                    else:
+                        value = 0.5
+                        monomial_dagger = Dagger(monomials[column]) * monomials[row]
+                        monomial_dagger = self.__apply_substitutions(monomial_dagger)
+#                        monomial_dagger = Dagger(monomial)
+                        if monomial.as_coeff_Mul()[0] < 0:
+                            monomial = -monomial
+                        if monomial != 0:
+                            if monomial_dagger in self.monomial_dictionary:
+                                indices = self.monomial_dictionary[monomial_dagger]
+                                k_dagger = self.__index2linear(indices[0],indices[1], indices[2])
+                            else:
+                                self.monomial_dictionary[monomial_dagger] = [column, row, monomial_block_index]
+                                k_dagger = self.__index2linear(column, row, monomial_block_index)
+                        if k_dagger == k:
+                            value = 1
+                        else:
+                            e = entry(block_index, row+1, column+1, value)
+                            self.F[k_dagger].append(e)
+                        
+                    e = entry(block_index, row+1, column+1, value)
                     self.F[k].append(e)
 
         self.block_struct.append(len(monomials))
@@ -209,7 +227,12 @@ class SdpRelaxation:
                 for row in range(len(monomials)):
                     for column in range(row, len(monomials)):
                         polynomial = Dagger(monomials[row]) * ineq * monomials[column]
-                        self.__push_facvar_sparse(polynomial, block_index, row, column)
+                        if row == column:
+                            self.__push_facvar_sparse(polynomial, block_index, row, column)                            
+                        else:
+                            polynomial_dagger = Dagger(monomials[column]) * ineq * monomials[row]
+                            poly = 0.5*polynomial_dagger + 0.5*polynomial
+                            self.__push_facvar_sparse(poly, block_index, row, column)
         return block_index
     
     def __save_monomial_dictionary(self,filename):
@@ -253,9 +276,7 @@ class SdpRelaxation:
                 identityOperator.is_commutative = True
                 monomials[0] = identityOperator
                 self.monomial_substitutions[identityOperator*identityOperator] = identityOperator
-            for monomial in list(self.monomial_substitutions.keys()):
-                if monomials.__contains__(monomial):
-                    monomials.remove(monomial)
+
             monomial_block_index+=1
 
         self.n_vars = 0
