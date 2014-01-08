@@ -1,9 +1,14 @@
 # -*- coding: utf-8 -*-
 """
 Exporting a Hamiltonian ground state problem to SDPA. The Hamiltonian 
-is of a simple harmonic oscillator.
+is of a simple harmonic oscillator. Bosonic systems reach the optimum
+solution at relaxation order 1:
 
-Created on Tue Dec  3 09:05:20 2013
+Navascués, M. García-Sáez, A. Acín, A. and Pironio, S. A paradox in bosonic
+energy computations via semidefinite programming relaxations. New Journal of
+Physics, 2013, 15, 023026.
+
+Created on Fri May 10 09:45:11 2013
 
 @author: Peter Wittek
 """
@@ -13,21 +18,56 @@ from sympy.physics.quantum.dagger import Dagger
 from sdprelaxation import SdpRelaxation
 
 # Order of relaxation
-order = 2
+order = 1
+
+# Number of variables
+N = 4
 
 # Parameters for the Hamiltonian
 hbar, omega = 1, 1
 
-# Define ladder operator
-a = Operator('a')   # Annihilation
+# Define ladder operators
+a = []
+for i in range(N):
+    a.append(Operator('a%s' % i))   # Annihilation
 
-hamiltonian = hbar*omega*(Dagger(a)*a+0.5)
-
+hamiltonian = 0
+for i in range(N):
+    hamiltonian += hbar*omega*(Dagger(a[i])*a[i]+0.5)
+    
 monomial_substitution = {}
 
-# [a,aT]=1
+for i in range(N):
+    for j in range(i+1,N):
+        # [a_i,a_jT] = 0 for i\neq j
+        monomial_substitution[a[i]*Dagger(a[j])] = Dagger(a[j])*a[i]
+        # [a_i, a_j] = 0
+        monomial_substitution[a[i]*a[j]] = a[j]*a[i]
+        # [a_iT, a_jT] = 0
+        monomial_substitution[Dagger(a[i])*Dagger(a[j])] = Dagger(a[j])*Dagger(a[i])
+
+#print monomial_substitution
+
+# [a_i,a_iT]=1
 equalities = []
-equalities.append(a*Dagger(a)-Dagger(a)*a-1.0)
+for i in range(N):
+    equalities.append(a[i]*Dagger(a[i])-Dagger(a[i])*a[i]-1.0)
+
+'''
+equalities = []
+for i in range(N):
+    for j in range(i,N):
+        if i==j:
+            equalities.append(a[i]*Dagger(a[i])-Dagger(a[i])*a[i]-1.0)
+        else:
+            # [a_i,a_jT] = 0 for i\neq j
+            equalities.append(a[i]*Dagger(a[j]) - Dagger(a[j])*a[i])
+            # [a_i, a_j] = 0
+            equalities.append(a[i]*a[j] - a[j]*a[i])
+            # [a_iT, a_jT] = 0
+            equalities.append(Dagger(a[i])*Dagger(a[j]) - Dagger(a[j])*Dagger(a[i]))
+'''
+#print equalities
 
 inequalities = []
 
@@ -40,6 +80,6 @@ sdpRelaxation.get_relaxation(hamiltonian, inequalities, equalities,
                       monomial_substitution, order, verbose)
 #Export relaxation to SDPA format
 print("Writing to disk...")
-sdpRelaxation.write_to_sdpa('harmonic_oscillator.dat-s')                      
+sdpRelaxation.write_to_sdpa('bosonic_harmonic_oscillator.dat-s')                      
 
 print('%0.2f s' % ((time.time()-time0)))
