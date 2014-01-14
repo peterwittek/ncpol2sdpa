@@ -267,7 +267,7 @@ class SdpRelaxation:
         for variables in self.variable_blocks:
             monomial_blocks.append(get_ncmonomials(variables, order))
 
-        # Adjusting monomial blocks and removing substituted monomials
+        # Adjusting monomial blocks
         monomial_block_index = 0
         for monomials in monomial_blocks:
             if len(monomial_blocks)>1:
