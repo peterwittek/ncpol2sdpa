@@ -160,9 +160,9 @@ class SdpRelaxation:
                         value = 0.5
                         monomial_dagger = Dagger(monomials[column]) * monomials[row]
                         monomial_dagger = self.__apply_substitutions(monomial_dagger)
-                        if monomial.as_coeff_Mul()[0] < 0:
-                            monomial = -monomial
-                        if monomial != 0:
+                        if monomial_dagger.as_coeff_Mul()[0] < 0:
+                            monomial_dagger = -monomial_dagger
+                        if monomial_dagger != 0:
                             if monomial_dagger in self.monomial_dictionary:
                                 indices = self.monomial_dictionary[monomial_dagger]
                                 k_dagger = self.__index2linear(indices[0],indices[1], indices[2])
