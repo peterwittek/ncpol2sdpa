@@ -46,28 +46,10 @@ for i in range(N):
         # [a_iT, a_jT] = 0
         monomial_substitution[Dagger(a[i])*Dagger(a[j])] = Dagger(a[j])*Dagger(a[i])
 
-#print monomial_substitution
-
 # [a_i,a_iT]=1
 equalities = []
 for i in range(N):
     equalities.append(a[i]*Dagger(a[i])-Dagger(a[i])*a[i]-1.0)
-
-'''
-equalities = []
-for i in range(N):
-    for j in range(i,N):
-        if i==j:
-            equalities.append(a[i]*Dagger(a[i])-Dagger(a[i])*a[i]-1.0)
-        else:
-            # [a_i,a_jT] = 0 for i\neq j
-            equalities.append(a[i]*Dagger(a[j]) - Dagger(a[j])*a[i])
-            # [a_i, a_j] = 0
-            equalities.append(a[i]*a[j] - a[j]*a[i])
-            # [a_iT, a_jT] = 0
-            equalities.append(Dagger(a[i])*Dagger(a[j]) - Dagger(a[j])*Dagger(a[i]))
-'''
-#print equalities
 
 inequalities = []
 
@@ -80,6 +62,6 @@ sdpRelaxation.get_relaxation(hamiltonian, inequalities, equalities,
                       monomial_substitution, order, verbose)
 #Export relaxation to SDPA format
 print("Writing to disk...")
-sdpRelaxation.write_to_sdpa('bosonic_harmonic_oscillator.dat-s')                      
+sdpRelaxation.write_to_sdpa('harmonic_oscillator.dat-s')                      
 
 print('%0.2f s' % ((time.time()-time0)))
