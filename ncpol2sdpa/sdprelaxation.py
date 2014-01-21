@@ -152,8 +152,7 @@ class SdpRelaxation:
         return facvar
     
     def __generate_moment_matrix(self, monomials, block_index, monomial_block_index):
-        """Generate the moment matrix of monomials, but does not add SDP
-        constraints.
+        """Generate the moment matrix of monomials.
         
         Arguments:
         monomials -- |W_d| set of words of length up to the relaxation order d
