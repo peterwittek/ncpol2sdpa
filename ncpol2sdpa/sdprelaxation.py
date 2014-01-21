@@ -109,9 +109,9 @@ class SdpRelaxation:
 
     def __get_facvar(self, polynomial):
         """Return dense vector representation of a polynomial. This function is
-           nearly identical to __push_facvar_sparse, but instead of pushing
-           sparse entries to the constraint matrices, it returns a dense 
-           vector.
+        nearly identical to __push_facvar_sparse, but instead of pushing
+        sparse entries to the constraint matrices, it returns a dense 
+        vector.
         """
         facvar = [ 0 ] * self.n_vars
         if isinstance( polynomial, int ):
