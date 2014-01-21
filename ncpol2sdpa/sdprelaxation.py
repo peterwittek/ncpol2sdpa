@@ -14,6 +14,7 @@ from sympy.physics.quantum.operator import HermitianOperator
 from ncutils import get_ncmonomials, get_variables_of_polynomial, count_ncmonomials, fastSubstitute, ncdegree
 
 class entry:
+    'Class for storing entries in the constraint matrices of the SDP relaxation'
     def __init__(self, block_index, row, column, value):
         self.block_index = block_index
         self.row = row
@@ -51,6 +52,9 @@ class SdpRelaxation:
         changed = True
         while changed:
             for lhs, rhs in self.monomial_substitutions.items():
+                # The fast substitution routine still fails on some rare 
+                # conditions. In production environments, it is safer to use
+                # the default substitution routine that comes with SymPy.
                 monomial = monomial.subs(lhs, rhs)
                 #monomial = fastSubstitute(monomial, lhs, rhs)
             if (originalMonomial == monomial):
@@ -62,13 +66,58 @@ class SdpRelaxation:
         n_monomials = self.n_monomials_in_blocks[monomial_block_index]
         return self.offsets[monomial_block_index] + i*n_monomials + j + 1
         
+
+    def __push_facvar_sparse(self, polynomial, block_index, i, j):
+        """Calculate the sparse vector representation of a polynomial
+        and pushes it to the F structure.
+        """
+        
+        # Preprocess the polynomial for uniform handling later
+        polynomial = polynomial.expand()
+        if polynomial.is_Mul:
+            elements = [ polynomial ]
+        else:
+            elements = polynomial.as_coeff_mul()[1][0].as_coeff_add()[1]           
+        # Identify its constituent monomials    
+        for element in elements:
+            coeff = 1.0
+            monomial = S.One
+            for var in element.as_coeff_mul()[1]:
+                if not var.is_Number:
+                    monomial = monomial * var
+                else:
+                    coeff = float(var)
+            coeff = float(element.as_coeff_mul()[0]) * coeff
+            monomial = self.__apply_substitutions(monomial)
+            # Given the monomial, we need its mapping L_y(w) to push it into
+            # a corresponding constraint matrix
+            if monomial != 0:
+                if monomial.as_coeff_Mul()[0] < 0:
+                    monomial = -monomial
+                    coeff = -1.0 * coeff
+                k = -1
+                if monomial in self.extra_variables:
+                    k = self.offsets[-1] + self.extra_variables.index(monomial) + 1
+                else:                
+                    if monomial in self.monomial_dictionary:
+                        indices = self.monomial_dictionary[monomial]
+                        k = self.__index2linear(indices[0],indices[1],indices[2])
+                # k identifies the mapped value of a word (monomial) w
+                if k > -1:
+                    e=entry(block_index, i+1, j+1, coeff)
+                    self.F[k].append(e)
+
     def __get_facvar(self, polynomial):
-        """Returns a dense vector representation of a polynomial"""
+        """Return dense vector representation of a polynomial. This function is
+           nearly identical to __push_facvar_sparse, but instead of pushing
+           sparse entries to the constraint matrices, it returns a dense 
+           vector.
+        """
         facvar = [ 0 ] * self.n_vars
         if isinstance( polynomial, int ):
             return facvar
 
-        # Is this a monomial?
+        # Preprocess the polynomial for uniform handling later
         polynomial = polynomial.expand()
         if polynomial.is_Mul:
             elements = [ polynomial ]
@@ -84,6 +133,8 @@ class SdpRelaxation:
                     coeff = float(var)
             coeff = float(element.as_coeff_mul()[0]) * coeff
             monomial = self.__apply_substitutions(monomial)
+            # Given the monomial, we need its mapping L_y(w) to find its 
+            # location in the dense vector needed by the objective function.
             if monomial.as_coeff_Mul()[0] < 0:
                 monomial = -monomial
                 coeff = -1.0 * coeff
@@ -99,64 +150,49 @@ class SdpRelaxation:
             facvar[k] += coeff    
     
         return facvar
-
-    def __push_facvar_sparse(self, polynomial, block_index, i, j):
-        """Calculates the sparse vector representation of a polynomial
-        and pushes it to the F structure.
-        """
-        polynomial = polynomial.expand()
-        if polynomial.is_Mul:
-            elements = [ polynomial ]
-        else:
-            elements = polynomial.as_coeff_mul()[1][0].as_coeff_add()[1]            
-        for element in elements:
-            coeff = 1.0
-            monomial = S.One
-            for var in element.as_coeff_mul()[1]:
-                if not var.is_Number:
-                    monomial = monomial * var
-                else:
-                    coeff = float(var)
-            coeff = float(element.as_coeff_mul()[0]) * coeff
-            monomial = self.__apply_substitutions(monomial)
-            if monomial != 0:
-                if monomial.as_coeff_Mul()[0] < 0:
-                    monomial = -monomial
-                    coeff = -1.0 * coeff
-                k = -1
-                if monomial in self.extra_variables:
-                    k = self.offsets[-1] + self.extra_variables.index(monomial) + 1
-                else:                
-                    if monomial in self.monomial_dictionary:
-                        indices = self.monomial_dictionary[monomial]
-                        k = self.__index2linear(indices[0],indices[1],indices[2])
-                if k > -1:
-                    e=entry(block_index, i+1, j+1, coeff)
-                    self.F[k].append(e)
     
     def __generate_moment_matrix(self, monomials, block_index, monomial_block_index):
-        """Generates the moment matrix of monomials, but does not add SDP
+        """Generate the moment matrix of monomials, but does not add SDP
         constraints.
+        
+        Arguments:
+        monomials -- |W_d| set of words of length up to the relaxation order d
+        block_index -- current block index in the constraints matrices of the
+                       SDP relaxation
+        monomial_block_index -- if there are multiple independent algebras 
+                                defining several monomial blocks, this 
+                                parameter which block we are in
         """
-        # Adding symmetry constraints of momentum matrix and generating 
-        # monomial dictionary
         block_index+=1
+        # We process the M_d(u,w) entries in the moment matrix
         for row in range(len(monomials)):
             for column in range(row, len(monomials)):
+                # Calculate the monomial u*v
                 monomial = Dagger(monomials[row]) * monomials[column]
+                # Apply the substitutions if any
                 monomial = self.__apply_substitutions(monomial)
                 if monomial.as_coeff_Mul()[0] < 0:
                     monomial = -monomial
                 if monomial != 0:
+                    # Have we seen this monomial before?
                     if monomial in self.monomial_dictionary:
+                        # If yes, then we improve sparsity by reusing the 
+                        # previous variable to denote this entry in the matrix
                         indices = self.monomial_dictionary[monomial]
                         k = self.__index2linear(indices[0],indices[1], indices[2])
                     else:
+                        # Otherwise we define a new entry in the associated
+                        # array recording the monomials, and add an entry in 
+                        # the moment matrix
                         self.monomial_dictionary[monomial] = [row, column, monomial_block_index]
                         k = self.__index2linear(row, column, monomial_block_index)
                     if row == column:
                         value = 1
                     else:
+                        # Special care must be taken so that the resulting
+                        # constraint matrices are symmetric, not just 
+                        # Hermitian. The procedure is essentially the same as 
+                        # above.                        
                         value = 0.5
                         monomial_dagger = Dagger(monomials[column]) * monomials[row]
                         monomial_dagger = self.__apply_substitutions(monomial_dagger)
@@ -174,7 +210,7 @@ class SdpRelaxation:
                         else:
                             e = entry(block_index, row+1, column+1, value)
                             self.F[k_dagger].append(e)
-                        
+                    # We push the entry to the moment matrix
                     e = entry(block_index, row+1, column+1, value)
                     self.F[k].append(e)
 
@@ -213,28 +249,48 @@ class SdpRelaxation:
                             
     
     def __process_inequalities(self, inequalities, monomial_blocks, block_index, order):
+        """Generate localizing matrices
+        
+        Arguments:
+        inequalities -- list of inequality constraints
+        monomial_blocks -- monomials arranged in blocks according to 
+                           independent algebras
+        block_index -- the current block index in constraint matrices of the 
+                       SDP relaxation
+        order -- the order of the relaxation        
+        """
         global block_struct
         global F
         for ineq in inequalities:
+            # Find the order of the localizing matrix
             max_order = ncdegree(ineq)
             localization_matrix_order = int(floor((2*order-max_order)/2))
             if localization_matrix_order >= 0:
+                # Identify the correct set of monomials
                 monomial_block_index_list = self.__get_monomial_block_index(ineq)
                 monomials = self.__pick_monomials_up_to_degree_in_order(monomial_blocks,monomial_block_index_list,localization_matrix_order)
+                # Mark length of block in the constraint matrices
                 self.block_struct.append(len(monomials))
                 block_index+=1
+                # Process M_y(gy)(u,w) entries 
                 for row in range(len(monomials)):
                     for column in range(row, len(monomials)):
+                        # Calculate the moments of polynomial entries
                         polynomial = Dagger(monomials[row]) * ineq * monomials[column]
                         if row == column:
                             self.__push_facvar_sparse(polynomial, block_index, row, column)                            
                         else:
+                            # Special care must be taken so that the resulting
+                            # constraint matrices are symmetric, not just 
+                            # Hermitian
                             polynomial_dagger = Dagger(monomials[column]) * ineq * monomials[row]
                             poly = 0.5*polynomial_dagger + 0.5*polynomial
                             self.__push_facvar_sparse(poly, block_index, row, column)
         return block_index
     
     def __save_monomial_dictionary(self,filename):
+        """Save the current monomial dictionary for debugging purposes.
+        """
         monomial_translation = [''] * (self.n_vars + 1)
         for key, indices in self.monomial_dictionary.iteritems():
             monomial = ('%s' % key)
@@ -250,7 +306,7 @@ class SdpRelaxation:
     
     def get_relaxation(self, obj, inequalities, equalities, 
                        monomial_substitutions, order, verbose=0):
-        """Gets the SDP relaxation of a noncommutative polynomial optimization
+        """Get the SDP relaxation of a noncommutative polynomial optimization
         problem.
         
         Arguments:
@@ -267,7 +323,8 @@ class SdpRelaxation:
         for variables in self.variable_blocks:
             monomial_blocks.append(get_ncmonomials(variables, order))
 
-        # Adjusting monomial blocks
+        # Adjust monomial blocks. This is only necessary if independent
+        # algebras generate the moment matrix.
         monomial_block_index = 0
         for monomials in monomial_blocks:
             if len(monomial_blocks)>1:
@@ -278,6 +335,8 @@ class SdpRelaxation:
 
             monomial_block_index+=1
 
+        # Initialize some helper variables, including the offsets of monomial
+        # blocks if there is more than one.
         self.n_vars = 0
         self.offsets = [ 0 ]
         for monomials in monomial_blocks:
@@ -290,13 +349,14 @@ class SdpRelaxation:
         if verbose>0:
             print('Number of SDP variables: %d' % self.n_vars)
             print('Generating moment matrix...');
-        # The diagonal part of the SDP problem contains equalities on symmetry 
-        # constraints encoded as pairs of inequalities
+
+
+        # Initialize sparse constant matrices in the target SDP
         self.F = [0] * (self.n_vars+1)
         for i in range(self.n_vars+1):
             self.F[i] = []
 
-        # Defining top left entry
+        # Define top left entry of the moment matrix, y_1 = 1
         block_index=1
         n_eq=1
         e = entry(block_index, n_eq, n_eq, 1)
@@ -310,17 +370,19 @@ class SdpRelaxation:
             self.F[self.__index2linear(0,0,monomial_block_index)].append(e)
         self.block_struct=[-n_eq]
 
-       # Generate moment matrices for each sets of variables
+       # Generate moment matrices for each blocks of variables
         for monomial_block_index in range(len(monomial_blocks)):
             block_index = self.__generate_moment_matrix(monomial_blocks[monomial_block_index], block_index, monomial_block_index)
    
         # Objective function
         self.obj_facvar=self.__get_facvar(obj)
-        
+
+        # Equalities are converted to pairs of inequalities
         for eq in equalities:
             inequalities.append(eq)
             inequalities.append(-eq)
     
+        # Process inequalities
         if verbose>0:
             print('Processing %d inequalities...' % len(inequalities))
 
@@ -328,6 +390,8 @@ class SdpRelaxation:
         self.__compact_sdp_variables()
 
     def __compact_sdp_variables(self):
+        """Discard unused relaxation variables.
+        """
         new_n_vars = 0
         new_F = []
         new_obj_facvar = []
@@ -342,7 +406,7 @@ class SdpRelaxation:
         self.obj_facvar = new_obj_facvar
         
     def write_to_sdpa(self, filename):
-        """Writes the SDP relaxation to SDPA format.
+        """Write the SDP relaxation to SDPA format.
         
         Arguments:
         filename -- the name of the file. It must have the suffix ".dat-s"
@@ -352,13 +416,13 @@ class SdpRelaxation:
         f.write('"file '+filename+' generated by ncpol2sdpa"\n')
         f.write(str(self.n_vars)+' = number of vars\n')
         f.write(str(len(self.block_struct))+' = number of blocs\n')
-        #bloc structure
+        # bloc structure
         f.write(str(self.block_struct).replace('[','(').replace(']',')'))
         f.write(' = BlocStructure\n')
-        #c vector (objective)
+        # c vector (objective)
         f.write(str(list(self.obj_facvar)).replace('[','{').replace(']','}'))
         f.write('\n')
-        #coefs
+        # Coefficient matrices
         for k in range(self.n_vars+1):
             for e in self.F[k]:
                 f.write('{0}\t{1}\t{2}\t{3}\t{4}\n'.format(

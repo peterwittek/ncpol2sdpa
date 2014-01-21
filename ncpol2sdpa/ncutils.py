@@ -33,6 +33,15 @@ def count_ncmonomials(monomials, degree):
     return ncmoncount
                     
 def fastSubstitute(monomial, oldSub, newSub):
+    """Experimental fast substitution routine that considers only restricted 
+    cases of noncommutative algebras. In rare cases, it fails to find a
+    substitution. Use it with proper testing.
+    
+    Arguments:
+    monomial -- the monomial with parts need to be substituted
+    oldSub -- the part to be replaced
+    newSub -- the replacement
+    """
     oldFactors = oldSub.as_coeff_mul()[1]
     factors = monomial.as_coeff_mul()[1]
     newVarList = []
