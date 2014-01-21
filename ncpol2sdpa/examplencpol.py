@@ -27,15 +27,10 @@ X = generate_ncvariables(n_vars)
 obj = X[0] * X[1] + X[1] * X[0]
 
 # Inequality constraints
-#inequalities = []
-inequalities = [0] * 1
-inequalities[0] = -X[1]**2 + X[1] + 0.5 
+inequalities = [ -X[1]**2 + X[1] + 0.5 ]
 
 # Equality constraints
 equalities = []
-#equalities = [0] * 1
-#equalities[0] = X[0]**2 - X[0]
-
 
 #Simple monomial substitutions
 monomial_substitution = {}
