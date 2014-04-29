@@ -24,10 +24,10 @@ If you install the module to your CPython library, but you want to use Pypy, ple
 
 Acknowledgment
 ==============
-This work is supported by the European Commission Seventh Framework Programme under Grant Agreement Number FP7-601138 [PERICLES](http://pericles-project.eu/), by the [Red Española de Supercomputación](http://www.bsc.es/RES) grants number FI-2013-1-0008 and  FI-2013-3-0004, and by the [Swedish National Infrastructure for Computing](http://www.snic.se/) project number SNIC 2014/2-7.
+This work is supported by the European Commission Seventh Framework Programme under Grant Agreement Number FP7-601138 `PERICLES <http://pericles-project.eu/>`_, by the `Red Española de Supercomputación <http://www.bsc.es/RES>`_ grants number FI-2013-1-0008 and  FI-2013-3-0004, and by the `Swedish National Infrastructure for Computing <http://www.snic.se/>`_ project number SNIC 2014/2-7.
 
 More Information
 ================
 For more information refer to the following manuscript:
 
-[http://arxiv.org/abs/1308.6029](http://arxiv.org/abs/1308.6029)
+`http://arxiv.org/abs/1308.6029 <http://arxiv.org/abs/1308.6029>`_
