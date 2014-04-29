@@ -164,17 +164,19 @@ class SdpRelaxation(object):
         return facvar
 
     def __process_monomial(self, monomial, row, column, monomial_block_index):
+        """Process a single monomial when building the moment matrix.
+        """
         if monomial.as_coeff_Mul()[0] < 0:
             monomial = -monomial
         k = 0
         # Have we seen this monomial before?
-        if monomial in self.monomial_dictionary:
+        try:
             # If yes, then we improve sparsity by reusing the
             # previous variable to denote this Entry in the matrix
             indices = self.monomial_dictionary[monomial]
             k = self.__index2linear(indices[0], indices[1],
-                                    indices[2])
-        else:
+                                        indices[2])
+        except KeyError:
             # Otherwise we define a new Entry in the associated
             # array recording the monomials, and add an Entry in
             # the moment matrix
@@ -218,7 +220,6 @@ class SdpRelaxation(object):
                         value = 0.5
                         monomial_dagger = \
                             Dagger(monomials[column]) * monomials[row]
-                        
                         monomial_dagger = \
                             self.__apply_substitutions(monomial_dagger)
                         if monomial_dagger != 0:
