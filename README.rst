@@ -12,7 +12,39 @@ The code requires `SymPy <http://sympy.org/>`_>=0.7.2 in the Python search path.
 
 Usage
 =====
-A simple usage example is included in examplencpol.py. A more sophisticated application is given in hamiltonian.py, which implements the Hamiltonian of a fermionic system in a 2D grid.
+The following code replicates the toy example from ironio, S.; Navascués, M. & Acín, A. Convergent relaxations of polynomial optimization problems with noncommuting variables SIAM Journal on Optimization, SIAM, 2010, 20, 2157-2180.
+
+``from ncpol2sdpa.ncutils import generate_ncvariables
+from ncpol2sdpa.sdprelaxation import SdpRelaxation
+
+#Number of Hermitian variables
+n_vars = 2
+#Order of relaxation
+order = 2
+
+#Get Hermitian variables
+X = generate_ncvariables(n_vars)
+
+#Define the objective function
+obj = X[0] * X[1] + X[1] * X[0]
+
+# Inequality constraints
+inequalities = [ -X[1]**2 + X[1] + 0.5 ]
+
+# Equality constraints
+equalities = []
+
+#Simple monomial substitutions
+monomial_substitution = {}
+monomial_substitution[X[0]**2] = X[0]
+
+#Obtain SDP relaxation
+sdpRelaxation = SdpRelaxation(X)
+sdpRelaxation.get_relaxation(obj, inequalities, equalities, 
+                      monomial_substitution, order)
+sdpRelaxation.write_to_sdpa('examplenc.dat-s')``
+
+Further examples are under the examples folder.
 
 Installation
 ============
