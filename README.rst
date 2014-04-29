@@ -8,7 +8,7 @@ The implementation has an intuitive syntax for entering Hamiltonians and it scal
 
 Dependencies
 ============
-The code requires `SymPy<http://sympy.org/>_>=0.7.2 in the Python search path. The code is known to work with Python 2.6.8 and 2.7.5, and also with Pypy 1.8 and 2.0.2. Using Pypy is highly recommended, as execution time is several times faster and memory use is reduced. The code is compatible with Python 3, but using Python 3.3.2 incurs a major decrease in performance; the case is likely to be similar in with other Python 3 versions.
+The code requires `SymPy<http://sympy.org/>`_>=0.7.2 in the Python search path. The code is known to work with Python 2.6.8 and 2.7.5, and also with Pypy 1.8 and 2.0.2. Using Pypy is highly recommended, as execution time is several times faster and memory use is reduced. The code is compatible with Python 3, but using Python 3.3.2 incurs a major decrease in performance; the case is likely to be similar in with other Python 3 versions.
 
 Usage
 =====
