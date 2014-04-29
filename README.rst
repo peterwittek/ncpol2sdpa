@@ -15,6 +15,7 @@ Usage
 The following code replicates the toy example from ironio, S.; Navascués, M. & Acín, A. Convergent relaxations of polynomial optimization problems with noncommuting variables SIAM Journal on Optimization, SIAM, 2010, 20, 2157-2180.
 
 ::
+
   from ncpol2sdpa.ncutils import generate_ncvariables
   from ncpol2sdpa.sdprelaxation import SdpRelaxation
 
