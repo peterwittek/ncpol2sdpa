@@ -12,7 +12,7 @@ The code requires `SymPy <http://sympy.org/>`_>=0.7.2 in the Python search path.
 
 Usage
 =====
-The following code replicates the toy example from ironio, S.; Navascués, M. & Acín, A. Convergent relaxations of polynomial optimization problems with noncommuting variables SIAM Journal on Optimization, SIAM, 2010, 20, 2157-2180.
+The following code replicates the toy example from Pironio, S.; Navascues, M. & Acin, A. Convergent relaxations of polynomial optimization problems with noncommuting variables SIAM Journal on Optimization, SIAM, 2010, 20, 2157-2180.
 
 ::
 
@@ -58,7 +58,7 @@ If you install the module to your CPython library, but you want to use Pypy, ple
 
 Acknowledgment
 ==============
-This work is supported by the European Commission Seventh Framework Programme under Grant Agreement Number FP7-601138 `PERICLES <http://pericles-project.eu/>`_, by the `Red Española de Supercomputación <http://www.bsc.es/RES>`_ grants number FI-2013-1-0008 and  FI-2013-3-0004, and by the `Swedish National Infrastructure for Computing <http://www.snic.se/>`_ project number SNIC 2014/2-7.
+This work is supported by the European Commission Seventh Framework Programme under Grant Agreement Number FP7-601138 `PERICLES <http://pericles-project.eu/>`_, by the `Red Espanola de Supercomputacion <http://www.bsc.es/RES>`_ grants number FI-2013-1-0008 and  FI-2013-3-0004, and by the `Swedish National Infrastructure for Computing <http://www.snic.se/>`_ project number SNIC 2014/2-7.
 
 More Information
 ================
