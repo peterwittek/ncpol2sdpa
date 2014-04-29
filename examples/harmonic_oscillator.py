@@ -15,7 +15,7 @@ Created on Fri May 10 09:45:11 2013
 import time
 from sympy.physics.quantum.operator import Operator
 from sympy.physics.quantum.dagger import Dagger
-from sdprelaxation import SdpRelaxation
+from ncpol2sdpa.sdprelaxation import SdpRelaxation
 
 # Order of relaxation
 order = 1

@@ -6,8 +6,8 @@ Created on Fri May 10 09:45:11 2013
 
 @author: Peter Wittek
 """
-from ncutils import generate_ncvariables
-from sdprelaxation import SdpRelaxation
+from ncpol2sdpa.ncutils import generate_ncvariables
+from ncpol2sdpa.sdprelaxation import SdpRelaxation
 import time
 
 #Number of Hermitian variables
