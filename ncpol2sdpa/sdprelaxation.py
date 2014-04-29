@@ -17,7 +17,9 @@ from .ncutils import get_ncmonomials, pick_monomials_up_to_degree, \
 
 class Entry(object):
 
-    'Class for storing entries in the constraint matrices of the SDP relaxation'
+    """Class for storing entries in the constraint matrices of the SDP
+    relaxation.
+    """
 
     def __init__(self, block_index, row, column, value):
         self.block_index = block_index
@@ -28,7 +30,8 @@ class Entry(object):
 
 class SdpRelaxation(object):
 
-    'Class for obtaining sparse SDP relaxation'
+    """Class for obtaining sparse SDP relaxation.
+    """
 
     monomial_substitutions = {}
     monomial_dictionary = {}
