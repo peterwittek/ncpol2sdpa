@@ -7,7 +7,6 @@ Created on Thu May  2 16:03:05 2013
 
 @author: Peter Wittek
 """
-from math import floor
 from sympy.core import S, Symbol, Pow, Number
 from sympy.physics.quantum.operator import HermitianOperator, Operator
 from sympy.physics.quantum.dagger import Dagger
