@@ -147,37 +147,6 @@ def get_ncmonomials(variables, degree):
         return ncmonomials
 
 
-def get_neighbors(index, lattice_dimension):
-    """Get the neighbors of an operator in a lattice.
-
-    Arguments:
-    index -- linear index of operator
-    lattice_dimension -- the size of the 2D lattice in either dimension
-
-    Returns a list of neighbors in linear index.
-    """
-
-    neighbors = []
-    coords = _linear2lattice(index, lattice_dimension)
-    if coords[0] > 1:
-        neighbors.append(index - 1)
-    if coords[0] < lattice_dimension - 1:
-        neighbors.append(index + 1)
-    if coords[1] > 1:
-        neighbors.append(index - lattice_dimension)
-    if coords[1] < lattice_dimension - 1:
-        neighbors.append(index + lattice_dimension)
-    return neighbors
-
-
-def _linear2lattice(index, dimension):
-    """Helper function to map linear coordinates to a lattice."""
-    coords = [0, 0]
-    coords[0] = index % dimension
-    coords[1] = int(floor(index / dimension))
-    return coords
-
-
 def get_variables_of_polynomial(polynomial):
     """Returns the degree of a noncommutative polynomial."""
     if isinstance(polynomial, (int, float, complex)):
