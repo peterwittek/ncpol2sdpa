@@ -177,6 +177,7 @@ def ncdegree(polynomial):
             degree = subdegree
     return degree
 
+
 def pick_monomials_up_to_degree(
         monomial_blocks, monomial_block_index_list, degree):
     """Collect monomials up to a given degree.
@@ -203,6 +204,7 @@ def pick_monomials_of_degree(monomials, degree):
         elif ncdegree(monomial) == degree:
             selected_monomials.append(monomial)
     return selected_monomials
+
 
 def unique(seq):
     """Helper function to include only unique monomials in a basis."""
