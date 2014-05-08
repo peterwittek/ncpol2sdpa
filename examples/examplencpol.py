@@ -36,7 +36,6 @@ equalities = []
 #Simple monomial substitutions
 monomial_substitutions = {}
 monomial_substitutions[X[0]**2] = X[0]
-#monomial_substitutions[X[1]*X[0]] = X[0]*X[1]
 
 #Obtain SDP relaxation
 sdpRelaxation = SdpRelaxation(X)
