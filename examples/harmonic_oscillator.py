@@ -15,10 +15,11 @@ Created on Fri May 10 09:45:11 2013
 import time
 from sympy.physics.quantum.operator import Operator
 from sympy.physics.quantum.dagger import Dagger
+from ncpol2sdpa.ncutils import generate_variables
 from ncpol2sdpa.sdprelaxation import SdpRelaxation
 
 # Order of relaxation
-order = 1
+order = 2
 
 # Number of variables
 N = 2
@@ -27,14 +28,14 @@ N = 2
 hbar, omega = 1, 1
 
 # Define ladder operators
-a = []
-for i in range(N):
-    a.append(Operator('a%s' % i))   # Annihilation
+a = generate_variables(N, name='a')
 
 hamiltonian = 0
 for i in range(N):
     hamiltonian += hbar*omega*(Dagger(a[i])*a[i]+0.5)
     
+print hamiltonian
+
 monomial_substitution = {}
 
 for i in range(N):

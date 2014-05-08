@@ -6,7 +6,7 @@ Created on Fri May 10 09:45:11 2013
 
 @author: Peter Wittek
 """
-from ncpol2sdpa.ncutils import generate_ncvariables
+from ncpol2sdpa.ncutils import generate_variables
 from ncpol2sdpa.sdprelaxation import SdpRelaxation
 import time
 
@@ -16,7 +16,7 @@ n_vars = 2
 order = 1
 
 #Get Hermitian variables
-X = generate_ncvariables(n_vars)
+X = generate_variables(n_vars, hermitian=True)
 
 #Define the objective function
 obj = 0
