@@ -11,8 +11,9 @@ from math import floor
 from sympy import S
 from sympy.physics.quantum.dagger import Dagger
 from sympy.physics.quantum.operator import HermitianOperator
-from .ncutils import get_ncmonomials, pick_monomials_up_to_degree, \
-    get_variables_of_polynomial, ncdegree
+from .ncutils import apply_substitutions, build_monomial, get_ncmonomials, \
+                    pick_monomials_up_to_degree, get_variables_of_polynomial,\
+                    ncdegree
 
 
 class Entry(object):
@@ -55,27 +56,45 @@ class SdpRelaxation(object):
         if extra_variables is not None:
             self.extra_variables = extra_variables
 
-    def __apply_substitutions(self, monomial):
-        """Helper function to remove monomials from the basis."""
-        original_monomial = monomial
-        changed = True
-        while changed:
-            for lhs, rhs in self.monomial_substitutions.items():
-                # The fast substitution routine still fails on some rare
-                # conditions. In production environments, it is safer to use
-                # the default substitution routine that comes with SymPy.
-                monomial = monomial.subs(lhs, rhs)
-                # monomial = fastSubstitute(monomial, lhs, rhs)
-            if original_monomial == monomial:
-                changed = False
-            original_monomial = monomial
-        return monomial
-
     def __index2linear(self, i, j, monomial_block_index):
-        """Convert a two dimensional index to a linear one.
-        """
         n_monomials = self.n_monomials_in_blocks[monomial_block_index]
-        return self.offsets[monomial_block_index] + i * n_monomials + j + 1
+        if i==0:
+            return self.offsets[monomial_block_index] + j 
+        else:
+            skew = int(i * (i + 1) / 2)
+            return self.offsets[monomial_block_index] + \
+              i * n_monomials-skew + j 
+
+    def __get_index_of_monomial(self, element):
+        monomial, coeff = build_monomial(element)
+        monomial = apply_substitutions(monomial, self.monomial_substitutions)
+        # Given the monomial, we need its mapping L_y(w) to push it into
+        # a corresponding constraint matrix
+        if monomial != 0:
+            if monomial.as_coeff_Mul()[0] < 0:
+                monomial = -monomial
+                coeff = -1.0 * coeff
+        k = -1
+        if monomial in self.extra_variables:
+            k = self.offsets[-1] +  \
+                self.extra_variables.index(monomial) + 1
+        elif monomial.is_Number:
+            k = 0
+            coeff *= -1
+        else:
+            try:
+                indices = self.monomial_dictionary[monomial]
+                k = self.__index2linear(indices[0], indices[1],
+                                      indices[2])
+            except KeyError:
+                [monomial, coeff] = build_monomial(element)
+                monomial = apply_substitutions(Dagger(monomial),
+                                               self.monomial_substitutions)
+                indices = self.monomial_dictionary[monomial]
+                indices[0], indices[1] = indices[1], indices[0]
+            k = self.__index2linear(indices[0], indices[1],
+                                      indices[2])                  
+        return k, coeff
 
     def __push_facvar_sparse(self, polynomial, block_index, i, j):
         """Calculate the sparse vector representation of a polynomial
@@ -90,35 +109,11 @@ class SdpRelaxation(object):
             elements = polynomial.as_coeff_mul()[1][0].as_coeff_add()[1]
         # Identify its constituent monomials
         for element in elements:
-            coeff = 1.0
-            monomial = S.One
-            for var in element.as_coeff_mul()[1]:
-                if not var.is_Number:
-                    monomial = monomial * var
-                else:
-                    coeff = float(var)
-            coeff = float(element.as_coeff_mul()[0]) * coeff
-            monomial = self.__apply_substitutions(monomial)
-            # Given the monomial, we need its mapping L_y(w) to push it into
-            # a corresponding constraint matrix
-            if monomial != 0:
-                if monomial.as_coeff_Mul()[0] < 0:
-                    monomial = -monomial
-                    coeff = -1.0 * coeff
-                k = -1
-                if monomial in self.extra_variables:
-                    k = self.offsets[-1] +  \
-                        self.extra_variables.index(monomial) + 1
-                else:
-                    if monomial in self.monomial_dictionary:
-                        indices = self.monomial_dictionary[monomial]
-                        k = self.__index2linear(
-                            indices[0], indices[1], indices[2]
-                        )
-                # k identifies the mapped value of a word (monomial) w
-                if k > -1:
-                    e = Entry(block_index, i + 1, j + 1, coeff)
-                    self.F[k].append(e)
+            k, coeff = self.__get_index_of_monomial(element)
+            # k identifies the mapped value of a word (monomial) w
+            if k > -1:
+                e = Entry(block_index, i + 1, j + 1, coeff)
+                self.F[k].append(e)
 
     def __get_facvar(self, polynomial):
         """Return dense vector representation of a polynomial. This function is
@@ -137,33 +132,9 @@ class SdpRelaxation(object):
         else:
             elements = polynomial.as_coeff_mul()[1][0].as_coeff_add()[1]
         for element in elements:
-            coeff = 1.0
-            monomial = S.One
-            for var in element.as_coeff_mul()[1]:
-                if not var.is_Number:
-                    monomial = monomial * var
-                else:
-                    coeff = float(var)
-            coeff = float(element.as_coeff_mul()[0]) * coeff
-            monomial = self.__apply_substitutions(monomial)
-            # Given the monomial, we need its mapping L_y(w) to find its
-            # location in the dense vector needed by the objective function.
-            if monomial.as_coeff_Mul()[0] < 0:
-                monomial = -monomial
-                coeff = -1.0 * coeff
-            if monomial in self.extra_variables:
-                k = self.offsets[-1] + self.extra_variables.index(monomial)
-            else:
-                if monomial in self.monomial_dictionary:
-                    indices = self.monomial_dictionary[monomial]
-                else:
-                    indices = self.monomial_dictionary[Dagger(monomial)]
-                    indices[0], indices[1] = indices[1], indices[0]
-                k = self.__index2linear(
-                    indices[0], indices[1], indices[2]
-                ) - 1
-            facvar[k] += coeff
-
+            k, coeff = self.__get_index_of_monomial(element)
+            if k > 0:
+                facvar[k-1] += coeff
         return facvar
 
     def __process_monomial(self, monomial, row, column, monomial_block_index):
@@ -208,34 +179,16 @@ class SdpRelaxation(object):
                 # Calculate the monomial u*v
                 monomial = Dagger(monomials[row]) * monomials[column]
                 # Apply the substitutions if any
-                monomial = self.__apply_substitutions(monomial)
-                value = 1
-                if monomial != 0:
+                monomial = apply_substitutions(monomial,
+                                               self.monomial_substitutions)
+                if monomial == 1:
+                    e = Entry(block_index, 1, 1, -1)
+                    self.F[0].append(e)
+                elif monomial != 0:
                     k = self.__process_monomial(monomial, row, column,
                                                 monomial_block_index)
-                    if row == column:
-                        value = 1
-                    else:
-                        # Special care must be taken so that the resulting
-                        # constraint matrices are symmetric, not just
-                        # Hermitian. The procedure is essentially the same as
-                        # above.
-                        value = 0.5
-                        monomial_dagger = \
-                            Dagger(monomials[column]) * monomials[row]
-                        monomial_dagger = \
-                            self.__apply_substitutions(monomial_dagger)
-                        if monomial_dagger != 0:
-                            k_dagger = self.__process_monomial(
-                                        monomial_dagger, column, row,
-                                        monomial_block_index)
-                        if k_dagger == k:
-                            value = 1
-                        else:
-                            e = Entry(block_index, row + 1, column + 1, value)
-                            self.F[k_dagger].append(e)
                     # We push the Entry to the moment matrix
-                    e = Entry(block_index, row + 1, column + 1, value)
+                    e = Entry(block_index, row + 1, column + 1, 1)
                     self.F[k].append(e)
 
         self.block_struct.append(len(monomials))
@@ -290,41 +243,10 @@ class SdpRelaxation(object):
                         # Calculate the moments of polynomial entries
                         polynomial = \
                             Dagger(monomials[row]) * ineq * monomials[column]
-                        if row == column:
-                            self.__push_facvar_sparse(
-                                polynomial,
-                                block_index,
-                                row,
-                                column)
-                        else:
-                            # Special care must be taken so that the resulting
-                            # constraint matrices are symmetric, not just
-                            # Hermitian
-                            polynomial_dagger = Dagger(
-                                monomials[column]) * ineq * monomials[row]
-                            poly = 0.5 * polynomial_dagger + 0.5 * polynomial
-                            self.__push_facvar_sparse(
-                                poly,
-                                block_index,
-                                row,
-                                column)
+                        self.__push_facvar_sparse(polynomial, block_index,
+                                row, column)
         return block_index
 
-    def __save_monomial_dictionary(self, filename):
-        """Save the current monomial dictionary for debugging purposes.
-        """
-        monomial_translation = [''] * (self.n_vars + 1)
-        for key, indices in self.monomial_dictionary.iteritems():
-            monomial = ('%s' % key)
-            monomial = monomial.replace('Dagger(', '')
-            monomial = monomial.replace(')', 'T')
-            monomial = monomial.replace('**', '^')
-            k = self.__index2linear(indices[0], indices[1], indices[2])
-            monomial_translation[k] = monomial
-        f = open(filename, 'w')
-        for k in range(len(monomial_translation)):
-            f.write('%s %s\n' % (k, monomial_translation[k]))
-        f.close()
 
     def get_relaxation(self, obj, inequalities, equalities,
                        monomial_substitutions, order, verbose=0):
@@ -343,7 +265,10 @@ class SdpRelaxation(object):
         # Generate monomials and remove substituted ones
         monomial_blocks = []
         for variables in self.variable_blocks:
-            monomial_blocks.append(get_ncmonomials(variables, order))
+            monomials = get_ncmonomials(variables, order)
+            monomials = [monomial for monomial in monomials if monomial not 
+              in self.monomial_substitutions]
+            monomial_blocks.append(monomials)
 
         # Adjust monomial blocks. This is only necessary if independent
         # algebras generate the moment matrix.
@@ -368,10 +293,12 @@ class SdpRelaxation(object):
         for monomials in monomial_blocks:
             n_monomials = len(monomials)
             self.n_monomials_in_blocks.append(n_monomials)
-            self.n_vars += n_monomials ** 2
+            # The minus one compensates for the constant term in the
+            # top left corner of the moment matrix
+            self.n_vars += int(n_monomials*(n_monomials+1)/2) - 1
             self.offsets.append(self.n_vars)
         self.n_vars += len(self.extra_variables)
-
+        
         if verbose > 0:
             print('Number of SDP variables: %d' % self.n_vars)
             print('Generating moment matrix...')
@@ -382,18 +309,7 @@ class SdpRelaxation(object):
             self.F[i] = []
 
         # Define top left Entry of the moment matrix, y_1 = 1
-        block_index = 1
-        n_eq = 1
-        e = Entry(block_index, n_eq, n_eq, 1)
-        self.F[0].append(e)
-        for monomial_block_index in range(len(monomial_blocks)):
-            self.F[self.__index2linear(0, 0, monomial_block_index)].append(e)
-        n_eq += 1
-        e = Entry(block_index, n_eq, n_eq, -1)
-        self.F[0].append(e)
-        for monomial_block_index in range(len(monomial_blocks)):
-            self.F[self.__index2linear(0, 0, monomial_block_index)].append(e)
-        self.block_struct = [-n_eq]
+        block_index = 0
 
        # Generate moment matrices for each blocks of variables
         for monomial_block_index in range(len(monomial_blocks)):
@@ -432,10 +348,26 @@ class SdpRelaxation(object):
                 new_n_vars += 1
                 new_F.append(self.F[i])
                 if i > 0:
-                    new_obj_facvar.append(self.obj_facvar[i - 1])
+                    new_obj_facvar.append(self.obj_facvar[i-1])
         self.n_vars = new_n_vars - 1
         self.F = new_F
         self.obj_facvar = new_obj_facvar
+
+    def __save_monomial_dictionary(self, filename):
+        """Save the current monomial dictionary for debugging purposes.
+        """
+        monomial_translation = [''] * (self.n_vars + 1)
+        for key, indices in self.monomial_dictionary.iteritems():
+            monomial = ('%s' % key)
+            monomial = monomial.replace('Dagger(', '')
+            monomial = monomial.replace(')', 'T')
+            monomial = monomial.replace('**', '^')
+            k = self.__index2linear(indices[0], indices[1], indices[2])
+            monomial_translation[k] = monomial
+        f = open(filename, 'w')
+        for k in range(len(monomial_translation)):
+            f.write('%s %s\n' % (k, monomial_translation[k]))
+        f.close()
 
     def write_to_sdpa(self, filename):
         """Write the SDP relaxation to SDPA format.

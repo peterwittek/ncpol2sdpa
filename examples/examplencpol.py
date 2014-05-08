@@ -3,7 +3,7 @@
 An example that exports to sparse SDPA format for scalable computation. The
 description of the example is in the following paper:
 
-Pironio, S.; Navascués, M. & Acín, A. Convergent relaxations of
+Pironio, S.; Navascués, M. & Acín, A. Convergent relaxations of 
 polynomial optimization problems with noncommuting variables SIAM Journal
 on Optimization, SIAM, 2010, 20, 2157-2180.
 
@@ -14,30 +14,32 @@ Created on Fri May 10 09:45:11 2013
 
 from ncpol2sdpa.ncutils import generate_ncvariables
 from ncpol2sdpa.sdprelaxation import SdpRelaxation
+from sympy import symarray
 
-# Number of Hermitian variables
+#Number of Hermitian variables    
 n_vars = 2
-# Order of relaxation
+#Order of relaxation
 order = 2
 
-# Get Hermitian variables
+#Get Hermitian variables
 X = generate_ncvariables(n_vars)
 
-# Define the objective function
+#Define the objective function
 obj = X[0] * X[1] + X[1] * X[0]
 
 # Inequality constraints
-inequalities = [-X[1] ** 2 + X[1] + 0.5]
+inequalities = [ -X[1]**2 + X[1] + 0.5 ]
 
 # Equality constraints
 equalities = []
 
-# Simple monomial substitutions
-monomial_substitution = {}
-monomial_substitution[X[0] ** 2] = X[0]
+#Simple monomial substitutions
+monomial_substitutions = {}
+monomial_substitutions[X[0]**2] = X[0]
+#monomial_substitutions[X[1]*X[0]] = X[0]*X[1]
 
-# Obtain SDP relaxation
+#Obtain SDP relaxation
 sdpRelaxation = SdpRelaxation(X)
-sdpRelaxation.get_relaxation(obj, inequalities, equalities,
-                             monomial_substitution, order)
-sdpRelaxation.write_to_sdpa('examplenc.dat-s')
+sdpRelaxation.get_relaxation(obj, inequalities, equalities, 
+                      monomial_substitutions, order)
+sdpRelaxation.write_to_sdpa('examplenc.dat-s')                      

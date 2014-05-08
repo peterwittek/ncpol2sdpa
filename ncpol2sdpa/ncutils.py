@@ -11,6 +11,32 @@ from sympy.core import S, Symbol, Pow, Number
 from sympy.physics.quantum.operator import HermitianOperator, Operator
 from sympy.physics.quantum.dagger import Dagger
 
+def apply_substitutions(monomial, monomial_substitutions):
+    """Helper function to remove monomials from the basis."""
+    original_monomial = monomial
+    changed = True
+    while changed:
+        for lhs, rhs in monomial_substitutions.items():
+            # The fast substitution routine still fails on some rare
+            # conditions. In production environments, it is safer to use
+            # the default substitution routine that comes with SymPy.
+            monomial = monomial.subs(lhs, rhs)
+            # monomial = fastSubstitute(monomial, lhs, rhs)
+        if original_monomial == monomial:
+            changed = False
+        original_monomial = monomial
+    return monomial
+
+def build_monomial(element):
+    coeff = 1.0
+    monomial = S.One
+    for var in element.as_coeff_mul()[1]:
+        if not var.is_Number:
+            monomial = monomial * var
+        else:
+            coeff = float(var)
+    coeff = float(element.as_coeff_mul()[0]) * coeff
+    return monomial, coeff
 
 def count_ncmonomials(monomials, degree):
     """Given a list of monomials, it counts those that have a certain degree,

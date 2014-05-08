@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Exporting a Hamiltonian ground state problem to SDPA. The Hamiltonian
+Exporting a Hamiltonian ground state problem to SDPA. The Hamiltonian 
 is of a simple harmonic oscillator. Bosonic systems reach the optimum
 solution at relaxation order 1:
 
@@ -21,7 +21,7 @@ from ncpol2sdpa.sdprelaxation import SdpRelaxation
 order = 1
 
 # Number of variables
-N = 4
+N = 2
 
 # Parameters for the Hamiltonian
 hbar, omega = 1, 1
@@ -33,36 +33,35 @@ for i in range(N):
 
 hamiltonian = 0
 for i in range(N):
-    hamiltonian += hbar * omega * (Dagger(a[i]) * a[i] + 0.5)
-
+    hamiltonian += hbar*omega*(Dagger(a[i])*a[i]+0.5)
+    
 monomial_substitution = {}
 
 for i in range(N):
-    for j in range(i + 1, N):
+    for j in range(i+1,N):
         # [a_i,a_jT] = 0 for i\neq j
-        monomial_substitution[a[i] * Dagger(a[j])] = Dagger(a[j]) * a[i]
+        monomial_substitution[Dagger(a[j])*a[i]] = a[i]*Dagger(a[j])
         # [a_i, a_j] = 0
-        monomial_substitution[a[i] * a[j]] = a[j] * a[i]
+        monomial_substitution[a[j]*a[i]] = a[i]*a[j]
         # [a_iT, a_jT] = 0
-        monomial_substitution[
-            Dagger(a[i]) * Dagger(a[j])] = Dagger(a[j]) * Dagger(a[i])
+        monomial_substitution[Dagger(a[j])*Dagger(a[i])] = Dagger(a[i])*Dagger(a[j])
 
 # [a_i,a_iT]=1
 equalities = []
 for i in range(N):
-    equalities.append(a[i] * Dagger(a[i]) - Dagger(a[i]) * a[i] - 1.0)
+    equalities.append(a[i]*Dagger(a[i])-Dagger(a[i])*a[i]-1.0)
 
 inequalities = []
 
 time0 = time.time()
-# Obtain SDP relaxation
+#Obtain SDP relaxation
 print("Obtaining SDP relaxation...")
 verbose = 1
 sdpRelaxation = SdpRelaxation(a)
-sdpRelaxation.get_relaxation(hamiltonian, inequalities, equalities,
-                             monomial_substitution, order, verbose)
-# Export relaxation to SDPA format
+sdpRelaxation.get_relaxation(hamiltonian, inequalities, equalities, 
+                      monomial_substitution, order, verbose)
+#Export relaxation to SDPA format
 print("Writing to disk...")
-sdpRelaxation.write_to_sdpa('harmonic_oscillator.dat-s')
+sdpRelaxation.write_to_sdpa('harmonic_oscillator.dat-s')                      
 
-print('%0.2f s' % ((time.time() - time0)))
+print('%0.2f s' % ((time.time()-time0)))
