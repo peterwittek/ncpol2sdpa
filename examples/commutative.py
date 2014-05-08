@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 An example that exports to sparse SDPA format for scalable computation. The
-description of the example is in the following paper:
+description of the commutative example is in the following paper:
 
 Pironio, S.; Navascués, M. & Acín, A. Convergent relaxations of 
 polynomial optimization problems with noncommuting variables SIAM Journal
@@ -15,7 +15,7 @@ Created on Fri May 10 09:45:11 2013
 from ncpol2sdpa.ncutils import generate_variables
 from ncpol2sdpa.sdprelaxation import SdpRelaxation
 
-#Number of Hermitian variables    
+#Number of variables    
 n_vars = 2
 #Order of relaxation
 order = 2
