@@ -40,4 +40,4 @@ monomial_substitution[X[0] ** 2] = X[0]
 sdpRelaxation = SdpRelaxation(X)
 sdpRelaxation.get_relaxation(obj, inequalities, equalities,
                              monomial_substitution, order)
-sdpRelaxation.write_to_sdpa('examplenc.dat-s')
+sdpRelaxation.write_to_sdpa('example_noncommutative.dat-s')
