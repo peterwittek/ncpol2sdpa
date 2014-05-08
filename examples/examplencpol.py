@@ -14,7 +14,6 @@ Created on Fri May 10 09:45:11 2013
 
 from ncpol2sdpa.ncutils import generate_ncvariables
 from ncpol2sdpa.sdprelaxation import SdpRelaxation
-from sympy import symarray
 
 #Number of Hermitian variables    
 n_vars = 2
