@@ -131,7 +131,7 @@ def fast_substitute(monomial, old_sub, new_sub):
     return new_monomial
 
 
-def generate_ncvariables(n_vars):
+def generate_variables(n_vars, hermitian=False, commutative=False, name='X'):
     """Generates a number of noncommutative variables
 
     Arguments:
@@ -140,9 +140,13 @@ def generate_ncvariables(n_vars):
     Returns a list of noncommutative variables
     """
 
-    variables = [0] * n_vars
+    variables = []
     for i in range(n_vars):
-        variables[i] = HermitianOperator('X%s' % i)
+        if hermitian or commutative:
+            variables.append(HermitianOperator('%s%s' % (name,i)))
+        else:
+            variables.append(Operator('%s%s' % (name,i)))
+        variables[i].is_commutative = commutative
     return variables
 
 
@@ -223,10 +227,7 @@ def pick_monomials_of_degree(monomials, degree):
     """
     selected_monomials = []
     for monomial in monomials:
-        # Expectation value of the identity operator for the block
-        if degree == 0 and monomial.is_commutative:
-            selected_monomials.append(monomial)
-        elif ncdegree(monomial) == degree:
+        if ncdegree(monomial) == degree:
             selected_monomials.append(monomial)
     return selected_monomials
 
