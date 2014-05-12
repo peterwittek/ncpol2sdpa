@@ -33,16 +33,16 @@ for i in range(n_vars):
     equalities.append(X[i]*X[i]-1.0)
 
 #Simple monomial substitutions
-monomial_substitution = {}
+monomial_substitutions = {}
 for i in range(n_vars):
     for j in range(i+1,n_vars):
         # [X_i, X_j] = 0
-        monomial_substitution[X[i]*X[j]] = X[j]*X[i]
+        monomial_substitutions[X[i]*X[j]] = X[j]*X[i]
 
 #Obtain SDP relaxation
 time0 = time.time()
 sdpRelaxation = SdpRelaxation(X)
 sdpRelaxation.get_relaxation(obj, inequalities, equalities, 
-                      monomial_substitution, order)
+                      monomial_substitutions, order)
 sdpRelaxation.write_to_sdpa('benchmark.dat-s')                      
 print('%0.2f s' % ((time.time()-time0)))

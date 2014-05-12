@@ -33,11 +33,11 @@ inequalities = [-X[1] ** 2 + X[1] + 0.5]
 equalities = []
 
 # Simple monomial substitutions
-monomial_substitution = {}
-monomial_substitution[X[0] ** 2] = X[0]
+monomial_substitutions = {}
+monomial_substitutions[X[0] ** 2] = X[0]
 
 # Obtain SDP relaxation
 sdpRelaxation = SdpRelaxation(X)
 sdpRelaxation.get_relaxation(obj, inequalities, equalities,
-                             monomial_substitution, order)
+                             monomial_substitutions, order)
 sdpRelaxation.write_to_sdpa('example_noncommutative.dat-s')

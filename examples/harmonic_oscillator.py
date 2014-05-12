@@ -36,16 +36,16 @@ for i in range(N):
     
 print hamiltonian
 
-monomial_substitution = {}
+monomial_substitutions = {}
 
 for i in range(N):
     for j in range(i+1,N):
         # [a_i,a_jT] = 0 for i\neq j
-        monomial_substitution[Dagger(a[j])*a[i]] = a[i]*Dagger(a[j])
+        monomial_substitutions[Dagger(a[j])*a[i]] = a[i]*Dagger(a[j])
         # [a_i, a_j] = 0
-        monomial_substitution[a[j]*a[i]] = a[i]*a[j]
+        monomial_substitutions[a[j]*a[i]] = a[i]*a[j]
         # [a_iT, a_jT] = 0
-        monomial_substitution[Dagger(a[j])*Dagger(a[i])] = Dagger(a[i])*Dagger(a[j])
+        monomial_substitutions[Dagger(a[j])*Dagger(a[i])] = Dagger(a[i])*Dagger(a[j])
 
 # [a_i,a_iT]=1
 equalities = []
@@ -60,7 +60,7 @@ print("Obtaining SDP relaxation...")
 verbose = 1
 sdpRelaxation = SdpRelaxation(a)
 sdpRelaxation.get_relaxation(hamiltonian, inequalities, equalities, 
-                      monomial_substitution, order, verbose)
+                      monomial_substitutions, order, verbose)
 #Export relaxation to SDPA format
 print("Writing to disk...")
 sdpRelaxation.write_to_sdpa('harmonic_oscillator.dat-s')                      
