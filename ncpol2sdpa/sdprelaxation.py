@@ -351,7 +351,7 @@ class SdpRelaxation(object):
         # Equalities are converted to pairs of inequalities
         for equality in equalities:
             inequalities.append(equality)
-            #inequalities.append(-equality)
+            inequalities.append(-equality)
 
         # Process inequalities
         if verbose > 0:
