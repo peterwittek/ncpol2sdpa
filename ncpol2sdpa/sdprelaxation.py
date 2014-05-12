@@ -13,7 +13,7 @@ from sympy.physics.quantum.dagger import Dagger
 from sympy.physics.quantum.operator import HermitianOperator
 from .ncutils import apply_substitutions, build_monomial, get_ncmonomials, \
                     pick_monomials_up_to_degree, get_variables_of_polynomial,\
-                    ncdegree
+                    ncdegree, unique
 
 
 class Entry(object):
@@ -65,9 +65,10 @@ class SdpRelaxation(object):
             return self.offsets[monomial_block_index] + \
               i * n_monomials-skew + j 
 
-    def __get_index_of_monomial(self, element):
+    def __get_index_of_monomial(self, element,enableSubstitution=False):
         monomial, coeff = build_monomial(element)
-        monomial = apply_substitutions(monomial, self.monomial_substitutions)
+        if enableSubstitution:
+            monomial = apply_substitutions(monomial, self.monomial_substitutions)
         # Given the monomial, we need its mapping L_y(w) to push it into
         # a corresponding constraint matrix
         if monomial != 0:
@@ -87,13 +88,17 @@ class SdpRelaxation(object):
                 k = self.__index2linear(indices[0], indices[1],
                                       indices[2])
             except KeyError:
-                [monomial, coeff] = build_monomial(element)
-                monomial = apply_substitutions(Dagger(monomial),
-                                               self.monomial_substitutions)
-                indices = self.monomial_dictionary[monomial]
-                indices[0], indices[1] = indices[1], indices[0]
-            k = self.__index2linear(indices[0], indices[1],
-                                      indices[2])                  
+                try:
+                    [monomial, coeff] = build_monomial(element)
+                    monomial = apply_substitutions(Dagger(monomial),
+                                                   self.monomial_substitutions)
+                    indices = self.monomial_dictionary[monomial]
+                    indices[0], indices[1] = indices[1], indices[0]
+                    k = self.__index2linear(indices[0], indices[1],
+                                      indices[2])          
+                except KeyError:
+                    [monomial, coeff] = build_monomial(element)
+                    print "DEBUG:",element, Dagger(monomial), apply_substitutions(Dagger(monomial), self.monomial_substitutions)
         return k, coeff
 
     def __push_facvar_sparse(self, polynomial, block_index, i, j):
@@ -102,8 +107,12 @@ class SdpRelaxation(object):
         """
 
         # Preprocess the polynomial for uniform handling later
-        polynomial = polynomial.expand()
-        if polynomial.is_Mul:
+        # DO NOT EXPAND THE POLYNOMIAL HERE!!!!!!!!!!!!!!!!!!!
+        # The __simplify_polynomial bypasses the problem.
+        # Simplifying here will trigger a bug in SymPy related to
+        # the powers of daggered variables.
+        # polynomial = polynomial.expand()
+        if polynomial.is_Mul or polynomial == 0:
             elements = [polynomial]
         else:
             elements = polynomial.as_coeff_mul()[1][0].as_coeff_add()[1]
@@ -111,7 +120,7 @@ class SdpRelaxation(object):
         for element in elements:
             k, coeff = self.__get_index_of_monomial(element)
             # k identifies the mapped value of a word (monomial) w
-            if k > -1:
+            if k > -1 and coeff != 0:
                 e = Entry(block_index, i + 1, j + 1, coeff)
                 self.F[k].append(e)
 
@@ -132,7 +141,7 @@ class SdpRelaxation(object):
         else:
             elements = polynomial.as_coeff_mul()[1][0].as_coeff_add()[1]
         for element in elements:
-            k, coeff = self.__get_index_of_monomial(element)
+            k, coeff = self.__get_index_of_monomial(element, enableSubstitution=True)
             if k > 0:
                 facvar[k-1] += coeff
         return facvar
@@ -209,6 +218,21 @@ class SdpRelaxation(object):
             block_index += 1
         return block_index_list
 
+    def __simplify_polynomial(self, polynomial):
+        # Preprocess the polynomial for uniform handling later
+        polynomial = polynomial.expand()
+        if polynomial.is_Mul:
+            elements = [polynomial]
+        else:
+            elements = polynomial.as_coeff_mul()[1][0].as_coeff_add()[1]
+        new_polynomial = 0
+        # Identify its constituent monomials
+        for element in elements:
+            monomial, coeff = build_monomial(element)
+            monomial = apply_substitutions(monomial, self.monomial_substitutions)
+            new_polynomial += coeff*monomial
+        return new_polynomial
+            
     def __process_inequalities(
             self, inequalities, monomial_blocks, block_index, order):
         """Generate localizing matrices
@@ -242,9 +266,9 @@ class SdpRelaxation(object):
                     for column in range(row, len(monomials)):
                         # Calculate the moments of polynomial entries
                         polynomial = \
-                            Dagger(monomials[row]) * ineq * monomials[column]
-                        self.__push_facvar_sparse(polynomial, block_index,
-                                row, column)
+                            self.__simplify_polynomial(Dagger(monomials[row]) * ineq * monomials[column])
+                        self.__push_facvar_sparse(polynomial,
+                                                  block_index, row, column)
         return block_index
 
 
@@ -268,6 +292,9 @@ class SdpRelaxation(object):
             monomials = get_ncmonomials(variables, order)
             monomials = [monomial for monomial in monomials if monomial not 
               in self.monomial_substitutions]
+            monomials = [apply_substitutions(monomial, 
+                       self.monomial_substitutions) for monomial in monomials]
+            monomials = unique(monomials)
             monomial_blocks.append(monomials)
 
         # Adjust monomial blocks. This is only necessary if independent
@@ -324,7 +351,7 @@ class SdpRelaxation(object):
         # Equalities are converted to pairs of inequalities
         for equality in equalities:
             inequalities.append(equality)
-            inequalities.append(-equality)
+            #inequalities.append(-equality)
 
         # Process inequalities
         if verbose > 0:

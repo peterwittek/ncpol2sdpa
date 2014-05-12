@@ -20,8 +20,8 @@ def apply_substitutions(monomial, monomial_substitutions):
             # The fast substitution routine still fails on some rare
             # conditions. In production environments, it is safer to use
             # the default substitution routine that comes with SymPy.
-            monomial = monomial.subs(lhs, rhs)
-            # monomial = fastSubstitute(monomial, lhs, rhs)
+            #monomial = monomial.subs(lhs, rhs)
+            monomial = fast_substitute(monomial, lhs, rhs)
         if original_monomial == monomial:
             changed = False
         original_monomial = monomial
@@ -69,8 +69,8 @@ def fast_substitute(monomial, old_sub, new_sub):
     old_sub -- the part to be replaced
     new_sub -- the replacement
     """
-    old_factors = old_sub.as_coeff_mul()[1]
-    factors = monomial.as_coeff_mul()[1]
+    old_factors = old_sub.as_ordered_factors()
+    factors = monomial.as_ordered_factors()
     new_var_list = []
     new_monomial = 1
     match = False
@@ -80,15 +80,26 @@ def fast_substitute(monomial, old_sub, new_sub):
     right_remainder = 1
     for i in range(len(factors) - len(old_factors) + 1):
         for j in range(len(old_factors)):
+            if isinstance(factors[i + j], Number) and \
+            ((not isinstance(old_factors[j], Number) or \
+             factors[i + j] != old_factors[j])):
+                break
             if isinstance(factors[i + j], Symbol) and \
               (not isinstance(old_factors[j], Operator) or \
               (isinstance(old_factors[j], Symbol) and \
               factors[i + j] != old_factors[j])):
-                break
+                  break
             if isinstance(factors[i + j], Operator) and \
               isinstance(old_factors[j], Operator) and \
               factors[i + j] != old_factors[j]:
-                break
+                  break
+            if isinstance(factors[i + j], Dagger) and \
+              (not isinstance(old_factors[j], Dagger) or \
+              factors[i + j] != old_factors[j]):
+                  break
+            if not isinstance(factors[i + j], Dagger) and \
+              isinstance(old_factors[j], Dagger):
+                  break
             if isinstance(factors[i + j], Pow):
                 old_degree = 1
                 old_base = 1
@@ -113,13 +124,13 @@ def fast_substitute(monomial, old_sub, new_sub):
                             factors[i + j].exp - old_degree)
             if isinstance(factors[i + j], Operator) and \
               isinstance(old_factors[j], Pow):
-                break
+                  break
         else:
             match = True
         if not match:
             new_var_list.append(factors[i])
         else:
-            new_monomial = monomial.as_coeff_mul()[0]
+            new_monomial = 1
             for var in new_var_list:
                 new_monomial *= var
             new_monomial *= left_remainder * new_sub * right_remainder
@@ -131,7 +142,7 @@ def fast_substitute(monomial, old_sub, new_sub):
     return new_monomial
 
 
-def generate_variables(n_vars, hermitian=False, commutative=False, name='X'):
+def generate_variables(n_vars, hermitian=False, commutative=False, name='x'):
     """Generates a number of noncommutative variables
 
     Arguments:
