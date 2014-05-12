@@ -1,4 +1,4 @@
-Since 1.0:
+Version 1.1: 2014-05-12
   - Commutative variables also work.
   - Major rework of how the moment matrix is generated.
 
