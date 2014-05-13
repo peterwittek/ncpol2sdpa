@@ -34,8 +34,6 @@ hamiltonian = 0
 for i in range(N):
     hamiltonian += hbar*omega*(Dagger(a[i])*a[i]+0.5)
     
-print hamiltonian
-
 monomial_substitutions = {}
 
 for i in range(N):
