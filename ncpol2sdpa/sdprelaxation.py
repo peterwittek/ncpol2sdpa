@@ -12,8 +12,9 @@ from sympy import S
 from sympy.physics.quantum.dagger import Dagger
 from sympy.physics.quantum.operator import HermitianOperator
 from .ncutils import apply_substitutions, build_monomial, get_ncmonomials, \
-                    pick_monomials_up_to_degree, get_variables_of_polynomial,\
-                    ncdegree, unique
+                    pick_monomials_up_to_degree, get_variables_of_polynomial, \
+                    ncdegree, unique, remove_scalar_factor, \
+                    separate_scalar_factor
 
 
 class Entry(object):
@@ -90,8 +91,9 @@ class SdpRelaxation(object):
             except KeyError:
                 try:
                     [monomial, coeff] = build_monomial(element)
-                    monomial = apply_substitutions(Dagger(monomial),
-                                                   self.monomial_substitutions)
+                    monomial, scalar_factor = separate_scalar_factor(apply_substitutions(Dagger(monomial),
+                                                   self.monomial_substitutions))
+                    coeff *= scalar_factor
                     indices = self.monomial_dictionary[monomial]
                     indices[0], indices[1] = indices[1], indices[0]
                     k = self.__index2linear(indices[0], indices[1],
@@ -220,7 +222,7 @@ class SdpRelaxation(object):
 
     def __simplify_polynomial(self, polynomial):
         # Preprocess the polynomial for uniform handling later
-        polynomial = polynomial.expand()
+        polynomial = (1.0*polynomial).expand()
         if polynomial.is_Mul:
             elements = [polynomial]
         else:
@@ -292,8 +294,9 @@ class SdpRelaxation(object):
             monomials = get_ncmonomials(variables, order)
             monomials = [monomial for monomial in monomials if monomial not 
               in self.monomial_substitutions]
-            monomials = [apply_substitutions(monomial, 
-                       self.monomial_substitutions) for monomial in monomials]
+            monomials = [remove_scalar_factor(apply_substitutions(monomial, 
+                       self.monomial_substitutions)) for monomial in monomials]
+            
             monomials = unique(monomials)
             monomial_blocks.append(monomials)
 
@@ -351,7 +354,7 @@ class SdpRelaxation(object):
         # Equalities are converted to pairs of inequalities
         for equality in equalities:
             inequalities.append(equality)
-            #inequalities.append(-equality)
+            inequalities.append(-equality)
 
         # Process inequalities
         if verbose > 0:

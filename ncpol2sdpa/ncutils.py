@@ -10,6 +10,7 @@ Created on Thu May  2 16:03:05 2013
 from sympy.core import S, Symbol, Pow, Number
 from sympy.physics.quantum.operator import HermitianOperator, Operator
 from sympy.physics.quantum.dagger import Dagger
+from sympy.physics.quantum.qexpr import split_commutative_parts
 
 def apply_substitutions(monomial, monomial_substitutions):
     """Helper function to remove monomials from the basis."""
@@ -27,6 +28,21 @@ def apply_substitutions(monomial, monomial_substitutions):
         original_monomial = monomial
     return monomial
 
+def separate_scalar_factor(monomial):
+    scalar_factor = 1
+    comm_factors, non_commfactors = split_commutative_parts(monomial)
+    if len(comm_factors)>0:
+        if isinstance(comm_factors[0],Number):
+            scalar_factor = comm_factors[0]
+    if scalar_factor != 1:
+        return monomial/scalar_factor, scalar_factor
+    else:
+        return monomial, scalar_factor
+
+def remove_scalar_factor(monomial):
+    monomial, dummy = separate_scalar_factor(monomial)
+    return monomial
+    
 def build_monomial(element):
     coeff = 1.0
     monomial = S.One
@@ -69,76 +85,104 @@ def fast_substitute(monomial, old_sub, new_sub):
     old_sub -- the part to be replaced
     new_sub -- the replacement
     """
-    old_factors = old_sub.as_ordered_factors()
-    factors = monomial.as_ordered_factors()
+    if isinstance(monomial, Number):
+        return monomial
+    comm_factors, ncomm_factors = split_commutative_parts(monomial)
+    old_comm_factors, old_ncomm_factors = split_commutative_parts(old_sub)
+    new_comm_factors, new_ncomm_factors = split_commutative_parts(new_sub)
+    comm_monomial = 1
+    is_constant_term = False
+    if len(comm_factors) == 1 and isinstance(comm_factors[0], Number):
+        is_constant_term = True
+        comm_monomial = comm_factors[0]
+    if not is_constant_term and len(comm_factors)>0 and \
+      len(old_comm_factors)>0:
+        for comm_factor in comm_factors:
+            comm_monomial *= comm_factor
+        comm_old_sub = 1
+        for comm_factor in old_comm_factors:
+            comm_old_sub *= comm_factor
+        comm_new_sub = 1
+        for comm_factor in new_comm_factors:
+            comm_new_sub *= comm_factor
+        comm_monomial = comm_monomial.subs(comm_old_sub, comm_new_sub)
+    if len(ncomm_factors)==0 or len(old_ncomm_factors)==0:
+        return comm_monomial
+    #old_factors = old_sub.as_ordered_factors()
+    #factors = monomial.as_ordered_factors()
     new_var_list = []
     new_monomial = 1
     match = False
-    if isinstance(monomial, Number):
-        return monomial
     left_remainder = 1
     right_remainder = 1
-    for i in range(len(factors) - len(old_factors) + 1):
-        for j in range(len(old_factors)):
-            if isinstance(factors[i + j], Number) and \
-            ((not isinstance(old_factors[j], Number) or \
-             factors[i + j] != old_factors[j])):
+    for i in range(len(ncomm_factors) - len(old_ncomm_factors) + 1):
+        for j in range(len(old_ncomm_factors)):
+            if isinstance(ncomm_factors[i + j], Number) and \
+            ((not isinstance(old_ncomm_factors[j], Number) or \
+             ncomm_factors[i + j] != old_ncomm_factors[j])):
                 break
-            if isinstance(factors[i + j], Symbol) and \
-              (not isinstance(old_factors[j], Operator) or \
-              (isinstance(old_factors[j], Symbol) and \
-              factors[i + j] != old_factors[j])):
+            if isinstance(ncomm_factors[i + j], Symbol) and \
+              (not isinstance(old_ncomm_factors[j], Operator) or \
+              (isinstance(old_ncomm_factors[j], Symbol) and \
+              ncomm_factors[i + j] != old_ncomm_factors[j])):
                   break
-            if isinstance(factors[i + j], Operator) and \
-              isinstance(old_factors[j], Operator) and \
-              factors[i + j] != old_factors[j]:
+            if isinstance(ncomm_factors[i + j], Operator) and \
+              isinstance(old_ncomm_factors[j], Operator) and \
+              ncomm_factors[i + j] != old_ncomm_factors[j]:
                   break
-            if isinstance(factors[i + j], Dagger) and \
-              (not isinstance(old_factors[j], Dagger) or \
-              factors[i + j] != old_factors[j]):
+            if isinstance(ncomm_factors[i + j], Dagger) and \
+              (not isinstance(old_ncomm_factors[j], Dagger) or \
+              ncomm_factors[i + j] != old_ncomm_factors[j]):
                   break
-            if not isinstance(factors[i + j], Dagger) and \
-              isinstance(old_factors[j], Dagger):
+            if not isinstance(ncomm_factors[i + j], Dagger) and \
+              not isinstance(ncomm_factors[i + j], Pow) and \
+              isinstance(old_ncomm_factors[j], Dagger):
                   break
-            if isinstance(factors[i + j], Pow):
+            if isinstance(ncomm_factors[i + j], Pow):
                 old_degree = 1
                 old_base = 1
-                if isinstance(old_factors[j], Pow):
-                    old_base = old_factors[j].base
-                    old_degree = old_factors[j].exp
+                if isinstance(old_ncomm_factors[j], Pow):
+                    old_base = old_ncomm_factors[j].base
+                    old_degree = old_ncomm_factors[j].exp
                 else:
-                    old_base = old_factors[j]
-                if old_base != factors[i + j].base:
+                    old_base = old_ncomm_factors[j]
+                if old_base != ncomm_factors[i + j].base:
                     break
-                if old_degree > factors[i + j].exp:
+                if old_degree > ncomm_factors[i + j].exp:
                     break
-                if old_degree < factors[i + j].exp:
-                    if j != len(old_factors) - 1:
+                if old_degree < ncomm_factors[i + j].exp:
+                    if j != len(old_ncomm_factors) - 1:
                         if j != 0:
                             break
                         else:
                             left_remainder = old_base ** (
-                                factors[i + j].exp - old_degree)
+                                ncomm_factors[i + j].exp - old_degree)
                     else:
                         right_remainder = old_base ** (
-                            factors[i + j].exp - old_degree)
-            if isinstance(factors[i + j], Operator) and \
-              isinstance(old_factors[j], Pow):
+                            ncomm_factors[i + j].exp - old_degree)
+            if isinstance(ncomm_factors[i + j], Operator) and \
+              isinstance(old_ncomm_factors[j], Pow):
                   break
         else:
             match = True
         if not match:
-            new_var_list.append(factors[i])
+            new_var_list.append(ncomm_factors[i])
         else:
             new_monomial = 1
             for var in new_var_list:
                 new_monomial *= var
             new_monomial *= left_remainder * new_sub * right_remainder
-            for j in range(i + len(old_factors), len(factors)):
-                new_monomial *= factors[j]
+            for j in range(i + len(old_ncomm_factors), len(ncomm_factors)):
+                new_monomial *= ncomm_factors[j]
+            new_monomial *= comm_monomial
             break
     else:
-        return monomial
+        if not is_constant_term and len(comm_factors)>0 and len(old_comm_factors)>0:
+            new_monomial = comm_monomial
+            for factor in ncomm_factors:
+                new_monomial *= ncomm_factors[j]
+        else:
+            return monomial
     return new_monomial
 
 
