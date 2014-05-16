@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Exporting a Hamiltonian ground state problem to SDPA. The Hamiltonian 
+Exporting a Hamiltonian ground state problem to SDPA. The Hamiltonian
 is of a simple harmonic oscillator. Bosonic systems reach the optimum
 solution at relaxation order 1:
 
@@ -30,20 +30,20 @@ a = generate_variables(N, name='a')
 
 hamiltonian = 0
 for i in range(N):
-    hamiltonian += hbar*omega*(Dagger(a[i])*a[i]+0.5)
+    hamiltonian += hbar * omega * (Dagger(a[i]) * a[i] + 0.5)
 
 monomial_substitutions, equalities = bosonic_constraints(a)
 inequalities = []
 
 time0 = time.time()
-#Obtain SDP relaxation
+# Obtain SDP relaxation
 print("Obtaining SDP relaxation...")
 verbose = 1
 sdpRelaxation = SdpRelaxation(a)
-sdpRelaxation.get_relaxation(hamiltonian, inequalities, equalities, 
-                      monomial_substitutions, order, verbose)
-#Export relaxation to SDPA format
+sdpRelaxation.get_relaxation(hamiltonian, inequalities, equalities,
+                             monomial_substitutions, order, verbose)
+# Export relaxation to SDPA format
 print("Writing to disk...")
-sdpRelaxation.write_to_sdpa('harmonic_oscillator.dat-s')                      
+sdpRelaxation.write_to_sdpa('harmonic_oscillator.dat-s')
 
-print('%0.2f s' % ((time.time()-time0)))
+print('%0.2f s' % ((time.time() - time0)))

@@ -2,9 +2,9 @@ from distutils.core import setup
 
 setup(
     name='ncpol2sdpa',
-    version='1.1',
+    version='1.2',
     author='Peter Wittek',
-    author_email='dummy@address',
+    author_email='peterwittek@users.noreply.github.com',
     packages=['ncpol2sdpa'],
     url='http://peterwittek.github.io/ncpol2sdpa/',
     keywords=[
