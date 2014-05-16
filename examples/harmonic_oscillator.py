@@ -13,16 +13,14 @@ Created on Fri May 10 09:45:11 2013
 @author: Peter Wittek
 """
 import time
-from sympy.physics.quantum.operator import Operator
 from sympy.physics.quantum.dagger import Dagger
-from ncpol2sdpa.ncutils import generate_variables
-from ncpol2sdpa.sdprelaxation import SdpRelaxation
+from ncpol2sdpa import generate_variables, bosonic_constraints, SdpRelaxation
 
 # Order of relaxation
 order = 2
 
 # Number of variables
-N = 2
+N = 3
 
 # Parameters for the Hamiltonian
 hbar, omega = 1, 1
@@ -33,23 +31,8 @@ a = generate_variables(N, name='a')
 hamiltonian = 0
 for i in range(N):
     hamiltonian += hbar*omega*(Dagger(a[i])*a[i]+0.5)
-    
-monomial_substitutions = {}
 
-for i in range(N):
-    for j in range(i+1,N):
-        # [a_i,a_jT] = 0 for i\neq j
-        monomial_substitutions[Dagger(a[j])*a[i]] = a[i]*Dagger(a[j])
-        # [a_i, a_j] = 0
-        monomial_substitutions[a[j]*a[i]] = a[i]*a[j]
-        # [a_iT, a_jT] = 0
-        monomial_substitutions[Dagger(a[j])*Dagger(a[i])] = Dagger(a[i])*Dagger(a[j])
-
-# [a_i,a_iT]=1
-equalities = []
-for i in range(N):
-    equalities.append(a[i]*Dagger(a[i])-Dagger(a[i])*a[i]-1.0)
-
+monomial_substitutions, equalities = bosonic_constraints(a)
 inequalities = []
 
 time0 = time.time()

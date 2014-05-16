@@ -262,18 +262,12 @@ def ncdegree(polynomial):
     return degree
 
 
-def pick_monomials_up_to_degree(
-        monomial_blocks, monomial_block_index_list, degree):
+def pick_monomials_up_to_degree(monomials,  degree):
     """Collect monomials up to a given degree.
     """
     ordered_monomials = []
-    for monomial_block_index in monomial_block_index_list:
-        for deg in range(degree + 1):
-            ordered_monomials.extend(
-                pick_monomials_of_degree(
-                    monomial_blocks[monomial_block_index], deg
-                )
-            )
+    for deg in range(degree + 1):
+        ordered_monomials.extend(pick_monomials_of_degree(monomials, deg))
     return ordered_monomials
 
 

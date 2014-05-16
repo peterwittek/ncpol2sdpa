@@ -6,8 +6,7 @@ Created on Fri May 10 09:45:11 2013
 
 @author: Peter Wittek
 """
-from ncpol2sdpa.ncutils import generate_variables
-from ncpol2sdpa.sdprelaxation import SdpRelaxation
+from ncpol2sdpa import generate_variables, SdpRelaxation
 import time
 
 #Number of Hermitian variables
@@ -33,16 +32,16 @@ for i in range(n_vars):
     equalities.append(X[i]*X[i]-1.0)
 
 #Simple monomial substitutions
-monomial_substitutions = {}
+monomial_substitution = {}
 for i in range(n_vars):
     for j in range(i+1,n_vars):
         # [X_i, X_j] = 0
-        monomial_substitutions[X[i]*X[j]] = X[j]*X[i]
+        monomial_substitution[X[i]*X[j]] = X[j]*X[i]
 
 #Obtain SDP relaxation
 time0 = time.time()
 sdpRelaxation = SdpRelaxation(X)
 sdpRelaxation.get_relaxation(obj, inequalities, equalities, 
-                      monomial_substitutions, order)
+                      monomial_substitution, order)
 sdpRelaxation.write_to_sdpa('benchmark.dat-s')                      
 print('%0.2f s' % ((time.time()-time0)))

@@ -8,7 +8,7 @@ The implementation has an intuitive syntax for entering Hamiltonians and it scal
 
 Dependencies
 ============
-The code requires `SymPy <http://sympy.org/>`_>=0.7.2 in the Python search path. The code is known to work with Python 2.6.8 and 2.7.5, and also with Pypy 1.8 and 2.0.2. Using Pypy is highly recommended, as execution time is several times faster and memory use is reduced. The code is compatible with Python 3, but using Python 3.3.2 incurs a major decrease in performance; the case is likely to be similar in with other Python 3 versions.
+The code requires `SymPy <http://sympy.org/>`_>=0.7.2 and `SciPy <http://scipy.org/>`_>=0.13 in the Python search path. The code is compatible with Python 3, but using it incurs a major decrease in performance. Note that since SciPy is now a dependency, Pypy is no longer supported.
 
 Usage
 =====
@@ -16,8 +16,7 @@ The following code replicates the toy example from Pironio, S.; Navascues, M. & 
 
 ::
 
-  from ncpol2sdpa.ncutils import generate_variables
-  from ncpol2sdpa.sdprelaxation import SdpRelaxation
+  from ncpol2sdpa import generate_variables, SdpRelaxation
 
   # Number of Hermitian variables
   n_vars = 2
@@ -47,13 +46,13 @@ The following code replicates the toy example from Pironio, S.; Navascues, M. & 
   sdpRelaxation.write_to_sdpa('examplenc.dat-s')
 
 
-Further examples are under the examples folder.
+Further examples are in the examples folder.
 
 Installation
 ============
 The code is available on PyPI, hence it can be installed by 
 
-``$ sudo pip install somoclu``
+``$ sudo pip install ncpol2sdpa``
 
 If you want the latest git version, follow the standard procedure for installing Python modules:
 

@@ -12,8 +12,7 @@ Created on Fri May 10 09:45:11 2013
 @author: Peter Wittek
 """
 
-from ncpol2sdpa.ncutils import generate_variables
-from ncpol2sdpa.sdprelaxation import SdpRelaxation
+from ncpol2sdpa import generate_variables, SdpRelaxation
 
 #Number of variables    
 n_vars = 2
@@ -27,7 +26,7 @@ X = generate_variables(n_vars, commutative = True)
 obj = X[0] * X[1] + X[1] * X[0]
 
 # Inequality constraints
-inequalities = [ -X[1]**2 + X[1] + 0.5 ]
+inequalities = [-X[1]**2 + X[1] + 0.5]
 
 # Equality constraints
 equalities = []

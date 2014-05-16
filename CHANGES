@@ -1,5 +1,13 @@
 Since 1.1:
   - Fast replace was updated and made default.
+  - Numpy and SciPy are now dependencies.
+  - Replaced internal data structures by SciPy sparse matrices.
+  - Pypy is no longer supported.
+  - Equality constraints are removed by a QR decomposition and basis transformation.
+  - Functions added to support calling SDPA from Python.
+  - Helper functions added to help phrasing physics problems.
+  - More commutative examples added for comparison to Gloptipoly.
+  - Internal module structure reorganized.
 
 Version 1.1: 2014-05-12
   - Commutative variables also work.
