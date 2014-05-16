@@ -56,9 +56,7 @@ The code is available on PyPI, hence it can be installed by
 
 If you want the latest git version, follow the standard procedure for installing Python modules:
 
-``$ sudo python_interpreter setup.py install``
-
-If you install the module to your CPython library, but you want to use Pypy, please ensure that the PYTHONPATH variable is set up correctly, otherwise Pypy will not find the relevant modules.
+``$ sudo python setup.py install``
 
 Acknowledgment
 ==============
