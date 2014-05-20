@@ -1,3 +1,6 @@
+Since version 1.2:
+  - Internal structure for storing monomials reorganized.
+
 Version 1.2: 2014-05-16
   - Fast replace was updated and made default.
   - Numpy and SciPy are now dependencies.
