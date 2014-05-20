@@ -225,7 +225,6 @@ class SdpRelaxation(object):
                                                    equality * monomials[column])
                     A[n_rows] = self.__get_facvar(polynomial)
                     n_rows += 1
-        print A.shape
         return A
 
     def __calculate_block_structure(self, monomials, inequalities, order):
