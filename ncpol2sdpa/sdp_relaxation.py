@@ -37,13 +37,6 @@ class SdpRelaxation(object):
         else:
             self.variables = [variables]
 
-    def __index2linear(self, i, j):
-        if i == 0:
-            return j
-        else:
-            skew = int(i * (i + 1) / 2)
-            return i * self.n_monomials - skew + j
-
     def __get_index_of_monomial(self, element, enableSubstitution=False):
         monomial, coeff = build_monomial(element)
         if enableSubstitution:
@@ -61,8 +54,7 @@ class SdpRelaxation(object):
             k = 0
         else:
             try:
-                indices = self.monomial_dictionary[monomial]
-                k = self.__index2linear(indices[0], indices[1])
+                k = self.monomial_dictionary[monomial]
             except KeyError:
                 try:
                     [monomial, coeff] = build_monomial(element)
@@ -70,9 +62,7 @@ class SdpRelaxation(object):
                         apply_substitutions(Dagger(monomial),
                                             self.monomial_substitutions))
                     coeff *= scalar_factor
-                    indices = self.monomial_dictionary[monomial]
-                    indices[0], indices[1] = indices[1], indices[0]
-                    k = self.__index2linear(indices[0], indices[1])
+                    k = self.monomial_dictionary[monomial]
                 except KeyError:
                     [monomial, coeff] = build_monomial(element)
                     # print "DEBUG:", element, Dagger(monomial),
@@ -125,7 +115,7 @@ class SdpRelaxation(object):
             facvar[k] += coeff
         return facvar
 
-    def __process_monomial(self, monomial, row, column):
+    def __process_monomial(self, monomial, n_vars):
         """Process a single monomial when building the moment matrix.
         """
         if monomial.as_coeff_Mul()[0] < 0:
@@ -135,14 +125,13 @@ class SdpRelaxation(object):
         try:
             # If yes, then we improve sparsity by reusing the
             # previous variable to denote this Entry in the matrix
-            indices = self.monomial_dictionary[monomial]
-            k = self.__index2linear(indices[0], indices[1])
+            k = self.monomial_dictionary[monomial]
         except KeyError:
             # Otherwise we define a new Entry in the associated
             # array recording the monomials, and add an Entry in
             # the moment matrix
-            self.monomial_dictionary[monomial] = [row, column]
-            k = self.__index2linear(row, column)
+            k = n_vars + 1
+            self.monomial_dictionary[monomial] = k
         return k
 
     def __generate_moment_matrix(self, monomials):
@@ -151,7 +140,7 @@ class SdpRelaxation(object):
         Arguments:
         monomials -- |W_d| set of words of length up to the relaxation order
         """
-
+        n_vars = 0
         # We process the M_d(u,w) entries in the moment matrix
         for row in range(self.n_monomials):
             for column in range(row, self.n_monomials):
@@ -163,9 +152,13 @@ class SdpRelaxation(object):
                 if monomial == 1:
                     self.F_struct[row * self.n_monomials + column, 0] = 1
                 elif monomial != 0:
-                    k = self.__process_monomial(monomial, row, column)
+                    k = self.__process_monomial(monomial, n_vars)
+                    if k > n_vars:
+                        n_vars = k
                     # We push the Entry to the moment matrix
                     self.F_struct[row * self.n_monomials + column, k] = 1
+        self.n_vars = n_vars
+        self.F_struct = self.F_struct[:,0:n_vars + 1]
 
     def __simplify_polynomial(self, polynomial):
         # Preprocess the polynomial for uniform handling later
@@ -269,8 +262,8 @@ class SdpRelaxation(object):
         monomials = [monomial for monomial in monomials if monomial not
                      in self.monomial_substitutions]
         monomials = [remove_scalar_factor(apply_substitutions(monomial,
-                                          self.monomial_substitutions)) 
-                                          for monomial in monomials]
+                                          self.monomial_substitutions))
+                     for monomial in monomials]
         monomials = unique(monomials)
         localizing_monomials = self.__calculate_block_structure(monomials,
                                                                 inequalities, order)
@@ -281,7 +274,6 @@ class SdpRelaxation(object):
         # The minus one compensates for the constant term in the
         # top left corner of the moment matrix
         self.n_vars = int(self.n_monomials * (self.n_monomials + 1) / 2) - 1
-
         rows_in_F_struct = 0
         for block_size in self.block_struct:
             rows_in_F_struct += block_size ** 2
@@ -296,7 +288,6 @@ class SdpRelaxation(object):
 
        # Generate moment matrices
         self.__generate_moment_matrix(monomials)
-
         # Objective function
         self.obj_facvar = (self.__get_facvar(obj))[1:]
 
