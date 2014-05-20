@@ -225,6 +225,7 @@ class SdpRelaxation(object):
                                                    equality * monomials[column])
                     A[n_rows] = self.__get_facvar(polynomial)
                     n_rows += 1
+        print A.shape
         return A
 
     def __calculate_block_structure(self, monomials, inequalities, order):
@@ -244,7 +245,8 @@ class SdpRelaxation(object):
         return localizing_monomials
 
     def get_relaxation(self, obj, inequalities, equalities,
-                       monomial_substitutions, order, verbose=0):
+                       monomial_substitutions, order, verbose=0,
+                       removeequalities=True):
         """Get the SDP relaxation of a noncommutative polynomial optimization
         problem.
 
@@ -265,6 +267,13 @@ class SdpRelaxation(object):
                                           self.monomial_substitutions))
                      for monomial in monomials]
         monomials = unique(monomials)
+
+        if not removeequalities:
+            # Equalities are converted to pairs of inequalities
+            for equality in equalities:
+                inequalities.append(equality)
+                inequalities.append(-equality)
+
         localizing_monomials = self.__calculate_block_structure(monomials,
                                                                 inequalities, order)
         # Initialize some helper variables, including the offsets of monomial
@@ -291,20 +300,15 @@ class SdpRelaxation(object):
         # Objective function
         self.obj_facvar = (self.__get_facvar(obj))[1:]
 
-        # Equalities are converted to pairs of inequalities
-        # for equality in equalities:
-        #    print self.__get_facvar2(equality)
-        #    inequalities.append(equality)
-        #    inequalities.append(-equality)
-
         # Process inequalities
         if verbose > 0:
             print('Processing %d inequalities...' % len(inequalities))
 
         self.__process_inequalities(inequalities, localizing_monomials, 1,
                                     order)
-        A = self.__process_equalities(equalities, localizing_monomials, order)
-        self.__remove_equalities(equalities, A)
+        if removeequalities:
+            A = self.__process_equalities(equalities, localizing_monomials, order)
+            self.__remove_equalities(equalities, A)
 
     def __build_permutation_matrix(self, P):
         n = len(P)
