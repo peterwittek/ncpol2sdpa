@@ -66,13 +66,13 @@ def fermionic_constraints(a):
             # {a_i, a_j} = 0
             equalities.append(a[j] * a[i] + a[i] * a[j])
             # {a_iT, a_jT} = 0
-            equalities.append(Dagger(a[j]) * Dagger(a[i]) + 
+            equalities.append(Dagger(a[j]) * Dagger(a[i]) +
                               Dagger(a[i]) * Dagger(a[j]))
 
     # {a_i,a_iT} = 1
     for i in range(n_vars):
-        equalities.append(a[i]**2)
-        equalities.append(Dagger(a[i])**2)
+        equalities.append(a[i] ** 2)
+        equalities.append(Dagger(a[i]) ** 2)
         equalities.append(a[i] * Dagger(a[i]) + Dagger(a[i]) * a[i] - 1.0)
 
     return monomial_substitutions, equalities

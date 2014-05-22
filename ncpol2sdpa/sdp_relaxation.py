@@ -69,9 +69,10 @@ class SdpRelaxation(object):
                     if self.verbose > 1:
                         [monomial, coeff] = build_monomial(element)
                         print("DEBUG: %s, %s, %s" % (element,
-                               Dagger(monomial),
-                               apply_substitutions(Dagger(monomial),
-                               self.monomial_substitutions)))
+                                                     Dagger(monomial),
+                                                     apply_substitutions(
+                                                         Dagger(monomial),
+                                                     self.monomial_substitutions)))
         return k, coeff
 
     def __push_facvar_sparse(self, polynomial, block_index, i, j):
@@ -167,7 +168,7 @@ class SdpRelaxation(object):
         # The initial estimate for the size of F_struct was overly
         # generous. We correct the size here.
         self.n_vars = n_vars
-        self.F_struct = self.F_struct[:,0:n_vars + 1]
+        self.F_struct = self.F_struct[:, 0:n_vars + 1]
 
     def __simplify_polynomial(self, polynomial):
         # Preprocess the polynomial for uniform handling later
@@ -202,9 +203,10 @@ class SdpRelaxation(object):
         initial_block_index = block_index
         for ineq in inequalities:
             block_index += 1
-            localization_order = self.localization_order[block_index - initial_block_index - 1]
+            localization_order = self.localization_order[
+                block_index - initial_block_index - 1]
             monomials = \
-               pick_monomials_up_to_degree(all_monomials, localization_order)
+                pick_monomials_up_to_degree(all_monomials, localization_order)
 
             # Process M_y(gy)(u,w) entries
             for row in range(len(monomials)):
@@ -230,14 +232,16 @@ class SdpRelaxation(object):
         for eq in equalities:
             # Find the order of the localizing matrix
             eq_order = ncdegree(eq)
-            if eq_order > 2*order:
-                print("An equality constraint has degree %d. Choose a higher level of relaxation." % eq_order)
+            if eq_order > 2 * order:
+                print(
+                    "An equality constraint has degree %d. Choose a higher level of relaxation." %
+                    eq_order)
                 raise Exception
             localization_order = int(floor((2 * order - eq_order) / 2))
             if localization_order > max_localization_order:
                 max_localization_order = localization_order
         monomials = \
-           pick_monomials_up_to_degree(all_monomials, max_localization_order)
+            pick_monomials_up_to_degree(all_monomials, max_localization_order)
         A = np.zeros(
             (len(equalities) * len(monomials) * (len(monomials) + 1) / 2,
              self.n_vars + 1))
@@ -252,11 +256,11 @@ class SdpRelaxation(object):
                         self.__simplify_polynomial(Dagger(monomials[row]) *
                                                    equality * monomials[column])
                     A[n_rows] = self.__get_facvar(polynomial)
-                    # This is something really weird: we want the constant 
-                    # terms in equalities to be positive. Otherwise funny 
+                    # This is something really weird: we want the constant
+                    # terms in equalities to be positive. Otherwise funny
                     # things happen in the QR decomposition and the basis
                     # transformation.
-                    if A[n_rows,0] < 0:
+                    if A[n_rows, 0] < 0:
                         A[n_rows] = -A[n_rows]
                     n_rows += 1
         return A
@@ -266,17 +270,19 @@ class SdpRelaxation(object):
         for ineq in inequalities:
             # Find the order of the localizing matrix
             ineq_order = ncdegree(ineq)
-            if ineq_order > 2*order:
-                print("A constraint has degree %d. Choose a higher level of relaxation." % ineq_order)
+            if ineq_order > 2 * order:
+                print(
+                    "A constraint has degree %d. Choose a higher level of relaxation." %
+                    ineq_order)
                 raise Exception
             localization_order = int(floor((2 * order - ineq_order) / 2))
             self.localization_order.append(localization_order)
             localizing_monomials = \
-               pick_monomials_up_to_degree(monomials,localization_order)
+                pick_monomials_up_to_degree(monomials, localization_order)
             self.block_struct.append(len(localizing_monomials))
 
     def get_relaxation(self, obj, inequalities, equalities,
-                       monomial_substitutions, order, 
+                       monomial_substitutions, order,
                        removeequalities=True):
         """Get the SDP relaxation of a noncommutative polynomial optimization
         problem.
@@ -330,8 +336,9 @@ class SdpRelaxation(object):
             print('Reduced number of SDP variables: %d' % self.n_vars)
 
         # Objective function
-        self.obj_facvar = (self.__get_facvar(self.__simplify_polynomial(obj)))[1:]
-        
+        self.obj_facvar = (
+            self.__get_facvar(self.__simplify_polynomial(obj)))[1:]
+
         # Process inequalities
         if self.verbose > 0:
             print('Processing %d inequalities...' % len(inequalities))

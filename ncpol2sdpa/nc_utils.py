@@ -22,7 +22,7 @@ def apply_substitutions(monomial, monomial_substitutions):
             # The fast substitution routine still fails on some rare
             # conditions. In production environments, it is safer to use
             # the default substitution routine that comes with SymPy.
-            #monomial = monomial.subs(lhs, rhs)
+            # monomial = monomial.subs(lhs, rhs)
             monomial = fast_substitute(monomial, lhs, rhs)
         if original_monomial == monomial:
             changed = False
@@ -96,7 +96,7 @@ def fast_substitute(monomial, old_sub, new_sub):
         return monomial
     comm_factors, ncomm_factors = split_commutative_parts(monomial)
     old_comm_factors, old_ncomm_factors = split_commutative_parts(old_sub)
-    #This is a temporary hack
+    # This is a temporary hack
     if not isinstance(new_sub, int):
         new_comm_factors, new_ncomm_factors = split_commutative_parts(new_sub)
     comm_monomial = 1
