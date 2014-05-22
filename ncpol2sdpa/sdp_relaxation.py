@@ -11,7 +11,7 @@ from math import floor
 import numpy as np
 from scipy.linalg import qr
 from scipy.sparse import lil_matrix, hstack
-from sympy import S
+from sympy import S, Number
 from sympy.physics.quantum.dagger import Dagger
 from .nc_utils import apply_substitutions, build_monomial, get_ncmonomials, \
     pick_monomials_up_to_degree, ncdegree, unique, remove_scalar_factor, \
@@ -23,7 +23,7 @@ class SdpRelaxation(object):
     """Class for obtaining sparse SDP relaxation.
     """
 
-    def __init__(self, variables):
+    def __init__(self, variables, verbose=0):
         self.monomial_substitutions = {}
         self.monomial_dictionary = {}
         self.n_vars = 0
@@ -32,6 +32,8 @@ class SdpRelaxation(object):
         self.obj_facvar = 0
         self.variables = []
         self.n_monomials = 0
+        self.verbose = verbose
+        self.localization_order = []
         if isinstance(variables, list):
             self.variables = variables
         else:
@@ -64,10 +66,12 @@ class SdpRelaxation(object):
                     coeff *= scalar_factor
                     k = self.monomial_dictionary[monomial]
                 except KeyError:
-                    [monomial, coeff] = build_monomial(element)
-                    # print "DEBUG:", element, Dagger(monomial),
-                    # apply_substitutions(Dagger(monomial),
-                    # self.monomial_substitutions)
+                    if self.verbose > 1:
+                        [monomial, coeff] = build_monomial(element)
+                        print("DEBUG: %s, %s, %s" % (element,
+                               Dagger(monomial),
+                               apply_substitutions(Dagger(monomial),
+                               self.monomial_substitutions)))
         return k, coeff
 
     def __push_facvar_sparse(self, polynomial, block_index, i, j):
@@ -104,6 +108,9 @@ class SdpRelaxation(object):
         """
         facvar = [0] * (self.n_vars + 1)
         # Preprocess the polynomial for uniform handling later
+        if isinstance(polynomial, Number):
+            facvar[0] = polynomial
+            return facvar
         polynomial = polynomial.expand()
         if polynomial.is_Mul:
             elements = [polynomial]
@@ -111,7 +118,7 @@ class SdpRelaxation(object):
             elements = polynomial.as_coeff_mul()[1][0].as_coeff_add()[1]
         for element in elements:
             k, coeff = self.__get_index_of_monomial(
-                element, enableSubstitution=True)
+                element)
             facvar[k] += coeff
         return facvar
 
@@ -124,11 +131,11 @@ class SdpRelaxation(object):
         # Have we seen this monomial before?
         try:
             # If yes, then we improve sparsity by reusing the
-            # previous variable to denote this Entry in the matrix
+            # previous variable to denote this entry in the matrix
             k = self.monomial_dictionary[monomial]
         except KeyError:
-            # Otherwise we define a new Entry in the associated
-            # array recording the monomials, and add an Entry in
+            # Otherwise we define a new entry in the associated
+            # array recording the monomials, and add an entry in
             # the moment matrix
             k = n_vars + 1
             self.monomial_dictionary[monomial] = k
@@ -155,14 +162,18 @@ class SdpRelaxation(object):
                     k = self.__process_monomial(monomial, n_vars)
                     if k > n_vars:
                         n_vars = k
-                    # We push the Entry to the moment matrix
+                    # We push the entry to the moment matrix
                     self.F_struct[row * self.n_monomials + column, k] = 1
+        # The initial estimate for the size of F_struct was overly
+        # generous. We correct the size here.
         self.n_vars = n_vars
         self.F_struct = self.F_struct[:,0:n_vars + 1]
 
     def __simplify_polynomial(self, polynomial):
         # Preprocess the polynomial for uniform handling later
         polynomial = (1.0 * polynomial).expand()
+        if isinstance(polynomial, Number):
+            return polynomial
         if polynomial.is_Mul:
             elements = [polynomial]
         else:
@@ -178,7 +189,7 @@ class SdpRelaxation(object):
         return new_polynomial
 
     def __process_inequalities(
-            self, inequalities, monomials, block_index, order):
+            self, inequalities, all_monomials, block_index, order):
         """Generate localizing matrices
 
         Arguments:
@@ -188,8 +199,13 @@ class SdpRelaxation(object):
                        SDP relaxation
         order -- the order of the relaxation
         """
+        initial_block_index = block_index
         for ineq in inequalities:
             block_index += 1
+            localization_order = self.localization_order[block_index - initial_block_index - 1]
+            monomials = \
+               pick_monomials_up_to_degree(all_monomials, localization_order)
+
             # Process M_y(gy)(u,w) entries
             for row in range(len(monomials)):
                 for column in range(row, len(monomials)):
@@ -202,7 +218,7 @@ class SdpRelaxation(object):
         return block_index
 
     def __process_equalities(
-            self, equalities, monomials, order):
+            self, equalities, all_monomials, order):
         """Generate localizing matrices
 
         Arguments:
@@ -210,6 +226,18 @@ class SdpRelaxation(object):
         monomials  -- localizing monomials
         order -- the order of the relaxation
         """
+        max_localization_order = 0
+        for eq in equalities:
+            # Find the order of the localizing matrix
+            eq_order = ncdegree(eq)
+            if eq_order > 2*order:
+                print("An equality constraint has degree %d. Choose a higher level of relaxation." % eq_order)
+                raise Exception
+            localization_order = int(floor((2 * order - eq_order) / 2))
+            if localization_order > max_localization_order:
+                max_localization_order = localization_order
+        monomials = \
+           pick_monomials_up_to_degree(all_monomials, max_localization_order)
         A = np.zeros(
             (len(equalities) * len(monomials) * (len(monomials) + 1) / 2,
              self.n_vars + 1))
@@ -224,27 +252,31 @@ class SdpRelaxation(object):
                         self.__simplify_polynomial(Dagger(monomials[row]) *
                                                    equality * monomials[column])
                     A[n_rows] = self.__get_facvar(polynomial)
+                    # This is something really weird: we want the constant 
+                    # terms in equalities to be positive. Otherwise funny 
+                    # things happen in the QR decomposition and the basis
+                    # transformation.
+                    if A[n_rows,0] < 0:
+                        A[n_rows] = -A[n_rows]
                     n_rows += 1
         return A
 
     def __calculate_block_structure(self, monomials, inequalities, order):
         self.block_struct.append(len(monomials))
-        max_localization_matrix_order = 0
         for ineq in inequalities:
             # Find the order of the localizing matrix
-            max_order = ncdegree(ineq)
-            localization_matrix_order = int(floor((2 * order - max_order) / 2))
-            if localization_matrix_order > max_localization_matrix_order:
-                max_localization_matrix_order = localization_matrix_order
-        localizing_monomials = \
-            pick_monomials_up_to_degree(monomials,
-                                        max_localization_matrix_order)
-        for i in range(len(inequalities)):
+            ineq_order = ncdegree(ineq)
+            if ineq_order > 2*order:
+                print("A constraint has degree %d. Choose a higher level of relaxation." % ineq_order)
+                raise Exception
+            localization_order = int(floor((2 * order - ineq_order) / 2))
+            self.localization_order.append(localization_order)
+            localizing_monomials = \
+               pick_monomials_up_to_degree(monomials,localization_order)
             self.block_struct.append(len(localizing_monomials))
-        return localizing_monomials
 
     def get_relaxation(self, obj, inequalities, equalities,
-                       monomial_substitutions, order, verbose=0,
+                       monomial_substitutions, order, 
                        removeequalities=True):
         """Get the SDP relaxation of a noncommutative polynomial optimization
         problem.
@@ -266,15 +298,13 @@ class SdpRelaxation(object):
                                           self.monomial_substitutions))
                      for monomial in monomials]
         monomials = unique(monomials)
-
         if not removeequalities:
             # Equalities are converted to pairs of inequalities
             for equality in equalities:
                 inequalities.append(equality)
                 inequalities.append(-equality)
 
-        localizing_monomials = self.__calculate_block_structure(monomials,
-                                                                inequalities, order)
+        self.__calculate_block_structure(monomials, inequalities, order)
         # Initialize some helper variables, including the offsets of monomial
         # blocks if there is more than one.
         self.n_monomials = len(monomials)
@@ -288,7 +318,7 @@ class SdpRelaxation(object):
         self.F_struct = lil_matrix((rows_in_F_struct,
                                     self.n_vars + 1))
 
-        if verbose > 0:
+        if self.verbose > 0:
             print('Number of SDP variables: %d' % self.n_vars)
             print('Generating moment matrix...')
 
@@ -296,17 +326,19 @@ class SdpRelaxation(object):
 
        # Generate moment matrices
         self.__generate_moment_matrix(monomials)
-        # Objective function
-        self.obj_facvar = (self.__get_facvar(obj))[1:]
+        if self.verbose > 0:
+            print('Reduced number of SDP variables: %d' % self.n_vars)
 
+        # Objective function
+        self.obj_facvar = (self.__get_facvar(self.__simplify_polynomial(obj)))[1:]
+        
         # Process inequalities
-        if verbose > 0:
+        if self.verbose > 0:
             print('Processing %d inequalities...' % len(inequalities))
 
-        self.__process_inequalities(inequalities, localizing_monomials, 1,
-                                    order)
+        self.__process_inequalities(inequalities, monomials, 1, order)
         if removeequalities:
-            A = self.__process_equalities(equalities, localizing_monomials, order)
+            A = self.__process_equalities(equalities, monomials, order)
             self.__remove_equalities(equalities, A)
 
     def __build_permutation_matrix(self, P):
@@ -325,16 +357,14 @@ class SdpRelaxation(object):
         Q, R, P = qr(np.transpose(A[:, 1:]), pivoting=True)
         E = self.__build_permutation_matrix(P)
         n = np.max(np.nonzero(np.sum(np.abs(R), axis=1) > 0)) + 1
-
         x = np.dot(Q[:, 0:n], np.linalg.solve(np.transpose(R[0:n, :]),
                    E.T.dot(-A[:, 0])))
         x = np.append(1, x)
         H = lil_matrix(Q[:, n:])  # New basis
         # Transforming the objective function
         self.obj_facvar = H.T.dot(c)
-
         # Transforming the moment matrix and localizing matrices
-        new_constant_column = lil_matrix([self.F_struct.dot(x)])
+        new_constant_column = lil_matrix(self.F_struct.dot(x))
         self.F_struct = hstack([new_constant_column.T,
                                 self.F_struct[:, 1:].dot(H)])
         self.n_vars = self.F_struct.shape[1] - 1
@@ -343,12 +373,11 @@ class SdpRelaxation(object):
         """Save the current monomial dictionary for debugging purposes.
         """
         monomial_translation = [''] * (self.n_vars + 1)
-        for key, indices in self.monomial_dictionary.iteritems():
+        for key, k in self.monomial_dictionary.iteritems():
             monomial = ('%s' % key)
             monomial = monomial.replace('Dagger(', '')
             monomial = monomial.replace(')', 'T')
             monomial = monomial.replace('**', '^')
-            k = self.__index2linear(indices[0], indices[1], indices[2])
             monomial_translation[k] = monomial
         f = open(filename, 'w')
         for k in range(len(monomial_translation)):

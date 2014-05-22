@@ -22,7 +22,7 @@ def apply_substitutions(monomial, monomial_substitutions):
             # The fast substitution routine still fails on some rare
             # conditions. In production environments, it is safer to use
             # the default substitution routine that comes with SymPy.
-            # monomial = monomial.subs(lhs, rhs)
+            #monomial = monomial.subs(lhs, rhs)
             monomial = fast_substitute(monomial, lhs, rhs)
         if original_monomial == monomial:
             changed = False
@@ -92,9 +92,13 @@ def fast_substitute(monomial, old_sub, new_sub):
     """
     if isinstance(monomial, Number):
         return monomial
+    if isinstance(monomial, int):
+        return monomial
     comm_factors, ncomm_factors = split_commutative_parts(monomial)
     old_comm_factors, old_ncomm_factors = split_commutative_parts(old_sub)
-    new_comm_factors, new_ncomm_factors = split_commutative_parts(new_sub)
+    #This is a temporary hack
+    if not isinstance(new_sub, int):
+        new_comm_factors, new_ncomm_factors = split_commutative_parts(new_sub)
     comm_monomial = 1
     is_constant_term = False
     if len(comm_factors) == 1 and isinstance(comm_factors[0], Number):
@@ -255,12 +259,13 @@ def ncdegree(polynomial):
     degree = 0
     if isinstance(polynomial, (int, float, complex)):
         return degree
+    polynomial = polynomial.expand()
     for monomial in polynomial.as_coefficients_dict():
         subdegree = 0
         for variable in monomial.as_coeff_mul()[1]:
             if isinstance(variable, Pow):
                 subdegree += variable.exp
-            else:
+            elif not isinstance(variable, Number):
                 subdegree += 1
         if subdegree > degree:
             degree = subdegree

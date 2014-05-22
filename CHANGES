@@ -1,5 +1,8 @@
 Since version 1.2:
+  - Size of localizing matrices adjusts to individual inequalities.
   - Internal structure for storing monomials reorganized.
+  - Checks for maximum order in the constraints added.
+  - Fermionic constraints corrected.
 
 Version 1.2: 2014-05-16
   - Fast replace was updated and made default.

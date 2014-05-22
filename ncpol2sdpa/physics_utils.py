@@ -7,42 +7,30 @@ Created on Fri May 16 14:27:47 2014
 @author: Peter Wittek
 """
 from sympy.physics.quantum.dagger import Dagger
-from math import floor
 
 
-def get_neighbors(index, lattice_dimension, periodic=False):
+def get_neighbors(index, lattice_length, W=0, periodic=False):
     """Get the neighbors of an operator in a lattice.
 
     Arguments:
     index -- linear index of operator
-    lattice_dimension -- the size of the 2D lattice in either dimension
+    lattice_length -- the size of the 2D lattice in either dimension
 
     Returns a list of neighbors in linear index.
     """
-
+    if W == 0:
+        W = lattice_length
     neighbors = []
-    coords = _linear2lattice(index, lattice_dimension)
-    # if coords[0] > 0:
-    #    neighbors.append(index - 1)
-    if coords[0] < lattice_dimension - 1:
+    coords = divmod(index, W)
+    if coords[1] < W - 1:
         neighbors.append(index + 1)
     elif periodic:
-        neighbors.append(index - lattice_dimension + 1)
-    # if coords[1] > 0:
-    #    neighbors.append(index - lattice_dimension)
-    if coords[1] < lattice_dimension - 1:
-        neighbors.append(index + lattice_dimension)
+        neighbors.append(index - W + 1)
+    if coords[0] < lattice_length - 1:
+        neighbors.append(index + W)
     elif periodic:
-        neighbors.append(index - (lattice_dimension - 1) * lattice_dimension)
+        neighbors.append(index - (lattice_length - 1) * W)
     return neighbors
-
-
-def _linear2lattice(index, dimension):
-    """Helper function to map linear coordinates to a lattice."""
-    coords = [0, 0]
-    coords[0] = index % dimension
-    coords[1] = int(floor(index / dimension))
-    return coords
 
 
 def bosonic_constraints(a):
@@ -73,15 +61,18 @@ def fermionic_constraints(a):
     for i in range(n_vars):
         for j in range(i + 1, n_vars):
             # {a_i,a_jT} = 0 for i\neq j
-            monomial_substitutions[Dagger(a[j]) * a[i]] = - a[i] * Dagger(a[j])
+            equalities.append(Dagger(a[j]) * a[i] + a[i] * Dagger(a[j]))
+            equalities.append(a[j] * Dagger(a[i]) + Dagger(a[i]) * a[j])
             # {a_i, a_j} = 0
-            monomial_substitutions[a[j] * a[i]] = - a[i] * a[j]
+            equalities.append(a[j] * a[i] + a[i] * a[j])
             # {a_iT, a_jT} = 0
-            monomial_substitutions[Dagger(a[j]) * Dagger(a[i])] = \
-                -Dagger(a[i]) * Dagger(a[j])
+            equalities.append(Dagger(a[j]) * Dagger(a[i]) + 
+                              Dagger(a[i]) * Dagger(a[j]))
 
     # {a_i,a_iT} = 1
     for i in range(n_vars):
+        equalities.append(a[i]**2)
+        equalities.append(Dagger(a[i])**2)
         equalities.append(a[i] * Dagger(a[i]) + Dagger(a[i]) * a[i] - 1.0)
 
     return monomial_substitutions, equalities
