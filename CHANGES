@@ -1,3 +1,6 @@
+Since version 1.2.1:
+  - Much faster SDPA writer for problems with many blocks.
+
 Version 1.2.1: 2014-05-22
   - Size of localizing matrices adjusts to individual inequalities.
   - Internal structure for storing monomials reorganized.

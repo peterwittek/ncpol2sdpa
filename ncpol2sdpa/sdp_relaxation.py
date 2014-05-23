@@ -9,6 +9,7 @@ Created on Sun May 26 15:06:17 2013
 """
 from math import floor
 import numpy as np
+from bisect import bisect_left
 from scipy.linalg import qr
 from scipy.sparse import lil_matrix, hstack
 from sympy import S, Number
@@ -391,10 +392,8 @@ class SdpRelaxation(object):
             f.write('%s %s\n' % (k, monomial_translation[k]))
         f.close()
 
-    def __convert_row_to_SDPA_index(self, row_offsets, block_index, row):
-        while (row_offsets[block_index] <= row):
-            block_index += 1
-        block_index -= 1
+    def __convert_row_to_SDPA_index(self, row_offsets, row):
+        block_index = bisect_left(row_offsets[1:], row+1) 
         width = self.block_struct[block_index]
         row = row - row_offsets[block_index]
         i, j = divmod(row, width)
@@ -424,19 +423,12 @@ class SdpRelaxation(object):
         for block_size in self.block_struct:
             cumulative_sum += block_size ** 2
             row_offsets.append(cumulative_sum)
-        previous_k = 0
-        block_index = 0
         for k, row, v in zipped:
-            if k!= previous_k:
-                block_index, i, j = self.__convert_row_to_SDPA_index(
-                    row_offsets, 0, row)
-            else:
-                block_index, i, j = self.__convert_row_to_SDPA_index(
-                    row_offsets, block_index, row)
+            block_index, i, j = self.__convert_row_to_SDPA_index(
+                    row_offsets, row)
             if k == 0:
                 v *= -1
             f.write('{0}\t{1}\t{2}\t{3}\t{4}\n'.format(
                 k, block_index + 1, i + 1, j + 1, v))
-            previous_k = k
         f.close()
 
