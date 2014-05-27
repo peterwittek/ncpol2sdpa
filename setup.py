@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
     name='ncpol2sdpa',
-    version='1.2.1',
+    version='1.2.2',
     author='Peter Wittek',
     author_email='peterwittek@users.noreply.github.com',
     packages=['ncpol2sdpa'],
@@ -27,6 +27,7 @@ setup(
          'Programming Language :: Python'
     ],
     install_requires=[
-        "sympy >= 0.7.2"
+        "sympy >= 0.7.2",
+        "scipy >= 0.13"
     ],
 )
