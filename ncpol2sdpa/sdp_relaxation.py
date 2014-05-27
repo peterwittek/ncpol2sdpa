@@ -284,7 +284,7 @@ class SdpRelaxation(object):
 
     def get_relaxation(self, obj, inequalities, equalities,
                        monomial_substitutions, order,
-                       removeequalities=True):
+                       removeequalities=False):
         """Get the SDP relaxation of a noncommutative polynomial optimization
         problem.
 
