@@ -1,3 +1,7 @@
+Since 1.2.2:
+  - CHSH inequality added as an example.
+  - Bug fixes: constant separation works correctly for integers.
+
 Version 1.2.2: 2014-05-27
   - Much faster SDPA writer for problems with many blocks.
   - Removal of equalities does not happen by default.

@@ -76,3 +76,29 @@ def fermionic_constraints(a):
         equalities.append(a[i] * Dagger(a[i]) + Dagger(a[i]) * a[i] - 1.0)
 
     return monomial_substitutions, equalities
+
+def projective_measurement_constraints(A, B):
+    monomial_substitutions = {}
+    equalities = []
+    for Mk in [M for M_list in [A, B] for M in M_list]:
+        sum = -1
+        for Ei in Mk:
+            sum += Ei
+            for Ej in Mk:
+                if Ei != Ej:
+                    # They are orthogonal in each M_k
+                    monomial_substitutions[Ei*Ej] = 0
+                    monomial_substitutions[Ej*Ei] = 0
+                else:
+                    # Every projector is idempotent
+                    monomial_substitutions[Ei*Ei] = Ei
+        # Projectors add up to the identity in each M_k
+        equalities.append(sum)
+    
+    # Projectors in A and B commute
+    for Ei in [E for Mk in A for E in Mk]:
+        for Ej in [F for Ml in B for F in Ml]:
+            monomial_substitutions[Ej*Ei] = Ei*Ej
+        
+    return monomial_substitutions, equalities
+    
