@@ -1,5 +1,6 @@
 Since 1.2.2:
   - CHSH inequality added as an example.
+  - Allows supplying extra monomials to a given level of relaxation.
   - Bug fixes: constant separation works correctly for integers.
 
 Version 1.2.2: 2014-05-27

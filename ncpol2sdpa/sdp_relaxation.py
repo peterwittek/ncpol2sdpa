@@ -91,7 +91,7 @@ class SdpRelaxation(object):
         # Simplifying here will trigger a bug in SymPy related to
         # the powers of daggered variables.
         # polynomial = polynomial.expand()
-        if polynomial.is_Mul or polynomial == 0:
+        if polynomial == 0 or polynomial.is_Mul:
             elements = [polynomial]
         else:
             elements = polynomial.as_coeff_mul()[1][0].as_coeff_add()[1]
@@ -110,7 +110,7 @@ class SdpRelaxation(object):
         """
         facvar = [0] * (self.n_vars + 1)
         # Preprocess the polynomial for uniform handling later
-        if isinstance(polynomial, Number):
+        if isinstance(polynomial, Number) or isinstance(polynomial, float):
             facvar[0] = polynomial
             return facvar
         polynomial = polynomial.expand()
@@ -284,7 +284,7 @@ class SdpRelaxation(object):
 
     def get_relaxation(self, obj, inequalities, equalities,
                        monomial_substitutions, order,
-                       removeequalities=False):
+                       removeequalities=False, extramonomials=None):
         """Get the SDP relaxation of a noncommutative polynomial optimization
         problem.
 
@@ -299,6 +299,8 @@ class SdpRelaxation(object):
         self.monomial_substitutions = monomial_substitutions
         # Generate monomials and remove substituted ones
         monomials = get_ncmonomials(self.variables, order)
+        if extramonomials != None:
+            monomials.extend(extramonomials)
         monomials = [monomial for monomial in monomials if monomial not
                      in self.monomial_substitutions]
         monomials = [remove_scalar_factor(apply_substitutions(monomial,
@@ -335,6 +337,8 @@ class SdpRelaxation(object):
         self.__generate_moment_matrix(monomials)
         if self.verbose > 0:
             print('Reduced number of SDP variables: %d' % self.n_vars)
+        if self.verbose > 1:
+            self.__save_monomial_dictionary("monomials.txt")
 
         # Objective function
         self.obj_facvar = (
@@ -393,7 +397,7 @@ class SdpRelaxation(object):
         f.close()
 
     def __convert_row_to_SDPA_index(self, row_offsets, row):
-        block_index = bisect_left(row_offsets[1:], row + 1)
+        block_index = bisect_left(row_offsets[1:], row+1) 
         width = self.block_struct[block_index]
         row = row - row_offsets[block_index]
         i, j = divmod(row, width)
@@ -425,9 +429,10 @@ class SdpRelaxation(object):
             row_offsets.append(cumulative_sum)
         for k, row, v in zipped:
             block_index, i, j = self.__convert_row_to_SDPA_index(
-                row_offsets, row)
+                    row_offsets, row)
             if k == 0:
                 v *= -1
             f.write('{0}\t{1}\t{2}\t{3}\t{4}\n'.format(
                 k, block_index + 1, i + 1, j + 1, v))
         f.close()
+
