@@ -1,7 +1,8 @@
 Since 1.2.2:
   - CHSH inequality added as an example.
   - Allows supplying extra monomials to a given level of relaxation.
-  - Bug fixes: constant separation works correctly for integers.
+  - Added functions to make it easier to work with Bell inequalities.
+  - Bug fixes: constant separation works correctly for integers, max-cut example fixed.
 
 Version 1.2.2: 2014-05-27
   - Much faster SDPA writer for problems with many blocks.

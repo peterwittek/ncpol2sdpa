@@ -32,6 +32,10 @@ def apply_substitutions(monomial, monomial_substitutions):
 
 def separate_scalar_factor(monomial):
     scalar_factor = 1
+    if isinstance(monomial, int):
+        return S.One, monomial
+    if monomial == 0:
+        return S.One, 0
     comm_factors, non_commfactors = split_commutative_parts(monomial)
     if len(comm_factors) > 0:
         if isinstance(comm_factors[0], Number):
@@ -50,6 +54,9 @@ def remove_scalar_factor(monomial):
 def build_monomial(element):
     coeff = 1.0
     monomial = S.One
+    if isinstance(element, float):
+        coeff *= element
+        return monomial, coeff
     for var in element.as_coeff_mul()[1]:
         if not var.is_Number:
             monomial = monomial * var

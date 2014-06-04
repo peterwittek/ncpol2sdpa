@@ -343,7 +343,6 @@ class SdpRelaxation(object):
         # Objective function
         self.obj_facvar = (
             self.__get_facvar(self.__simplify_polynomial(obj)))[1:]
-
         # Process inequalities
         if self.verbose > 0:
             print('Processing %d inequalities...' % len(inequalities))
