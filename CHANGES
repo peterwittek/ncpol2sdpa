@@ -1,4 +1,4 @@
-Since 1.2.2:
+Version 1.2.3: 2014-06-04
   - CHSH inequality added as an example.
   - Allows supplying extra monomials to a given level of relaxation.
   - Added functions to make it easier to work with Bell inequalities.

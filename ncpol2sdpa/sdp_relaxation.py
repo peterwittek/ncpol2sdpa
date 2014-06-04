@@ -299,7 +299,7 @@ class SdpRelaxation(object):
         self.monomial_substitutions = monomial_substitutions
         # Generate monomials and remove substituted ones
         monomials = get_ncmonomials(self.variables, order)
-        if extramonomials != None:
+        if extramonomials is not None:
             monomials.extend(extramonomials)
         monomials = [monomial for monomial in monomials if monomial not
                      in self.monomial_substitutions]
@@ -396,7 +396,7 @@ class SdpRelaxation(object):
         f.close()
 
     def __convert_row_to_SDPA_index(self, row_offsets, row):
-        block_index = bisect_left(row_offsets[1:], row+1) 
+        block_index = bisect_left(row_offsets[1:], row + 1)
         width = self.block_struct[block_index]
         row = row - row_offsets[block_index]
         i, j = divmod(row, width)
@@ -428,10 +428,9 @@ class SdpRelaxation(object):
             row_offsets.append(cumulative_sum)
         for k, row, v in zipped:
             block_index, i, j = self.__convert_row_to_SDPA_index(
-                    row_offsets, row)
+                row_offsets, row)
             if k == 0:
                 v *= -1
             f.write('{0}\t{1}\t{2}\t{3}\t{4}\n'.format(
                 k, block_index + 1, i + 1, j + 1, v))
         f.close()
-
