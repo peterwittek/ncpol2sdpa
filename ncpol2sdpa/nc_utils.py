@@ -111,17 +111,17 @@ def fast_substitute(monomial, old_sub, new_sub):
     if len(comm_factors) == 1 and isinstance(comm_factors[0], Number):
         is_constant_term = True
         comm_monomial = comm_factors[0]
-    if not is_constant_term and len(comm_factors) > 0 and \
-            len(old_comm_factors) > 0:
+    if not is_constant_term and len(comm_factors) > 0:
         for comm_factor in comm_factors:
             comm_monomial *= comm_factor
-        comm_old_sub = 1
-        for comm_factor in old_comm_factors:
-            comm_old_sub *= comm_factor
-        comm_new_sub = 1
-        for comm_factor in new_comm_factors:
-            comm_new_sub *= comm_factor
-        comm_monomial = comm_monomial.subs(comm_old_sub, comm_new_sub)
+        if len(old_comm_factors) > 0:            
+            comm_old_sub = 1
+            for comm_factor in old_comm_factors:
+                comm_old_sub *= comm_factor
+            comm_new_sub = 1
+            for comm_factor in new_comm_factors:
+                comm_new_sub *= comm_factor
+            comm_monomial = comm_monomial.subs(comm_old_sub, comm_new_sub)
     if len(ncomm_factors) == 0 or len(old_ncomm_factors) == 0:
         return comm_monomial
     # old_factors = old_sub.as_ordered_factors()
@@ -193,10 +193,10 @@ def fast_substitute(monomial, old_sub, new_sub):
             new_monomial *= comm_monomial
             break
     else:
-        if not is_constant_term and len(comm_factors) > 0 and len(old_comm_factors) > 0:
+        if not is_constant_term and len(comm_factors) > 0:
             new_monomial = comm_monomial
             for factor in ncomm_factors:
-                new_monomial *= ncomm_factors[j]
+                new_monomial *= factor
         else:
             return monomial
     return new_monomial
