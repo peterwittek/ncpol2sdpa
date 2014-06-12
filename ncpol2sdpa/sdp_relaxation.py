@@ -380,6 +380,12 @@ class SdpRelaxation(object):
                                 self.F_struct[:, 1:].dot(H)])
         self.n_vars = self.F_struct.shape[1] - 1
 
+    def swap_objective(self, new_objective):
+        """Swaps the objective function while keeping the moment matrix and
+        the localizing matrices untouched"""
+        self.obj_facvar = (
+            self.__get_facvar(self.__simplify_polynomial(new_objective)))[1:]
+
     def __save_monomial_dictionary(self, filename):
         """Save the current monomial dictionary for debugging purposes.
         """
