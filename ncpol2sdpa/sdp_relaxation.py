@@ -110,7 +110,7 @@ class SdpRelaxation(object):
         """
         facvar = [0] * (self.n_vars + 1)
         # Preprocess the polynomial for uniform handling later
-        if isinstance(polynomial, Number) or isinstance(polynomial, float):
+        if isinstance(polynomial, Number) or isinstance(polynomial, float) or isinstance(polynomial, int):
             facvar[0] = polynomial
             return facvar
         polynomial = polynomial.expand()
@@ -173,6 +173,8 @@ class SdpRelaxation(object):
 
     def __simplify_polynomial(self, polynomial):
         # Preprocess the polynomial for uniform handling later
+        if isinstance(polynomial, int) or isinstance(polynomial, float):
+            return polynomial
         polynomial = (1.0 * polynomial).expand()
         if isinstance(polynomial, Number):
             return polynomial
