@@ -299,6 +299,11 @@ class SdpRelaxation(object):
         monomial_substitutions -- monomials that can be replaced
                                   (e.g., idempotent variables)
         level -- the level of the relaxation
+        removeequalities -- whether to attempt removing the equalities by 
+                            solving the linear equations
+        monomials -- instead of the level, monomials can be supplied directly
+        extramonomials -- monomials to be included, on top of the requested
+                          level of relaxation
         """
         self.monomial_substitutions = monomial_substitutions
         # Generate monomials and remove substituted ones
