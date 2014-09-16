@@ -69,6 +69,7 @@ class SdpRelaxation(object):
                 except KeyError:
                     if self.verbose > 1:
                         [monomial, coeff] = build_monomial(element)
+                        print monomial, coeff
                         print("DEBUG: %s, %s, %s" % (element,
                                                      Dagger(monomial),
                                                      apply_substitutions(
@@ -286,7 +287,8 @@ class SdpRelaxation(object):
 
     def get_relaxation(self, obj, inequalities, equalities,
                        monomial_substitutions, order,
-                       removeequalities=False, extramonomials=None):
+                       removeequalities=False, monomials=None,
+                       extramonomials=None):
         """Get the SDP relaxation of a noncommutative polynomial optimization
         problem.
 
@@ -300,7 +302,8 @@ class SdpRelaxation(object):
         """
         self.monomial_substitutions = monomial_substitutions
         # Generate monomials and remove substituted ones
-        monomials = get_ncmonomials(self.variables, order)
+        if monomials == None:
+            monomials = get_ncmonomials(self.variables, order)
         if extramonomials is not None:
             monomials.extend(extramonomials)
         monomials = [monomial for monomial in monomials if monomial not
