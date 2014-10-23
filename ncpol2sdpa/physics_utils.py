@@ -88,13 +88,18 @@ def fermionic_constraints(a):
     return monomial_substitutions, equalities
 
 
+def generate_measurements(party, label):
+    measurements = []
+    for i in range(len(party)):
+        measurements.append(generate_variables(party[i]-1, hermitian=True,
+                                               name=label + '%s' % i))
+    return measurements
+
 def projective_measurement_constraints(A, B):
     monomial_substitutions = {}
     equalities = []
     for Mk in [M for M_list in [A, B] for M in M_list]:
-        sum = -1
         for Ei in Mk:
-            sum += Ei
             for Ej in Mk:
                 if Ei != Ej:
                     # They are orthogonal in each M_k
@@ -104,7 +109,6 @@ def projective_measurement_constraints(A, B):
                     # Every projector is idempotent
                     monomial_substitutions[Ei * Ei] = Ei
         # Projectors add up to the identity in each M_k
-        equalities.append(sum)
 
     # Projectors in A and B commute
     for Ei in [E for Mk in A for E in Mk]:
@@ -114,6 +118,26 @@ def projective_measurement_constraints(A, B):
     return monomial_substitutions, equalities
 
 
+def define_objective_with_I(I, A, B):
+    objective = 0
+    i, j = 0, 1  # Row and column index in I
+    for m_Bj in B:  # Define first row
+        for Bj in m_Bj:
+            objective += I[i][j] * Bj
+            j += 1
+    i += 1
+    for m_Ai in A:
+        for Ai in m_Ai:
+            objective += I[i][0] * Ai
+            j = 1
+            for m_Bj in B:
+                for Bj in m_Bj:
+                        objective += I[i][j] * Ai * Bj
+                        j += 1
+            i += 1
+    return -objective
+
+
 def flatten(lol):
     new_list = []
     for element in lol:
@@ -121,35 +145,6 @@ def flatten(lol):
             element = flatten(element)
         new_list.extend(element)
     return new_list
-
-
-def define_objective_with_I(I, A, B):
-    objective = 0
-    i, j = 0, 1  # Row and column index in I
-    for m_Bj in B:  # Define first row
-        for Bj in m_Bj[:-1]:
-            objective += I[i][j] * Bj
-            j += 1
-    i += 1
-    for m_Ai in A:
-        for Ai in m_Ai[:-1]:
-            objective += I[i][0] * Ai
-            j = 1
-            for m_Bj in B:
-                for Bj in m_Bj[:-1]:
-                        objective += I[i][j] * Ai * Bj
-                        j += 1
-            i += 1
-    return -objective
-
-
-def generate_measurements(party, label):
-    measurements = []
-    for i in range(len(party)):
-        measurements.append(generate_variables(party[i], hermitian=True,
-                                               name=label + '%s' % i))
-    return measurements
-
 
 def correlator(A, B):
     correlators = []
