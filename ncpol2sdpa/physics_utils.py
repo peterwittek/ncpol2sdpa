@@ -59,6 +59,7 @@ def fermionic_constraints(a):
     n_vars = len(a)
     monomial_substitutions = {}
     equalities = []
+    inequalities = []    
     for i in range(n_vars):
         for j in range(i + 1, n_vars):
             # {a_i,a_jT} = 0 for i\neq j
@@ -85,7 +86,10 @@ def fermionic_constraints(a):
         equalities.append(Dagger(a[i]) ** 2)
         equalities.append(a[i] * Dagger(a[i]) + Dagger(a[i]) * a[i] - 1.0)
 
-    return monomial_substitutions, equalities
+    for i in range(n_vars):
+        inequalities.append(Dagger(a[i])*a[i])
+        inequalities.append(1-Dagger(a[i])*a[i])
+    return monomial_substitutions, equalities, inequalities
 
 
 def generate_measurements(party, label):
