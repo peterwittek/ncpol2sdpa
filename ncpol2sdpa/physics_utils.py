@@ -108,7 +108,6 @@ def projective_measurement_constraints(A, B):
                 else:
                     # Every projector is idempotent
                     monomial_substitutions[Ei * Ei] = Ei
-        # Projectors add up to the identity in each M_k
 
     # Projectors in A and B commute
     for Ei in [E for Mk in A for E in Mk]:

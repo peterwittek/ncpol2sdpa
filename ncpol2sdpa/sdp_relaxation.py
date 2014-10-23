@@ -340,9 +340,6 @@ class SdpRelaxation(object):
         if self.verbose > 0:
             print('Number of SDP variables: %d' % self.n_vars)
             print('Generating moment matrix...')
-
-        # Define top left Entry of the moment matrix, y_1 = 1
-
        # Generate moment matrices
         self.__generate_moment_matrix(monomials)
         if self.verbose > 0:
