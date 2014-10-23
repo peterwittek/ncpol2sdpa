@@ -1,3 +1,6 @@
+Since 1.2.4:
+  - Much smaller SDPs are generated when using the helper functions for quantum correlations by not considering the last projector in the measurements and thus removing the sum-to-identity constraint; positive semidefinite condition is not influenced by this.
+
 Version 1.2.4: 2014-06-13
   - Bug fixes: mixed commutative and noncommutative variable monomials are handled correctly 
                in substitutions, constant integer objective functions are accepted.
