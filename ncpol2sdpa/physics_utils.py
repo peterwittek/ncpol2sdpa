@@ -101,7 +101,6 @@ def generate_measurements(party, label):
 
 def projective_measurement_constraints(A, B):
     monomial_substitutions = {}
-    equalities = []
     for Mk in [M for M_list in [A, B] for M in M_list]:
         for Ei in Mk:
             for Ej in Mk:
@@ -118,7 +117,7 @@ def projective_measurement_constraints(A, B):
         for Ej in [F for Ml in B for F in Ml]:
             monomial_substitutions[Ej * Ei] = Ei * Ej
 
-    return monomial_substitutions, equalities
+    return monomial_substitutions
 
 
 def define_objective_with_I(I, A, B):
