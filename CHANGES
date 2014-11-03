@@ -1,5 +1,7 @@
-Since 1.2.4:
+Version 1.3: 2014-11-03
   - Much smaller SDPs are generated when using the helper functions for quantum correlations by not considering the last projector in the measurements and thus removing the sum-to-identity constraint; positive semidefinite condition is not influenced by this.
+  - Helper functions for fermionic systems and projective measurements are simplified.
+  - Support for the Nieto-Silleras (doi:10.1088/1367-2630/16/1/013035) hierarchy for level 1+ relaxations.
 
 Version 1.2.4: 2014-06-13
   - Bug fixes: mixed commutative and noncommutative variable monomials are handled correctly 
