@@ -58,10 +58,14 @@ def build_monomial(element):
         coeff *= element
         return monomial, coeff
     for var in element.as_coeff_mul()[1]:
-        if not var.is_Number:
+        if not (var.is_Number or var.is_imaginary):
             monomial = monomial * var
         else:
-            coeff = float(var)
+            if var.is_Number:
+                coeff = float(var)
+            # If not, then it is imaginary
+            else:
+                coeff *= coeff * 1j
     coeff = float(element.as_coeff_mul()[0]) * coeff
     return monomial, coeff
 
