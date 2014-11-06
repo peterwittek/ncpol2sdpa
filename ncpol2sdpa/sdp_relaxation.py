@@ -59,8 +59,10 @@ class SdpRelaxation(object):
             try:
                 k = self.monomial_dictionary[monomial]
             except KeyError:
+                save_coeff = 0
                 try:
                     [monomial, coeff] = build_monomial(element)
+                    save_coeff = coeff
                     monomial, scalar_factor = separate_scalar_factor(
                         apply_substitutions(Dagger(monomial),
                                             self.monomial_substitutions))
@@ -69,7 +71,6 @@ class SdpRelaxation(object):
                 except KeyError:
                     if self.verbose > 1:
                         [monomial, coeff] = build_monomial(element)
-                        print monomial, coeff
                         print("DEBUG: %s, %s, %s" % (element,
                                                      Dagger(monomial),
                                                      apply_substitutions(
@@ -255,7 +256,7 @@ class SdpRelaxation(object):
             pick_monomials_up_to_degree(all_monomials, max_localization_order)
         A = np.zeros(
             (len(equalities) * len(monomials) * (len(monomials) + 1) / 2,
-             self.n_vars + 1))
+             self.n_vars + 1),  dtype=complex)
         n_rows = 0
         for equality in equalities:
             # Find the order of the localizing matrix
@@ -309,7 +310,7 @@ class SdpRelaxation(object):
     def get_relaxation(self, obj, inequalities, equalities,
                        monomial_substitutions, level,
                        removeequalities=False, monomials=None,
-                       extramonomials=None):
+                       extramonomials=None, picos=False):
         """Get the SDP relaxation of a noncommutative polynomial optimization
         problem.
 
@@ -345,7 +346,7 @@ class SdpRelaxation(object):
                                                       monomials, 
                                                       extramonomials, level))
 
-        if not removeequalities:
+        if not (removeequalities or picos):
             # Equalities are converted to pairs of inequalities
             for equality in equalities:
                 inequalities.append(equality)
@@ -391,6 +392,9 @@ class SdpRelaxation(object):
         if self.verbose > 1:
             self.__save_monomial_dictionary("monomials.txt")
 
+        if picos:                
+            return self.__convert_to_picos(inequalities, equalities, obj, monomials)
+
         # Objective function
         self.obj_facvar = (
             self.__get_facvar(self.__simplify_polynomial(obj)))[1:]
@@ -408,7 +412,6 @@ class SdpRelaxation(object):
             for var in var_offsets[:-1]:
                 self.F_struct[-1, var+1] = 1
                 self.F_struct[-4, var+1] = -1
-
 
     def __build_permutation_matrix(self, P):
         n = len(P)
@@ -466,6 +469,66 @@ class SdpRelaxation(object):
         i, j = divmod(row, width)
         return block_index, i, j
 
+    def __to_affine_expression(self, polynomial, X, row_offsets):
+        facvar = self.__get_facvar(polynomial)
+        affine_expression = 0
+        for k in range(len(facvar)):
+            if facvar[k]!=0:
+                row0 = self.F_struct[:, k].nonzero()[0][0]
+                block_index, i, j = self.__convert_row_to_SDPA_index(                row_offsets, row0)
+                affine_expression += facvar[k]*X[i,j]
+        return affine_expression
+        
+
+    def __convert_to_picos(self, inequalities, equalities, obj, all_monomials):
+        import picos as pic
+        P = pic.Problem()
+        #Defining the momement matrix
+        X = P.add_variable('X', (self.n_vars, self.n_vars), 'symmetric')
+        P.add_constraint(X >> 0)
+        P.add_constraint(X[0,0]==1)
+        row_offsets = [0]
+        cumulative_sum = 0
+        for block_size in self.block_struct:
+            cumulative_sum += block_size ** 2
+            row_offsets.append(cumulative_sum)
+        #Defining the symmetries of the moment matrix
+        for k in range(self.n_vars):
+            if self.F_struct[:self.block_struct[0]**2,k].getnnz()>1:
+                row0 = self.F_struct[:self.block_struct[0]**2, k].nonzero()[0][0]
+                for row in self.F_struct[:self.block_struct[0]**2, k].nonzero()[0][1:]:
+                    block_index1, i1, j1 = self.__convert_row_to_SDPA_index(                row_offsets, row0)
+                    block_index2, i2, j2 = self.__convert_row_to_SDPA_index(                row_offsets, row)                    
+                    if not (i1 == i2 and j1 == j2):
+                        P.add_constraint(X[i2, j2] == X[i1, j1])
+        #Iterate over the inequalities
+        block_index = 0
+        for ineq in inequalities:
+            block_index += 1
+            localization_order = self.localization_order[
+                block_index - 1]
+            monomials = \
+                pick_monomials_up_to_degree(all_monomials, localization_order)
+            Y = P.add_variable(('Y%s' % block_index), (len(monomials), len(monomials)), 'symmetric')
+            P.add_constraint(Y >> 0)
+            # Process M_y(gy)(u,w) entries
+            for row in range(len(monomials)):
+                for column in range(row, len(monomials)):
+                    # Calculate the moments of polynomial entries
+                    polynomial = \
+                        self.__simplify_polynomial(
+                            Dagger(monomials[row]) * ineq * monomials[column])
+                    affine_expression = self.__to_affine_expression(polynomial, X, row_offsets)
+                    P.add_constraint(Y[row, column]==affine_expression)
+        for eq in equalities:
+            affine_expression = self.__to_affine_expression(eq, X, row_offsets)
+            P.add_constraint(affine_expression == 0)
+
+        # Set the objective                    
+        affine_expression= self.__to_affine_expression(obj, X, row_offsets)
+        P.set_objective('min', affine_expression)
+        return P
+        
     def write_to_sdpa(self, filename):
         """Write the SDP relaxation to SDPA format.
 
