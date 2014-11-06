@@ -169,12 +169,12 @@ def maximum_violation(A_configuration, B_configuration, I, level):
     A = generate_measurements(A_configuration, 'A')
     B = generate_measurements(B_configuration, 'B')
 
-    monomial_substitutions, equalities = projective_measurement_constraints(
+    monomial_substitutions = projective_measurement_constraints(
         A, B)
 
     objective = define_objective_with_I(I, A, B)
 
     sdpRelaxation = SdpRelaxation(flatten([A, B]), verbose=2)
-    sdpRelaxation.get_relaxation(objective, [], equalities,
+    sdpRelaxation.get_relaxation(objective, [], [],
                                  monomial_substitutions, level)
     return solve_sdp(sdpRelaxation)
