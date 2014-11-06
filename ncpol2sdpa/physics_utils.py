@@ -8,8 +8,9 @@ Created on Fri May 16 14:27:47 2014
 """
 from sympy import Symbol
 from sympy.physics.quantum.dagger import Dagger
-from ncpol2sdpa import generate_variables, SdpRelaxation, solve_sdp
-
+from .nc_utils import generate_variables, flatten
+from .sdpa_utils import solve_sdp
+from .sdp_relaxation import SdpRelaxation
 
 def get_neighbors(index, lattice_length, W=0, periodic=False):
     """Get the neighbors of an operator in a lattice.
@@ -139,19 +140,6 @@ def define_objective_with_I(I, A, B):
                         j += 1
             i += 1
     return -objective
-
-
-def flatten(lol):
-    new_list = []
-    for element in lol:
-        if isinstance(element, Symbol):
-            new_list.append(element)
-        elif isinstance(element[0], list):
-            element = flatten(element)
-            new_list.extend(element)
-        else:
-            new_list.extend(element)
-    return new_list
 
 def correlator(A, B):
     correlators = []

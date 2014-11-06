@@ -12,6 +12,17 @@ from sympy.physics.quantum.operator import HermitianOperator, Operator
 from sympy.physics.quantum.dagger import Dagger
 from sympy.physics.quantum.qexpr import split_commutative_parts
 
+def flatten(lol):
+    new_list = []
+    for element in lol:
+        if isinstance(element, Symbol):
+            new_list.append(element)
+        elif isinstance(element[0], list):
+            element = flatten(element)
+            new_list.extend(element)
+        else:
+            new_list.extend(element)
+    return new_list
 
 def apply_substitutions(monomial, monomial_substitutions):
     """Helper function to remove monomials from the basis."""
