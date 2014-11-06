@@ -6,6 +6,7 @@ Created on Fri May 16 14:27:47 2014
 
 @author: Peter Wittek
 """
+from sympy import Symbol
 from sympy.physics.quantum.dagger import Dagger
 from ncpol2sdpa import generate_variables, SdpRelaxation, solve_sdp
 
@@ -143,9 +144,13 @@ def define_objective_with_I(I, A, B):
 def flatten(lol):
     new_list = []
     for element in lol:
-        if isinstance(element[0], list):
+        if isinstance(element, Symbol):
+            new_list.append(element)
+        elif isinstance(element[0], list):
             element = flatten(element)
-        new_list.extend(element)
+            new_list.extend(element)
+        else:
+            new_list.extend(element)
     return new_list
 
 def correlator(A, B):
