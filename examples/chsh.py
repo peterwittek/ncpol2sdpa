@@ -10,12 +10,12 @@ from ncpol2sdpa import generate_variables, SdpRelaxation, solve_sdp,\
     projective_measurement_constraints
 
 
-def expectation_values(M, outcomes):
+def expectation_values(measurement, outcomes):
     exp_values = []
-    for k in range(len(M)):
+    for k in range(len(measurement)):
         exp_value = 0
-        for i in range(len(M[k])):
-            exp_value += outcomes[k][i] * M[k][i]
+        for j in range(len(measurement[k])):
+            exp_value += outcomes[k][j] * measurement[k][j]
         exp_values.append(exp_value)
     return exp_values
 

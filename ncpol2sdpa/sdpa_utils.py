@@ -12,6 +12,8 @@ from .sdp_relaxation import SdpRelaxation
 
 
 def read_sdpa_out(filename):
+    """Helper function to parse the output file of SDPA
+    """
     f = open(filename, 'r')
     for line in f:
         if line.find("objValPrimal") > -1:
@@ -24,6 +26,9 @@ def read_sdpa_out(filename):
 
 
 def solve_sdp(sdp_problem):
+    """Helper function to write out the SDP problem to a temporary
+    file, call the solver, and parse the output.
+    """
     primal, dual = 0, 0
     if isinstance(sdp_problem, SdpRelaxation):
         tf = tempfile.NamedTemporaryFile()

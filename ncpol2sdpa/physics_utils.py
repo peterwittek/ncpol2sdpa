@@ -6,7 +6,6 @@ Created on Fri May 16 14:27:47 2014
 
 @author: Peter Wittek
 """
-from sympy import Symbol
 from sympy.physics.quantum.dagger import Dagger
 from .nc_utils import generate_variables, flatten
 from .sdpa_utils import solve_sdp
@@ -37,6 +36,9 @@ def get_neighbors(index, lattice_length, W=0, periodic=False):
 
 
 def bosonic_constraints(a):
+    """Return a set of constraints that define bosonic ladder
+    operators.
+    """
     n_vars = len(a)
     monomial_substitutions = {}
     equalities = []
@@ -58,10 +60,13 @@ def bosonic_constraints(a):
 
 
 def fermionic_constraints(a):
+    """Return  a set of constraints that define fermionic ladder
+    operators.
+    """
     n_vars = len(a)
     monomial_substitutions = {}
     equalities = []
-    inequalities = []    
+    inequalities = []
     for i in range(n_vars):
         for j in range(i + 1, n_vars):
             # {a_i,a_jT} = 0 for i\neq j
@@ -95,6 +100,8 @@ def fermionic_constraints(a):
 
 
 def generate_measurements(party, label):
+    """Generate variables that behave like measurements.
+    """
     measurements = []
     for i in range(len(party)):
         measurements.append(generate_variables(party[i]-1, hermitian=True,
@@ -102,6 +109,9 @@ def generate_measurements(party, label):
     return measurements
 
 def projective_measurement_constraints(A, B):
+    """Return a set of constraints that define projective
+    measurements.
+    """
     monomial_substitutions = {}
     for Mk in [M for M_list in [A, B] for M in M_list]:
         for Ei in Mk:
@@ -136,29 +146,33 @@ def define_objective_with_I(I, A, B):
             j = 1
             for m_Bj in B:
                 for Bj in m_Bj:
-                        objective += I[i][j] * Ai * Bj
-                        j += 1
+                    objective += I[i][j] * Ai * Bj
+                    j += 1
             i += 1
     return -objective
 
 def correlator(A, B):
+    """Correlators between the probabilities of two parties.
+    """
     correlators = []
     for i in range(len(A)):
         correlator_row = []
         for j in range(len(B)):
-            correlator = 0
+            corr = 0
             for k in range(len(A[i])):
                 for l in range(len(B[j])):
                     if k == l:
-                        correlator += A[i][k] * B[j][l]
+                        corr += A[i][k] * B[j][l]
                     else:
-                        correlator -= A[i][k] * B[j][l]
-            correlator_row.append(correlator)
+                        corr -= A[i][k] * B[j][l]
+            correlator_row.append(corr)
         correlators.append(correlator_row)
     return correlators
 
 
 def maximum_violation(A_configuration, B_configuration, I, level):
+    """Get the maximum violation of a Bell inequality.
+    """
     A = generate_measurements(A_configuration, 'A')
     B = generate_measurements(B_configuration, 'B')
 

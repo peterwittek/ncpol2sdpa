@@ -38,5 +38,5 @@ monomial_substitution = {}
 # Obtain SDP relaxation
 sdpRelaxation = SdpRelaxation(X)
 P = sdpRelaxation.get_relaxation(obj, inequalities, equalities,
-                             monomial_substitution, level, picos=True)
+                                 monomial_substitution, level, picos=True)
 P.solve(solver='mosek7')

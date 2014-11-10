@@ -7,12 +7,15 @@ Created on Thu May  2 16:03:05 2013
 
 @author: Peter Wittek
 """
+from scipy.sparse import lil_matrix
 from sympy.core import S, Symbol, Pow, Number
 from sympy.physics.quantum.operator import HermitianOperator, Operator
 from sympy.physics.quantum.dagger import Dagger
 from sympy.physics.quantum.qexpr import split_commutative_parts
 
 def flatten(lol):
+    """Flatten a list of lists to a list.
+    """
     new_list = []
     for element in lol:
         if isinstance(element, Symbol):
@@ -42,6 +45,8 @@ def apply_substitutions(monomial, monomial_substitutions):
 
 
 def separate_scalar_factor(monomial):
+    """Separate the constant factor from a monomial.
+    """
     scalar_factor = 1
     if isinstance(monomial, int):
         return S.One, monomial
@@ -58,11 +63,16 @@ def separate_scalar_factor(monomial):
 
 
 def remove_scalar_factor(monomial):
+    """Return monomial without constant factor.
+    """
     monomial, dummy = separate_scalar_factor(monomial)
     return monomial
 
 
 def build_monomial(element):
+    """Construct a monomial with the coefficient separated
+    from an element in a polynomial.
+    """
     coeff = 1.0
     monomial = S.One
     if isinstance(element, float):
@@ -129,7 +139,7 @@ def fast_substitute(monomial, old_sub, new_sub):
     if not is_constant_term and len(comm_factors) > 0:
         for comm_factor in comm_factors:
             comm_monomial *= comm_factor
-        if len(old_comm_factors) > 0:            
+        if len(old_comm_factors) > 0:
             comm_old_sub = 1
             for comm_factor in old_comm_factors:
                 comm_old_sub *= comm_factor
@@ -324,3 +334,14 @@ def unique(seq):
         seen[marker] = 1
         result.append(item)
     return result
+
+def build_permutation_matrix(P):
+    """Build a permutation matrix for a permutation P.
+    """
+    n = len(P)
+    E = lil_matrix((n, n))
+    column = 0
+    for row in P:
+        E[row, column] = 1
+        column += 1
+    return E

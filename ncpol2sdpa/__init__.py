@@ -1,18 +1,17 @@
-__all__ = [
-    'SdpRelaxation',
-     'generate_variables',
-     'get_ncmonomials',
-     'ncdegree',
-     'bosonic_constraints',
-     'fermionic_constraints',
-     'projective_measurement_constraints',
-     'correlator',
-     'maximum_violation',
-     'generate_measurements',
-     'define_objective_with_I',
-     'flatten',
-     'get_neighbors',
-     'solve_sdp']
+__all__ = ['SdpRelaxation',
+           'generate_variables',
+           'get_ncmonomials',
+           'ncdegree',
+           'bosonic_constraints',
+           'fermionic_constraints',
+           'projective_measurement_constraints',
+           'correlator',
+           'maximum_violation',
+           'generate_measurements',
+           'define_objective_with_I',
+           'flatten',
+           'get_neighbors',
+           'solve_sdp']
 
 from .sdp_relaxation import SdpRelaxation
 from .nc_utils import generate_variables, get_ncmonomials, ncdegree, flatten
