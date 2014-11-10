@@ -2,21 +2,17 @@
 \documentclass{article}
 \pdfoutput=1
 \pdfminorversion=4
-\usepackage{times}
 \usepackage{amsmath}
 \usepackage{amssymb}
-\usepackage{latexsym}
 \usepackage{graphicx}
 \usepackage{subfigure} 
 \usepackage{url}
-\usepackage[stretch=10]{microtype}
-\usepackage{todonotes}
 \usepackage{natbib}
 \usepackage[hyperfootnotes=false,hidelinks=true]{hyperref}
 
 \title{Ncpol2sdpa Manual}
 \author{Peter Wittek\\
-        \small{University of Bor\aa{}s}
+        \small{ICFO-The Institute of Photonic Sciences and University of Bor\aa{}s}
 }
 \date{}
 \begin{document}
@@ -29,6 +25,8 @@ Ncpol2sdpa is a tool to convert a polynomial optimization problem of noncommutin
 The objective is to be able to solve very large scale optimization problems. For example, a convergent series of lower bounds can be obtained for ground state problems with arbitrary Hamiltonians.
 
 The implementation has an intuitive syntax for entering Hamiltonians and it scales for a larger number of noncommuting variables using a sparse representation of the SDP problem. The code is available in the Python Package Index at \url{https://pypi.python.org/pypi/ncpol2sdpa/} and the development version is at \url{http://peterwittek.github.io/ncpol2sdpa/}.
+
+For further information on the internal workings of the library, please refer to corresponding paper~\citep{wittek2014ncpol2sdpa}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Dependencies and compilation}
@@ -58,18 +56,17 @@ X = ... # Define noncommuting variables
 sdpRelaxation = SdpRelaxation(X)
 \end{verbatim}
 
-Getting the relaxation also follows an almost identical syntax. It requires all the information about the polynomial optimization problem itself: the objective function, an associative array of the inequalities, equalities, the monomial substitutions, and also the order of the relaxation:
+Getting the relaxation also follows an almost identical syntax. It requires all the information about the polynomial optimization problem itself: the objective function, an associative array of the inequalities, equalities, the monomial substitutions, and also the level of the relaxation:
 \begin{verbatim}
 sdpRelaxation.get_relaxation(obj, inequalities, equalities, 
-                      monomial_substitution, order)
+                      monomial_substitution, level)
 \end{verbatim}
 
-The last step in is to write out the relaxation to a sparse SDPA file. The method (\verb+write_to_sdpa+) takes one parameter, the file name. Alternatively, if SDPA is in the search path, then it can be solved by invoking a helper function (\verb+solve_sdp+).
+The last step in is to write out the relaxation to a sparse SDPA file. The method (\verb+write_to_sdpa+) takes one parameter, the file name. Alternatively, if SDPA is in the search path, then it can be solved by invoking a helper function (\verb+solve_sdp+). Using a compatibility layer to PICOS\footnote{\url{http://picos.zib.de/}}, it is also possible to solve the problem with a range of other solvers, including CVXOPT\footnote{\url{http://cvxopt.org/}} and MOSEK\footnote{\url{http://www.mosek.com/}}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Example 1: Toy example}
-We provide a simple usage example here; this example comes with the code (test-examplencpol.py and test/exampleNcPol.cpp).
-
+\section{Examples}
+\subsection{Example 1: Toy example}\label{example1}
 Consider the following polynomial optimization problem~\citep{pironio2010convergent}:
 
 \[ \min_{x\in \mathbb{R}^2}x_1x_2+x_2x_1\]
@@ -79,7 +76,6 @@ such that
 \[ -x_2^2+x_2+0.5\geq 0\]
 
 \[x_1^2-x_1=0.\]
-
 
 Entering the objective function and the inequality constraint is easy. The equality constraint is a simple projection. We either substitute two inequalities to replace the equality, or treat the equality as a monomial substitution. The second option leads to a sparser SDP relaxation. The code samples below take this approach. In this case, the monomial basis is $\{1, x_1, x_2, x_1x_2, x_2x_1, x_2^2\}$. The corresponding relaxation is written as
 
@@ -113,8 +109,8 @@ from ncpol2sdpa import generate_variables, SdpRelaxation
 
 # Number of Hermitian variables
 n_vars = 2
-# Order of relaxation
-order = 2
+# Level of relaxation
+level = 2
 
 # Get Hermitian variables
 X = generate_variables(n_vars, hermitian=True)
@@ -135,13 +131,11 @@ monomial_substitution[X[0] ** 2] = X[0]
 # Obtain SDP relaxation
 sdpRelaxation = SdpRelaxation(X)
 sdpRelaxation.get_relaxation(obj, inequalities, equalities,
-                             monomial_substitution, order)
+                             monomial_substitution, level)
 sdpRelaxation.write_to_sdpa('example_noncommutative.dat-s')
 \end{verbatim}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Solving the problem}
-The relaxation in sparse format will be identical to the one outlined in the previous section. Any flavour of SDPA family of solvers will solve the exported problem:
+Any flavour of the SDPA family of solvers will solve the exported problem:
 \begin{verbatim}
 $ sdpa examplenc.dat-s examplenc.out
 \end{verbatim}
@@ -160,7 +154,15 @@ objValDual   = -7.5000007373829902e-01
 This is close to the analytical optimum of $-3/4$.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Example 2: Bosonic system}
+\subsection{Example 2: Using PICOS and MOSEK}
+A compatibility layer with PICOS allows calling a wider ranger of solvers. Assuming that the PICOS dependencies are in \verb+PYTHONPATH+ and MOSEK is also operational, we can pass an argument to the function \verb+get_relaxation+ to generate a PICOS optimization problem. Using the preliminaries of the problem outlined in Section~\ref{example1}, we change the relevant function call to:
+\begin{verbatim}
+P = sdpRelaxation.get_relaxation(obj, inequalities, equalities,
+                           monomial_substitution, level, picos=True)
+\end{verbatim}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Example 3: Bosonic system}
 A more sophisticated application is  also supplied with the code (test-harmonic\_oscillator.py), which implements the Hamiltonian of a bosonic system on a 1D line. Since it uses non-Hermitian variables, a C++ implementation is currently not feasible.
 
 The system Hamiltonian describes $N$ harmonic oscillators with a parameter $\omega$. It is the result of second quantization and it is subject to bosonic constraints on the ladder operators $a_{k}$ and $a_{k}^{\dagger}$ (see, for instance, Section~22.2 in \cite{fayngold2013quantum}). The Hamiltonian is written as
@@ -182,8 +184,8 @@ from ncpol2sdpa import generate_variables,  \
                        bosonic_constraints, \
                        SdpRelaxation, solve_sdp
 
-# Order of relaxation
-order = 2
+# level of relaxation
+level = 1
 
 # Number of variables
 N = 4
@@ -207,7 +209,7 @@ print("Obtaining SDP relaxation...")
 verbose = 1
 sdpRelaxation = SdpRelaxation(a)
 sdpRelaxation.get_relaxation(hamiltonian, inequalities, equalities, 
-                      monomial_substitutions, order, verbose)
+                      monomial_substitutions, level, verbose)
 #Export relaxation to SDPA format
 print("Writing to disk...")
 sdpRelaxation.write_to_sdpa('harmonic_oscillator.dat-s')                      
@@ -220,7 +222,7 @@ objValDual   = +1.9999993671869802e+00
 \end{verbatim}
 This is very close to the analytic result of 2. The result is similarly precise for arbitrary numbers of oscillators. 
 
-It is remarkable that we get the correct value at the first order of relaxation, but this property is typical for bosonic systems~\citep{navascues2013paradox}.
+It is remarkable that we get the correct value at the first level of relaxation, but this property is typical for bosonic systems~\citep{navascues2013paradox}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{thebibliography}{}
@@ -245,6 +247,11 @@ Pironio, S., Navascues, M., and Ac\'in, A. (2010).
 \newblock Convergent relaxations of polynomial optimization problems with
   noncommuting variables.
 \newblock {\em SIAM Journal on Optimization}, 20(5):2157--2180.
+
+\bibitem[Wittek, 2014]{wittek2014ncpol2sdpa}
+Wittek, P. (2014). 
+\newblock Ncpol2sdpa -- Sparse Semidefinite Programming Relaxations for Polynomial Optimization Problems of Noncommuting Variables. 
+\newblock {\em To appear in the ACM Transactions on Mathematical Software}.
 
 \bibitem[Yamashita et~al., 2003]{yamashita2003sdpara}
 Yamashita, M., Fujisawa, K., and Kojima, M. (2003).
