@@ -29,7 +29,7 @@ E = generate_variables(n_vars, name='E', hermitian=True)
 
 # Define measurements and outcomes
 M, outcomes = [], []
-for i in range(n_vars / 2):
+for i in range(int(n_vars / 2)):
     M.append([E[2 * i], E[2 * i + 1]])
     outcomes.append([1, -1])
 
@@ -45,4 +45,4 @@ objective = -(C[0] * C[2] + C[0] * C[3] + C[1] * C[2] - C[1] * C[3])
 
 sdpRelaxation = SdpRelaxation(E, verbose=2)
 sdpRelaxation.get_relaxation(objective, [], [], monomial_substitutions, level)
-print solve_sdp(sdpRelaxation)
+print(solve_sdp(sdpRelaxation))

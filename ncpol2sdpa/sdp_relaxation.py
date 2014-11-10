@@ -72,8 +72,8 @@ class SdpRelaxation(object):
                         [monomial, coeff] = build_monomial(element)
                         sub = apply_substitutions(Dagger(monomial),
                                                   self.monomial_substitutions)
-                        print("DEBUG: %s, %s, %s" % (element,
-                                                     Dagger(monomial), sub))
+                        print(("DEBUG: %s, %s, %s" % (element,
+                                                     Dagger(monomial), sub)))
         return k, coeff
 
     def __push_facvar_sparse(self, polynomial, block_index, i, j):
@@ -247,8 +247,8 @@ class SdpRelaxation(object):
             # Find the order of the localizing matrix
             eq_order = ncdegree(eq)
             if eq_order > 2 * level:
-                print("An equality constraint has degree %d. Choose a higher \
-                      level of relaxation." % eq_order)
+                print(("An equality constraint has degree %d. Choose a higher \
+                      level of relaxation." % eq_order))
                 raise Exception
             localization_order = int(floor((2 * level - eq_order) / 2))
             if localization_order > max_localization_order:
@@ -287,8 +287,8 @@ class SdpRelaxation(object):
             # Find the order of the localizing matrix
             ineq_order = ncdegree(ineq)
             if ineq_order > 2 * level:
-                print("A constraint has degree %d. Choose a higher level of\
-                      relaxation." % ineq_order)
+                print(("A constraint has degree %d. Choose a higher level of\
+                      relaxation." % ineq_order))
                 raise Exception
             localization_order = int(floor((2 * level - ineq_order) / 2))
             self.localization_order.append(localization_order)
@@ -378,7 +378,7 @@ class SdpRelaxation(object):
                                     self.n_vars + 1))
 
         if self.verbose > 0:
-            print('Number of SDP variables: %d' % self.n_vars)
+            print(('Number of SDP variables: %d' % self.n_vars))
             print('Generating moment matrix...')
        # Generate moment matrices
         new_n_vars, block_index = 0, 0
@@ -393,7 +393,7 @@ class SdpRelaxation(object):
         self.F_struct = self.F_struct[:, 0:self.n_vars + 1]
 
         if self.verbose > 0:
-            print('Reduced number of SDP variables: %d' % self.n_vars)
+            print(('Reduced number of SDP variables: %d' % self.n_vars))
         if self.verbose > 1:
             self.__save_monomial_dictionary("monomials.txt")
 
@@ -406,7 +406,7 @@ class SdpRelaxation(object):
             self.__get_facvar(self.__simplify_polynomial(obj)))[1:]
         # Process inequalities
         if self.verbose > 0:
-            print('Processing %d inequalities...' % len(inequalities))
+            print(('Processing %d inequalities...' % len(inequalities)))
 
         self.__process_inequalities(inequalities, flatten(monomial_sets),
                                     block_index)
@@ -452,7 +452,7 @@ class SdpRelaxation(object):
         """Save the current monomial dictionary for debugging purposes.
         """
         monomial_translation = [''] * (self.n_vars + 1)
-        for key, k in self.monomial_dictionary.iteritems():
+        for key, k in self.monomial_dictionary.items():
             monomial = ('%s' % key)
             monomial = monomial.replace('Dagger(', '')
             monomial = monomial.replace(')', 'T')
