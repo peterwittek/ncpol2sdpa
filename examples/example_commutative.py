@@ -16,8 +16,8 @@ from ncpol2sdpa import generate_variables, SdpRelaxation
 
 # Number of variables
 n_vars = 2
-# Order of relaxation
-order = 2
+# Level of relaxation
+level = 2
 
 # Get commutative variables
 X = generate_variables(n_vars, commutative=True)
@@ -38,5 +38,5 @@ monomial_substitutions[X[0] ** 2] = X[0]
 # Obtain SDP relaxation
 sdpRelaxation = SdpRelaxation(X)
 sdpRelaxation.get_relaxation(obj, inequalities, equalities,
-                             monomial_substitutions, order)
+                             monomial_substitutions, level)
 sdpRelaxation.write_to_sdpa('example_commutative.dat-s')

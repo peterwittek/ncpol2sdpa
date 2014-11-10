@@ -16,8 +16,8 @@ from ncpol2sdpa import generate_variables, SdpRelaxation
 
 # Number of Hermitian variables
 n_vars = 2
-# Order of relaxation
-order = 2
+# Level of relaxation
+level = 2
 
 # Get Hermitian variables
 X = generate_variables(n_vars, hermitian=True)
@@ -38,5 +38,5 @@ monomial_substitution[X[0] ** 2] = X[0]
 # Obtain SDP relaxation
 sdpRelaxation = SdpRelaxation(X)
 sdpRelaxation.get_relaxation(obj, inequalities, equalities,
-                             monomial_substitution, order)
+                             monomial_substitution, level)
 sdpRelaxation.write_to_sdpa('example_noncommutative.dat-s')
