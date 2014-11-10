@@ -1,5 +1,8 @@
 Since 1.3:
-  - Handling of complex coefficients improved
+  - Handling of complex coefficients improved.
+  - Added PICOS compatibility layer, enabling solving a problem by a larger range of solvers, including MOSEK.
+  - Bug fixes: Python 3 compatibility restored.
+  
 
 Version 1.3: 2014-11-03
   - Much smaller SDPs are generated when using the helper functions for quantum correlations by not considering the last projector in the measurements and thus removing the sum-to-identity constraint; positive semidefinite condition is not influenced by this.
