@@ -39,9 +39,9 @@ time0 = time.time()
 # Obtain SDP relaxation
 print("Obtaining SDP relaxation...")
 verbose = 1
-sdpRelaxation = SdpRelaxation(a)
+sdpRelaxation = SdpRelaxation(a, verbose=verbose)
 sdpRelaxation.get_relaxation(hamiltonian, inequalities, equalities,
-                             monomial_substitutions, level, verbose)
+                             monomial_substitutions, level, removeequalities=True)
 # Export relaxation to SDPA format
 print("Writing to disk...")
 sdpRelaxation.write_to_sdpa('harmonic_oscillator.dat-s')
