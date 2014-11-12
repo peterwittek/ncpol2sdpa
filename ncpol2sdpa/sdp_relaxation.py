@@ -257,7 +257,7 @@ class SdpRelaxation(object):
             pick_monomials_up_to_degree(all_monomials, max_localization_order)
         A = np.zeros(
             (len(equalities) * len(monomials) * (len(monomials) + 1) / 2,
-             self.n_vars + 1), dtype=complex)
+             self.n_vars + 1))
         n_rows = 0
         for equality in equalities:
             # Find the order of the localizing matrix
