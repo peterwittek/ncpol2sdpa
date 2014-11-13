@@ -14,7 +14,7 @@ Created on Fri May 10 09:45:11 2013
 """
 import time
 from sympy.physics.quantum.dagger import Dagger
-from ncpol2sdpa import generate_variables, bosonic_constraints, SdpRelaxation
+from ncpol2sdpa import generate_variables, bosonic_constraints, SdpRelaxation, write_to_sdpa
 
 # Level of relaxation
 level = 1
@@ -44,6 +44,6 @@ sdpRelaxation.get_relaxation(hamiltonian, inequalities, equalities,
                              monomial_substitutions, level, removeequalities=True)
 # Export relaxation to SDPA format
 print("Writing to disk...")
-sdpRelaxation.write_to_sdpa('harmonic_oscillator.dat-s')
+write_to_sdpa(sdpRelaxation, 'harmonic_oscillator.dat-s')
 
 print('%0.2f s' % ((time.time() - time0)))

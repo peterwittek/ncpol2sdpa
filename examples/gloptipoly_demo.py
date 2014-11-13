@@ -8,7 +8,7 @@ Created on Thu May 15 11:16:58 2014
 @author: wittek
 """
 from sympy.physics.quantum.operator import HermitianOperator
-from ncpol2sdpa import SdpRelaxation
+from ncpol2sdpa import SdpRelaxation, write_to_sdpa
 
 # Get commutative variables
 x1 = HermitianOperator("x1")
@@ -22,4 +22,4 @@ g0 = 4 * x1 ** 2 + x1 * x2 - 4 * x2 ** 2 - \
 # Obtain SDP relaxation
 sdpRelaxation = SdpRelaxation([x1, x2])
 sdpRelaxation.get_relaxation(g0, [], [], {}, 3)
-sdpRelaxation.write_to_sdpa('gloptipoly_demo.dat-s')
+write_to_sdpa(sdpRelaxation, 'gloptipoly_demo.dat-s')
