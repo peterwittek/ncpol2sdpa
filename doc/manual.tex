@@ -105,7 +105,7 @@ y_{22} & y_{221} & y_{222} & y_{2212} & y_{2221} & y_{2222}
 \]
 Apart from the matrices being symmetric, notice other regular patterns between the elements. These are taken care of as additional constraints in the implementation. The optimum for the objective function is $-3/4$. The implementation reads as follows:
 \begin{verbatim}
-from ncpol2sdpa import generate_variables, SdpRelaxation
+from ncpol2sdpa import generate_variables, SdpRelaxation, write_to_sdpa
 
 # Number of Hermitian variables
 n_vars = 2
@@ -132,7 +132,7 @@ monomial_substitution[X[0] ** 2] = X[0]
 sdpRelaxation = SdpRelaxation(X)
 sdpRelaxation.get_relaxation(obj, inequalities, equalities,
                              monomial_substitution, level)
-sdpRelaxation.write_to_sdpa('example_noncommutative.dat-s')
+write_to_sdpa(sdpRelaxation, 'example_noncommutative.dat-s')
 \end{verbatim}
 
 Any flavour of the SDPA family of solvers will solve the exported problem:
@@ -186,7 +186,7 @@ Clearly, most of the constraints are monomial substitutions, except $[a_{i},a_{i
 from sympy.physics.quantum.dagger import Dagger
 from ncpol2sdpa import generate_variables,  \
                        bosonic_constraints, \
-                       SdpRelaxation, solve_sdp
+                       SdpRelaxation, write_to_sdp
 
 # level of relaxation
 level = 1
@@ -216,7 +216,7 @@ sdpRelaxation.get_relaxation(hamiltonian, inequalities, equalities,
                       monomial_substitutions, level, verbose)
 #Export relaxation to SDPA format
 print("Writing to disk...")
-sdpRelaxation.write_to_sdpa('harmonic_oscillator.dat-s')                      
+write_to_sdpa(sdpRelaxation, 'harmonic_oscillator.dat-s')                      
 \end{verbatim}
 
 Solving the SDP for $N=4$, for instance, gives the following result:

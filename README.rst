@@ -16,7 +16,7 @@ The following code replicates the toy example from Pironio, S.; Navascues, M. & 
 
 ::
 
-  from ncpol2sdpa import generate_variables, SdpRelaxation
+  from ncpol2sdpa import generate_variables, SdpRelaxation, write_to_sdpa
 
   # Number of Hermitian variables
   n_vars = 2
@@ -43,7 +43,7 @@ The following code replicates the toy example from Pironio, S.; Navascues, M. & 
   sdpRelaxation = SdpRelaxation(X)
   sdpRelaxation.get_relaxation(obj, inequalities, equalities,
                                monomial_substitution, level)
-  sdpRelaxation.write_to_sdpa('examplenc.dat-s')
+  write_to_sdpa(sdpRelaxation, 'examplenc.dat-s')
 
 
 Further examples are in the examples folder.
