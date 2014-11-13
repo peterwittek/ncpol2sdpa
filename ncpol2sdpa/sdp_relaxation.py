@@ -440,6 +440,7 @@ class SdpRelaxation(object):
         new_constant_column = lil_matrix(self.F_struct.dot(x))
         self.F_struct = hstack([new_constant_column.T,
                                 self.F_struct[:, 1:].dot(H)])
+        self.F_struct = self.F_struct.tolil()                                
         self.n_vars = self.F_struct.shape[1] - 1
 
     def swap_objective(self, new_objective):
@@ -566,18 +567,21 @@ class SdpRelaxation(object):
         f.write(str(list(self.obj_facvar)).replace('[', '{').replace(']', '}'))
         f.write('\n')
         # Coefficient matrices
-        cx = self.F_struct.tocoo()
-        zipped = sorted(zip(cx.col, cx.row, cx.data))
         row_offsets = [0]
         cumulative_sum = 0
         for block_size in self.block_struct:
             cumulative_sum += block_size ** 2
             row_offsets.append(cumulative_sum)
-        for k, row, v in zipped:
-            block_index, i, j = self.__convert_row_to_SDPA_index(
-                row_offsets, row)
-            if k == 0:
-                v *= -1
-            f.write('{0}\t{1}\t{2}\t{3}\t{4}\n'.format(
-                k, block_index + 1, i + 1, j + 1, v))
+        for row in range(len(self.F_struct.rows)):
+            if len(self.F_struct.rows[row]) > 0:
+                col_index = 0
+                for k in self.F_struct.rows[row]:
+                    v = self.F_struct.data[row][col_index]
+                    col_index += 1
+                    block_index, i, j = self.__convert_row_to_SDPA_index(
+                        row_offsets, row)
+                    if k == 0:
+                        v *= -1
+                    f.write('{0}\t{1}\t{2}\t{3}\t{4}\n'.format(
+                        k, block_index + 1, i + 1, j + 1, v))
         f.close()
