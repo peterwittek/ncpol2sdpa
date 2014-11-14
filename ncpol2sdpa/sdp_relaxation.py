@@ -9,16 +9,19 @@ Created on Sun May 26 15:06:17 2013
 """
 from math import floor
 import numpy as np
-from scipy.linalg import qr
-from scipy.sparse import lil_matrix, hstack
 from sympy import Number
 from sympy.physics.quantum.dagger import Dagger
+import sys
+if sys.version.find("PyPy") == -1:
+    from scipy.linalg import qr
+    from scipy.sparse import lil_matrix, hstack
+else:
+    from .sparse_utils import lil_matrix
 from .nc_utils import apply_substitutions, build_monomial, \
     pick_monomials_up_to_degree, ncdegree, \
     separate_scalar_factor, flatten, build_permutation_matrix, \
     simplify_polynomial, save_monomial_dictionary, get_monomials
 from .sdpa_utils import convert_row_to_sdpa_index
-
 
 class SdpRelaxation(object):
 
@@ -413,6 +416,7 @@ class SdpRelaxation(object):
                                 self.F_struct[:, 1:].dot(H)])
         self.F_struct = self.F_struct.tolil()
         self.n_vars = self.F_struct.shape[1] - 1
+    
 
     def swap_objective(self, new_objective):
         """Swaps the objective function while keeping the moment matrix and

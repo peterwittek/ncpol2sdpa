@@ -8,7 +8,7 @@ The implementation has an intuitive syntax for entering Hamiltonians and it scal
 
 Dependencies
 ============
-The code requires `SymPy <http://sympy.org/>`_>=0.7.2 and `SciPy <http://scipy.org/>`_>=0.13 in the Python search path. The code is compatible with Python 3, but using it incurs a major decrease in performance. Note that since SciPy is now a dependency, Pypy is no longer supported.
+The code requires `SymPy <http://sympy.org/>`_>=0.7.2 and `SciPy <http://scipy.org/>`_>=0.13 in the Python search path. The code is compatible with Python 3, but using it incurs a major decrease in performance. If you use Pypy, SciPy is not necessary, but removal of equations is not supported in this case.
 
 Usage
 =====

@@ -7,13 +7,14 @@ Created on Thu May  2 16:03:05 2013
 
 @author: Peter Wittek
 """
-from scipy.sparse import lil_matrix
 from sympy.core import S, Symbol, Pow, Number
 from sympy.physics.quantum.operator import HermitianOperator, Operator
 from sympy.physics.quantum.dagger import Dagger
 from sympy.physics.quantum.qexpr import split_commutative_parts
-
-
+import sys
+if sys.version.find("PyPy") == -1:
+    from scipy.sparse import lil_matrix
+    
 def flatten(lol):
     """Flatten a list of lists to a list.
     """
