@@ -1,2 +1,3 @@
   - Separate PICOS compatibility layer to picos_utils.py file.
-  
+  - Improve syntax of constraints.
+

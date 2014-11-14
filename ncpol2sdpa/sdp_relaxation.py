@@ -281,7 +281,7 @@ class SdpRelaxation(object):
     def get_relaxation(self, obj, inequalities, equalities,
                        monomial_substitutions, level,
                        removeequalities=False, 
-                       extramonomials=None, picos=False):
+                       extramonomials=None, target='sdpa'):
         """Get the SDP relaxation of a noncommutative polynomial optimization
         problem.
 
@@ -317,7 +317,7 @@ class SdpRelaxation(object):
                                                self.monomial_substitutions,
                                                level))
 
-        if not (removeequalities or picos):
+        if not (removeequalities or target == 'picos'):
             # Equalities are converted to pairs of inequalities
             for equality in equalities:
                 inequalities.append(equality)
@@ -363,7 +363,7 @@ class SdpRelaxation(object):
         if self.verbose > 1:
             save_monomial_dictionary("monomials.txt", self.monomial_dictionary, self.n_vars)
 
-        if picos:
+        if target == 'picos':
             return self.__convert_to_picos(inequalities, equalities, obj,
                                            monomial_sets)
 
