@@ -280,7 +280,7 @@ class SdpRelaxation(object):
 
     def get_relaxation(self, obj, inequalities, equalities,
                        monomial_substitutions, level,
-                       removeequalities=False, monomials=None,
+                       removeequalities=False, 
                        extramonomials=None, picos=False):
         """Get the SDP relaxation of a noncommutative polynomial optimization
         problem.
@@ -294,7 +294,6 @@ class SdpRelaxation(object):
         level -- the level of the relaxation
         removeequalities -- whether to attempt removing the equalities by
                             solving the linear equations
-        monomials -- instead of the level, monomials can be supplied directly
         extramonomials -- monomials to be included, on top of the requested
                           level of relaxation
         """
@@ -308,14 +307,12 @@ class SdpRelaxation(object):
                 if extramonomials is not None:
                     extramonomials_ = extramonomials[k]
                 monomial_sets.append(get_monomials(variables,
-                                                   monomials,
                                                    extramonomials_,
                                                    self.monomial_substitutions,
                                                    level))
                 k += 1
         else:
             monomial_sets.append(get_monomials(self.variables,
-                                               monomials,
                                                extramonomials, 
                                                self.monomial_substitutions,
                                                level))

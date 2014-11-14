@@ -323,12 +323,10 @@ def ncdegree(polynomial):
             degree = subdegree
     return degree
 
-def get_monomials(variables, monomials, extramonomials, monomial_substitutions,\
-                  degree):
+def get_monomials(variables, extramonomials, monomial_substitutions, degree):
     """Return the monomials of a certain degree.
     """
-    if monomials == None:
-        monomials = get_ncmonomials(variables, degree)
+    monomials = get_ncmonomials(variables, degree)
     if extramonomials is not None:
         monomials.extend(extramonomials)
     monomials = [monomial for monomial in monomials if monomial not
