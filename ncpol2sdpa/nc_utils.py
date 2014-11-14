@@ -13,6 +13,7 @@ from sympy.physics.quantum.operator import HermitianOperator, Operator
 from sympy.physics.quantum.dagger import Dagger
 from sympy.physics.quantum.qexpr import split_commutative_parts
 
+
 def flatten(lol):
     """Flatten a list of lists to a list.
     """
@@ -26,6 +27,7 @@ def flatten(lol):
         else:
             new_list.extend(element)
     return new_list
+
 
 def simplify_polynomial(polynomial, monomial_substitutions):
     """Simplify a polynomial for uniform handling later.
@@ -46,6 +48,7 @@ def simplify_polynomial(polynomial, monomial_substitutions):
         monomial = apply_substitutions(monomial, monomial_substitutions)
         new_polynomial += coeff * monomial
     return new_polynomial
+
 
 def apply_substitutions(monomial, monomial_substitutions):
     """Helper function to remove monomials from the basis."""
@@ -106,7 +109,7 @@ def build_monomial(element):
                 coeff = float(var)
             # If not, then it is imaginary
             else:
-                coeff = 1j*coeff
+                coeff = 1j * coeff
     coeff = float(element.as_coeff_mul()[0]) * coeff
     return monomial, coeff
 
@@ -323,6 +326,7 @@ def ncdegree(polynomial):
             degree = subdegree
     return degree
 
+
 def get_monomials(variables, extramonomials, monomial_substitutions, degree):
     """Return the monomials of a certain degree.
     """
@@ -332,10 +336,11 @@ def get_monomials(variables, extramonomials, monomial_substitutions, degree):
     monomials = [monomial for monomial in monomials if monomial not
                  in monomial_substitutions]
     monomials = [remove_scalar_factor(apply_substitutions(monomial,
-                                        monomial_substitutions))
+                                                          monomial_substitutions))
                  for monomial in monomials]
     monomials = unique(monomials)
     return monomials
+
 
 def pick_monomials_up_to_degree(monomials, degree):
     """Collect monomials up to a given degree.
@@ -355,6 +360,7 @@ def pick_monomials_of_degree(monomials, degree):
             selected_monomials.append(monomial)
     return selected_monomials
 
+
 def save_monomial_dictionary(filename, monomial_dictionary, n_vars):
     """Save a monomial dictionary for debugging purposes.
     """
@@ -365,10 +371,11 @@ def save_monomial_dictionary(filename, monomial_dictionary, n_vars):
         monomial = monomial.replace(')', 'T')
         monomial = monomial.replace('**', '^')
         monomial_translation[k] = monomial
-    f = open(filename, 'w')
+    file_ = open(filename, 'w')
     for k in range(len(monomial_translation)):
-        f.write('%s %s\n' % (k, monomial_translation[k]))
-    f.close()
+        file_.write('%s %s\n' % (k, monomial_translation[k]))
+    file_.close()
+
 
 def unique(seq):
     """Helper function to include only unique monomials in a basis."""
@@ -382,13 +389,13 @@ def unique(seq):
         result.append(item)
     return result
 
-def build_permutation_matrix(P):
-    """Build a permutation matrix for a permutation P.
+
+def build_permutation_matrix(permutation):
+    """Build a permutation matrix for a permutation.
     """
-    n = len(P)
-    E = lil_matrix((n, n))
+    matrix = lil_matrix((len(permutation), len(permutation)))
     column = 0
-    for row in P:
-        E[row, column] = 1
+    for row in permutation:
+        matrix[row, column] = 1
         column += 1
-    return E
+    return matrix
