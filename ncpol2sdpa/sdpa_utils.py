@@ -9,8 +9,6 @@ Created on Fri May 16 13:52:58 2014
 from bisect import bisect_left
 from subprocess import call
 import tempfile
-from .sdp_relaxation import SdpRelaxation
-
 
 def read_sdpa_out(filename):
     """Helper function to parse the output file of SDPA
@@ -31,19 +29,14 @@ def solve_sdp(sdp_problem):
     file, call the solver, and parse the output.
     """
     primal, dual = 0, 0
-    if isinstance(sdp_problem, SdpRelaxation):
-        tf = tempfile.NamedTemporaryFile()
-        tmp_filename = tf.name
-        tf.close()
-        tmp_dats_filename = tmp_filename + ".dat-s"
-        tmp_out_filename = tmp_filename + ".out"
-        sdp_problem.write_to_sdpa(tmp_dats_filename)
-        call(["sdpa", tmp_dats_filename, tmp_out_filename])
-        primal, dual = read_sdpa_out(tmp_out_filename)
-    else:
-        out_filename = sdp_problem[:sdp_problem.find(".")] + ".out"
-        call(["sdpa", sdp_problem, out_filename])
-        primal, dual = read_sdpa_out(out_filename)
+    tf = tempfile.NamedTemporaryFile()
+    tmp_filename = tf.name
+    tf.close()
+    tmp_dats_filename = tmp_filename + ".dat-s"
+    tmp_out_filename = tmp_filename + ".out"
+    write_to_sdpa(sdp_problem, tmp_dats_filename)
+    call(["sdpa", tmp_dats_filename, tmp_out_filename])
+    primal, dual = read_sdpa_out(tmp_out_filename)
     return primal, dual
 
 def convert_row_to_SDPA_index(block_struct, row_offsets, row):
