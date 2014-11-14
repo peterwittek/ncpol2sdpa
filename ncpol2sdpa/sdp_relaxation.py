@@ -16,6 +16,7 @@ from sympy.physics.quantum.dagger import Dagger
 from .nc_utils import apply_substitutions, build_monomial, get_ncmonomials, \
     pick_monomials_up_to_degree, ncdegree, unique, remove_scalar_factor, \
     separate_scalar_factor, flatten, build_permutation_matrix
+from .sdpa_utils import convert_row_to_SDPA_index
 
 class SdpRelaxation(object):
 
@@ -473,7 +474,7 @@ class SdpRelaxation(object):
             if facvar[k] != 0:
                 row0 = self.F_struct[:, k].nonzero()[0][0]
                 block_index, i, j = \
-                  self.__convert_row_to_SDPA_index(row_offsets, row0)
+                  convert_row_to_SDPA_index(self.block_struct, row_offsets, row0)
                 affine_expression += facvar[k]*X[i, j]
         return affine_expression
 
@@ -505,9 +506,9 @@ class SdpRelaxation(object):
                 for row in self.F_struct[:self.block_struct[0]**2,
                                          k].nonzero()[0][1:]:
                     block_index, i1, j1 = \
-                      self.__convert_row_to_SDPA_index(row_offsets, row0)
+                      convert_row_to_SDPA_index(self.block_struct, row_offsets, row0)
                     block_index, i2, j2 = \
-                      self.__convert_row_to_SDPA_index(row_offsets, row)
+                      convert_row_to_SDPA_index(self.block_struct, row_offsets, row)
                     if not (i1 == i2 and j1 == j2):
                         P.add_constraint(X[i2, j2] == X[i1, j1])
         #Iterate over the inequalities
