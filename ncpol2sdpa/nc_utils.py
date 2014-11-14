@@ -323,6 +323,21 @@ def ncdegree(polynomial):
             degree = subdegree
     return degree
 
+def get_monomials(variables, monomials, extramonomials, monomial_substitutions,\
+                  degree):
+    """Return the monomials of a certain degree.
+    """
+    if monomials == None:
+        monomials = get_ncmonomials(variables, degree)
+    if extramonomials is not None:
+        monomials.extend(extramonomials)
+    monomials = [monomial for monomial in monomials if monomial not
+                 in monomial_substitutions]
+    monomials = [remove_scalar_factor(apply_substitutions(monomial,
+                                        monomial_substitutions))
+                 for monomial in monomials]
+    monomials = unique(monomials)
+    return monomials
 
 def pick_monomials_up_to_degree(monomials, degree):
     """Collect monomials up to a given degree.

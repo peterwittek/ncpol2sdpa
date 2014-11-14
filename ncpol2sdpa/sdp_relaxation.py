@@ -13,10 +13,10 @@ from scipy.linalg import qr
 from scipy.sparse import lil_matrix, hstack
 from sympy import S, Number
 from sympy.physics.quantum.dagger import Dagger
-from .nc_utils import apply_substitutions, build_monomial, get_ncmonomials, \
-    pick_monomials_up_to_degree, ncdegree, unique, remove_scalar_factor, \
+from .nc_utils import apply_substitutions, build_monomial, \
+    pick_monomials_up_to_degree, ncdegree, \
     separate_scalar_factor, flatten, build_permutation_matrix, \
-    simplify_polynomial, save_monomial_dictionary
+    simplify_polynomial, save_monomial_dictionary, get_monomials
 from .sdpa_utils import convert_row_to_SDPA_index
 
 class SdpRelaxation(object):
@@ -278,21 +278,6 @@ class SdpRelaxation(object):
                                             localization_order)
             self.block_struct.append(len(localizing_monomials))
 
-    def __get_monomials(self, variables, monomials, extramonomials, degree):
-        """Return the monomials of a certain degree.
-        """
-        if monomials == None:
-            monomials = get_ncmonomials(variables, degree)
-        if extramonomials is not None:
-            monomials.extend(extramonomials)
-        monomials = [monomial for monomial in monomials if monomial not
-                     in self.monomial_substitutions]
-        monomials = [remove_scalar_factor(apply_substitutions(monomial,
-                                            self.monomial_substitutions))
-                     for monomial in monomials]
-        monomials = unique(monomials)
-        return monomials
-
     def get_relaxation(self, obj, inequalities, equalities,
                        monomial_substitutions, level,
                        removeequalities=False, monomials=None,
@@ -322,15 +307,18 @@ class SdpRelaxation(object):
                 extramonomials_ = None
                 if extramonomials is not None:
                     extramonomials_ = extramonomials[k]
-                monomial_sets.append(self.__get_monomials(variables,
-                                                          monomials,
-                                                          extramonomials_,
-                                                          level))
+                monomial_sets.append(get_monomials(variables,
+                                                   monomials,
+                                                   extramonomials_,
+                                                   self.monomial_substitutions,
+                                                   level))
                 k += 1
         else:
-            monomial_sets.append(self.__get_monomials(self.variables,
-                                                      monomials,
-                                                      extramonomials, level))
+            monomial_sets.append(get_monomials(self.variables,
+                                               monomials,
+                                               extramonomials, 
+                                               self.monomial_substitutions,
+                                               level))
 
         if not (removeequalities or picos):
             # Equalities are converted to pairs of inequalities
