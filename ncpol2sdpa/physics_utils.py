@@ -98,6 +98,38 @@ def fermionic_constraints(a):
         inequalities.append(1-Dagger(a[i])*a[i])
     return monomial_substitutions, equalities, inequalities
 
+def pauli_constraints(X, Y, Z):
+    monomial_substitutions = {}
+    equalities = []
+    n_vars = len(X)
+    for r in range(n_vars):
+        # They square to the identity
+        monomial_substitutions[X[r]*X[r]] = 1
+        monomial_substitutions[Y[r]*Y[r]] = 1
+        monomial_substitutions[Z[r]*Z[r]] = 1
+
+        # Anticommutation relations
+        equalities.append(Y[r]*X[r]+X[r]*Y[r])
+        equalities.append(Z[r]*X[r]+X[r]*Z[r])
+        equalities.append(Z[r]*Y[r]+Y[r]*Z[r])
+        # Commutation relations.
+        '''
+        equalities.append(X[r]*Y[r] - 1j*Z[r])
+        equalities.append(X[r]*Z[r] + 1j*Y[r])
+        equalities.append(Y[r]*Z[r] - 1j*X[r])
+        '''
+        # They commute between the sites
+        for s in range(r+1,n_vars):
+            monomial_substitutions[X[s]*X[r]] = X[r]*X[s]
+            monomial_substitutions[Y[s]*Y[r]] = Y[r]*Y[s]
+            monomial_substitutions[Y[s]*X[r]] = X[r]*Y[s]
+            monomial_substitutions[Y[r]*X[s]] = X[s]*Y[r]
+            monomial_substitutions[Z[s]*Z[r]] = Z[r]*Z[s]
+            monomial_substitutions[Z[s]*X[r]] = X[r]*Z[s]
+            monomial_substitutions[Z[r]*X[s]] = X[s]*Z[r]
+            monomial_substitutions[Z[s]*Y[r]] = Y[r]*Z[s]
+            monomial_substitutions[Z[r]*Y[s]] = Y[s]*Z[r]
+    return monomial_substitutions, equalities
 
 def generate_measurements(party, label):
     """Generate variables that behave like measurements.
