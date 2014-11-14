@@ -16,7 +16,7 @@ from sympy.physics.quantum.dagger import Dagger
 from .nc_utils import apply_substitutions, build_monomial, get_ncmonomials, \
     pick_monomials_up_to_degree, ncdegree, unique, remove_scalar_factor, \
     separate_scalar_factor, flatten, build_permutation_matrix, \
-    simplify_polynomial
+    simplify_polynomial, save_monomial_dictionary
 from .sdpa_utils import convert_row_to_SDPA_index
 
 class SdpRelaxation(object):
@@ -376,7 +376,7 @@ class SdpRelaxation(object):
         if self.verbose > 0:
             print(('Reduced number of SDP variables: %d' % self.n_vars))
         if self.verbose > 1:
-            self.__save_monomial_dictionary("monomials.txt")
+            save_monomial_dictionary("monomials.txt", self.monomial_dictionary, self.n_vars)
 
         if picos:
             return self.__convert_to_picos(inequalities, equalities, obj,
@@ -429,21 +429,6 @@ class SdpRelaxation(object):
         the localizing matrices untouched"""
         self.obj_facvar = (
             self.__get_facvar(simplify_polynomial(new_objective, self.monomial_substitutions)))[1:]
-
-    def __save_monomial_dictionary(self, filename):
-        """Save the current monomial dictionary for debugging purposes.
-        """
-        monomial_translation = [''] * (self.n_vars + 1)
-        for key, k in self.monomial_dictionary.items():
-            monomial = ('%s' % key)
-            monomial = monomial.replace('Dagger(', '')
-            monomial = monomial.replace(')', 'T')
-            monomial = monomial.replace('**', '^')
-            monomial_translation[k] = monomial
-        f = open(filename, 'w')
-        for k in range(len(monomial_translation)):
-            f.write('%s %s\n' % (k, monomial_translation[k]))
-        f.close()
 
     def __to_affine_expression(self, polynomial, X, row_offsets):
         """Helper function to create PICOS affine expressions from SymPy

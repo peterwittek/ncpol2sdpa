@@ -342,6 +342,20 @@ def pick_monomials_of_degree(monomials, degree):
             selected_monomials.append(monomial)
     return selected_monomials
 
+def save_monomial_dictionary(filename, monomial_dictionary, n_vars):
+    """Save a monomial dictionary for debugging purposes.
+    """
+    monomial_translation = [''] * (n_vars + 1)
+    for key, k in monomial_dictionary.items():
+        monomial = ('%s' % key)
+        monomial = monomial.replace('Dagger(', '')
+        monomial = monomial.replace(')', 'T')
+        monomial = monomial.replace('**', '^')
+        monomial_translation[k] = monomial
+    f = open(filename, 'w')
+    for k in range(len(monomial_translation)):
+        f.write('%s %s\n' % (k, monomial_translation[k]))
+    f.close()
 
 def unique(seq):
     """Helper function to include only unique monomials in a basis."""
