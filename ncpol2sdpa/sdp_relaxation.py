@@ -44,7 +44,7 @@ class SdpRelaxation(object):
         else:
             self.variables = [variables]
 
-    def __get_index_of_monomial(self, element, enablesubstitution=False):
+    def __get_index_of_monomial(self, element, enablesubstitution=True):
         """Returns the index of a monomial.
         """
         monomial, coeff = build_monomial(element)
