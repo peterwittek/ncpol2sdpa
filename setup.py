@@ -5,7 +5,7 @@ optimization problems to sparse SDP input formats.
 Ncpol2SDPA is a set of scripts to convert a polynomial optimization problem of
 either commutative or noncommutative variables to a sparse semidefinite
 programming (SDP) problem that can be processed by the SDPA family of solvers
-or further process by PICOS to solve the problem by Cvxopt or MOSEK. The
+or further processed by PICOS to solve the problem by CVXOPT or MOSEK. The
 optimization problem can be unconstrained or constrained by equalities and
 inequalities.
 """
