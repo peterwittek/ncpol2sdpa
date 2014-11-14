@@ -1,4 +1,5 @@
 Since 1.3:
+  - Added helper function to add constraints on Pauli operators.
   - Handling of complex coefficients improved.
   - Added PICOS compatibility layer, enabling solving a problem by a larger range of solvers, including MOSEK.
   - Bug fixes: Python 3 compatibility restored.
