@@ -27,6 +27,26 @@ def flatten(lol):
             new_list.extend(element)
     return new_list
 
+def simplify_polynomial(polynomial, monomial_substitutions):
+    """Simplify a polynomial for uniform handling later.
+    """
+    if isinstance(polynomial, int) or isinstance(polynomial, float):
+        return polynomial
+    polynomial = (1.0 * polynomial).expand()
+    if isinstance(polynomial, Number):
+        return polynomial
+    if polynomial.is_Mul:
+        elements = [polynomial]
+    else:
+        elements = polynomial.as_coeff_mul()[1][0].as_coeff_add()[1]
+    new_polynomial = 0
+    # Identify its constituent monomials
+    for element in elements:
+        monomial, coeff = build_monomial(element)
+        monomial = apply_substitutions(monomial, monomial_substitutions)
+        new_polynomial += coeff * monomial
+    return new_polynomial
+
 def apply_substitutions(monomial, monomial_substitutions):
     """Helper function to remove monomials from the basis."""
     original_monomial = monomial

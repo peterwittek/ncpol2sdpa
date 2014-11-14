@@ -15,7 +15,8 @@ from sympy import S, Number
 from sympy.physics.quantum.dagger import Dagger
 from .nc_utils import apply_substitutions, build_monomial, get_ncmonomials, \
     pick_monomials_up_to_degree, ncdegree, unique, remove_scalar_factor, \
-    separate_scalar_factor, flatten, build_permutation_matrix
+    separate_scalar_factor, flatten, build_permutation_matrix, \
+    simplify_polynomial
 from .sdpa_utils import convert_row_to_SDPA_index
 
 class SdpRelaxation(object):
@@ -87,7 +88,7 @@ class SdpRelaxation(object):
         width = self.block_struct[block_index - 1]
         # Preprocess the polynomial for uniform handling later
         # DO NOT EXPAND THE POLYNOMIAL HERE!!!!!!!!!!!!!!!!!!!
-        # The __simplify_polynomial bypasses the problem.
+        # The simplify_polynomial bypasses the problem.
         # Simplifying here will trigger a bug in SymPy related to
         # the powers of daggered variables.
         # polynomial = polynomial.expand()
@@ -182,28 +183,6 @@ class SdpRelaxation(object):
                                   column, k] = 1
         return n_vars, block_index+1
 
-    def __simplify_polynomial(self, polynomial):
-        """Simplify a polynomial for uniform handling later.
-        """
-        if isinstance(polynomial, int) or isinstance(polynomial, float):
-            return polynomial
-        polynomial = (1.0 * polynomial).expand()
-        if isinstance(polynomial, Number):
-            return polynomial
-        if polynomial.is_Mul:
-            elements = [polynomial]
-        else:
-            elements = polynomial.as_coeff_mul()[1][0].as_coeff_add()[1]
-        new_polynomial = 0
-        # Identify its constituent monomials
-        for element in elements:
-            monomial, coeff = build_monomial(element)
-            monomial = apply_substitutions(
-                monomial,
-                self.monomial_substitutions)
-            new_polynomial += coeff * monomial
-        return new_polynomial
-
     def __process_inequalities(
             self, inequalities, all_monomials, block_index):
         """Generate localizing matrices
@@ -227,8 +206,9 @@ class SdpRelaxation(object):
                 for column in range(row, len(monomials)):
                     # Calculate the moments of polynomial entries
                     polynomial = \
-                        self.__simplify_polynomial(
-                            Dagger(monomials[row]) * ineq * monomials[column])
+                        simplify_polynomial(
+                            Dagger(monomials[row]) * ineq * monomials[column],
+                            self.monomial_substitutions)
                     self.__push_facvar_sparse(polynomial,
                                               block_index, row, column)
         return block_index
@@ -266,8 +246,9 @@ class SdpRelaxation(object):
                 for column in range(row, len(monomials)):
                     # Calculate the moments of polynomial entries
                     polynomial = \
-                        self.__simplify_polynomial(Dagger(monomials[row]) *
-                                                   equality * monomials[column])
+                        simplify_polynomial(Dagger(monomials[row]) *
+                                                   equality * monomials[column],
+                                            self.monomial_substitutions)
                     A[n_rows] = self.__get_facvar(polynomial)
                     # This is something really weird: we want the constant
                     # terms in equalities to be positive. Otherwise funny
@@ -403,7 +384,7 @@ class SdpRelaxation(object):
 
         # Objective function
         self.obj_facvar = (
-            self.__get_facvar(self.__simplify_polynomial(obj)))[1:]
+            self.__get_facvar(simplify_polynomial(obj, self.monomial_substitutions)))[1:]
         # Process inequalities
         if self.verbose > 0:
             print(('Processing %d inequalities...' % len(inequalities)))
@@ -447,7 +428,7 @@ class SdpRelaxation(object):
         """Swaps the objective function while keeping the moment matrix and
         the localizing matrices untouched"""
         self.obj_facvar = (
-            self.__get_facvar(self.__simplify_polynomial(new_objective)))[1:]
+            self.__get_facvar(simplify_polynomial(new_objective, self.monomial_substitutions)))[1:]
 
     def __save_monomial_dictionary(self, filename):
         """Save the current monomial dictionary for debugging purposes.
@@ -527,8 +508,9 @@ class SdpRelaxation(object):
                 for column in range(row, len(monomials)):
                     # Calculate the moments of polynomial entries
                     polynomial = \
-                        self.__simplify_polynomial(
-                            Dagger(monomials[row]) * ineq * monomials[column])
+                        simplify_polynomial(
+                            Dagger(monomials[row]) * ineq * monomials[column],
+                            self.monomial_substitutions)
                     affine_expression = \
                       self.__to_affine_expression(polynomial, X, row_offsets)
                     P.add_constraint(Y[row, column] == affine_expression)
