@@ -2,9 +2,14 @@ Ncpol2sdpa
 ==========
 Ncpol2sdpa is a set of scripts to convert a polynomial optimization problem of either commutative or noncommutative variables to a sparse semidefinite programming (SDP) problem that can be processed by the `SDPA <http://sdpa.sourceforge.net/>`_ family of solvers, `MOSEK <http://www.mosek.com/>`_, or further processed by `PICOS <http://picos.zib.de/>`_ to solve the problem by `CVXOPT <http://cvxopt.org/>`_ . The optimization problem can be unconstrained or constrained by equalities and inequalities.
 
-The objective is to be able to solve very large scale optimization problems. For example, a convergent series of lower bounds can be obtained for ground state problems with arbitrary Hamiltonians.
+The objective is to be able to solve very large scale optimization problems. Example applications include:
 
-The implementation has an intuitive syntax for entering Hamiltonians and it scales for a larger number of noncommutative variables using a sparse representation of the SDP problem. 
+- Ground-state energy problems: bosonic and fermionic systems, Pauli spin 
+  operators.
+- Maximum quantum violation of Bell inequalities.
+- Nieto-Silleras-type hierarchy for quantifying randomness.
+
+The implementation has an intuitive syntax for entering problems and it scales for a larger number of noncommutative variables using a sparse representation of the SDP problem. 
 
 Dependencies
 ============
