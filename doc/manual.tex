@@ -154,15 +154,24 @@ objValDual   = -7.5000007373829902e-01
 This is close to the analytical optimum of $-3/4$.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Example 2: Using PICOS and MOSEK}
-A compatibility layer with PICOS allows calling a wider ranger of solvers. Assuming that the PICOS dependencies are in \verb+PYTHONPATH+ and MOSEK is also operational, we can pass an argument to the function \verb+get_relaxation+ to generate a PICOS optimization problem. Using the preliminaries of the problem outlined in Section~\ref{example1}, we change the relevant function call to:
+\subsection{Example 2: Using MOSEK or PICOS}
+Apart from SDPA, MOSEK also enjoys full support. Using the preliminaries of the problem outlined in Section~\ref{example1}, once we have the relaxation, we can convert it to a MOSEK task and solve it:
+
+\begin{verbatim}
+task = convert_to_mosek(sdpRelaxation)
+task.optimize()
+task.solutionsummary(mosek.streamtype.msg)
+\end{verbatim}
+Please ensure that the MOSEK is operational.
+
+A compatibility layer with PICOS allows calling a wider ranger of solvers. Assuming that the PICOS dependencies are in \verb+PYTHONPATH+, we can pass an argument to the function \verb+get_relaxation+ to generate a PICOS optimization problem. Using the same example as before, we change the relevant function call to:
 \begin{verbatim}
 P = sdpRelaxation.get_relaxation(obj, inequalities, equalities,
                            monomial_substitution, level, target='picos')
 \end{verbatim}
-This returns a PICOS problem, and with that, we can solve it with any solver that PICOS supports. For example, with MOSEK, we can enter:
+This returns a PICOS problem, and with that, we can solve it with any solver that PICOS supports:
 \begin{verbatim}
-P.solve(solver='mosek7')
+P.solve()
 \end{verbatim}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
