@@ -1,4 +1,4 @@
-Since 1.3:
+Version 1.4: 2014-11-18
   - Pypy support restored with limitations.
   - Direct export to and optimization by MOSEK.
   - Added helper function to add constraints on Pauli operators.

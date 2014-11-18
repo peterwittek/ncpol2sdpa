@@ -14,7 +14,7 @@ from distutils.core import setup
 
 setup(
     name='ncpol2sdpa',
-    version='1.3',
+    version='1.4',
     author='Peter Wittek',
     author_email='peterwittek@users.noreply.github.com',
     packages=['ncpol2sdpa'],

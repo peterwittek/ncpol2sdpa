@@ -2,5 +2,6 @@ include *.py
 include CHANGES
 include LICENSE
 include README.rst
+include doc/manual.pdf
 recursive-include ncpol2sdpa *.py
 recursive-include examples *.py
