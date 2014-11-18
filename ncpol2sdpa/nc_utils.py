@@ -14,7 +14,8 @@ from sympy.physics.quantum.qexpr import split_commutative_parts
 import sys
 if sys.version.find("PyPy") == -1:
     from scipy.sparse import lil_matrix
-    
+
+
 def flatten(lol):
     """Flatten a list of lists to a list.
     """

@@ -23,6 +23,7 @@ from .nc_utils import apply_substitutions, build_monomial, \
     simplify_polynomial, save_monomial_dictionary, get_monomials
 from .sdpa_utils import convert_row_to_sdpa_index
 
+
 class SdpRelaxation(object):
 
     """Class for obtaining sparse SDP relaxation.
@@ -49,9 +50,8 @@ class SdpRelaxation(object):
         """
         monomial, coeff = build_monomial(element)
         if enablesubstitution:
-            monomial = apply_substitutions(
-                monomial,
-                self.monomial_substitutions)
+            monomial = apply_substitutions(monomial,
+                                           self.monomial_substitutions)
         # Given the monomial, we need its mapping L_y(w) to push it into
         # a corresponding constraint matrix
         if monomial != 0:
@@ -377,7 +377,12 @@ class SdpRelaxation(object):
                                            monomial_sets)
 
         # Objective function
-        self.obj_facvar = (self.__get_facvar(simplify_polynomial(obj, self.monomial_substitutions)))[1:]
+        self.obj_facvar = (
+            self.__get_facvar(
+                simplify_polynomial(
+                    obj,
+                    self.monomial_substitutions)))[
+            1:]
         # Process inequalities
         if self.verbose > 0:
             print(('Processing %d inequalities...' % len(inequalities)))
@@ -416,7 +421,6 @@ class SdpRelaxation(object):
                                 self.F_struct[:, 1:].dot(H)])
         self.F_struct = self.F_struct.tolil()
         self.n_vars = self.F_struct.shape[1] - 1
-    
 
     def swap_objective(self, new_objective):
         """Swaps the objective function while keeping the moment matrix and
