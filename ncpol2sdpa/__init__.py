@@ -31,3 +31,5 @@ from .physics_utils import bosonic_constraints, fermionic_constraints, \
     pauli_constraints, get_neighbors, correlator, generate_measurements, \
     projective_measurement_constraints, \
     maximum_violation, define_objective_with_I
+from .mosek_utils import convert_to_mosek
+
