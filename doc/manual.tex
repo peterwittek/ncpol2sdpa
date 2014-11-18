@@ -62,7 +62,7 @@ sdpRelaxation.get_relaxation(obj, inequalities, equalities,
                       monomial_substitution, level)
 \end{verbatim}
 
-The last step in is to write out the relaxation to a sparse SDPA file. The method (\verb+write_to_sdpa+) takes one parameter, the file name. Alternatively, if SDPA is in the search path, then it can be solved by invoking a helper function (\verb+solve_sdp+). Using a compatibility layer to PICOS\footnote{\url{http://picos.zib.de/}}, it is also possible to solve the problem with a range of other solvers, including CVXOPT\footnote{\url{http://cvxopt.org/}} and MOSEK\footnote{\url{http://www.mosek.com/}}.
+The last step in is to write out the relaxation to a sparse SDPA file. The method (\verb+write_to_sdpa+) takes one parameter, the file name. Alternatively, if SDPA is in the search path, then it can be solved by invoking a helper function (\verb+solve_sdp+). Alternatively, MOSEK\footnote{\url{http://www.mosek.com/}} is also supported for writing a problem and solving it. Using a compatibility layer to PICOS\footnote{\url{http://picos.zib.de/}}, it is also possible to solve the problem with a range of other solvers, including CVXOPT\footnote{\url{http://cvxopt.org/}}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Examples}
