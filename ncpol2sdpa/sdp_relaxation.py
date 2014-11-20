@@ -20,9 +20,8 @@ else:
 from .nc_utils import apply_substitutions, build_monomial, \
     pick_monomials_up_to_degree, ncdegree, \
     separate_scalar_factor, flatten, build_permutation_matrix, \
-    simplify_polynomial, save_monomial_dictionary, get_monomials
+    simplify_polynomial, save_monomial_dictionary, get_monomials, unique
 from .sdpa_utils import convert_row_to_sdpa_index
-
 
 class SdpRelaxation(object):
 
@@ -204,7 +203,7 @@ class SdpRelaxation(object):
                 block_index - initial_block_index - 1]
             monomials = \
                 pick_monomials_up_to_degree(all_monomials, localization_order)
-
+            monomials = unique(monomials)
             # Process M_y(gy)(u,w) entries
             for row in range(len(monomials)):
                 for column in range(row, len(monomials)):
@@ -280,7 +279,7 @@ class SdpRelaxation(object):
             localizing_monomials = \
                 pick_monomials_up_to_degree(flatten(monomial_sets),
                                             localization_order)
-            self.block_struct.append(len(localizing_monomials))
+            self.block_struct.append(len(localizing_monomials)/len(monomial_sets))
 
     def get_relaxation(self, obj, inequalities, equalities,
                        monomial_substitutions, level,
