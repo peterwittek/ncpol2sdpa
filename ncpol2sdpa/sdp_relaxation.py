@@ -28,7 +28,7 @@ class SdpRelaxation(object):
     """Class for obtaining sparse SDP relaxation.
     """
 
-    def __init__(self, variables, verbose=0, independent_algebras=False):
+    def __init__(self, variables, verbose=0, hierarchy="npa"):
         self.monomial_substitutions = {}
         self.monomial_dictionary = {}
         self.n_vars = 0
@@ -38,7 +38,7 @@ class SdpRelaxation(object):
         self.variables = []
         self.verbose = verbose
         self.localization_order = []
-        self.independent_algebras = independent_algebras
+        self.hierarchy = hierarchy
         if isinstance(variables, list):
             self.variables = variables
         else:
@@ -148,6 +148,51 @@ class SdpRelaxation(object):
             self.monomial_dictionary[monomial] = k
         return k
 
+    def __generate_moroder_moment_matrix(self, n_vars, block_index,
+                                         monomialsA, monomialsB):
+        """Generate the moment matrix of monomials.
+
+        Arguments:
+        n_vars -- current number of variables
+        block_index -- current block index in the SDP matrix
+        monomials -- |W_d| set of words of length up to the relaxation level
+        """
+        row_offset = 0
+        if block_index > 0:
+            for block_size in self.block_struct[0:block_index]:
+                row_offset += block_size ** 2
+        N = len(monomialsA)*len(monomialsB)
+        # We process the M_d(u,w) entries in the moment matrix
+        for rowA in range(len(monomialsA)):
+            for columnA in range(rowA, len(monomialsA)):
+                for rowB in range(len(monomialsB)):
+                    start_columnB = 0
+                    if rowA == columnA:
+                        start_columnB = rowB
+                    for columnB in range(start_columnB, len(monomialsB)):
+                        monomial = Dagger(monomialsA[rowA]) * \
+                                   monomialsA[columnA] * \
+                                   Dagger(monomialsB[rowB]) * \
+                                   monomialsB[columnB]
+                        # Apply the substitutions if any
+                        monomial = apply_substitutions(monomial,
+                                                       self.monomial_substitutions)
+                        if monomial == 1:
+                            self.F_struct[row_offset + rowA * N*len(monomialsB) + 
+                                          rowB * N + 
+                                          columnA * len(monomialsB) + columnB, 0] = 1
+
+                        elif monomial != 0:
+                            k = self.__process_monomial(monomial, n_vars)
+                            if k > n_vars:
+                                n_vars = k
+                            # We push the entry to the moment matrix
+                            self.F_struct[row_offset + rowA * N*len(monomialsB) + 
+                                          rowB * N + 
+                                          columnA * len(monomialsB) + columnB, k] = 1
+        return n_vars, block_index + 1
+
+
     def __generate_moment_matrix(self, n_vars, block_index, monomials):
         """Generate the moment matrix of monomials.
 
@@ -169,14 +214,14 @@ class SdpRelaxation(object):
                 monomial = apply_substitutions(monomial,
                                                self.monomial_substitutions)
                 if monomial == 1:
-                    if not self.independent_algebras:
-                        self.F_struct[row_offset + row * len(monomials) +
-                                      column, 0] = 1
-                    else:
+                    if self.hierarchy == "nieto-silleras":
                         k = n_vars + 1
                         n_vars = k
                         self.F_struct[row_offset + row * len(monomials) +
                                       column, k] = 1
+                    else:
+                        self.F_struct[row_offset + row * len(monomials) +
+                                      column, 0] = 1
                 elif monomial != 0:
                     k = self.__process_monomial(monomial, n_vars)
                     if k > n_vars:
@@ -265,8 +310,11 @@ class SdpRelaxation(object):
     def __calculate_block_structure(self, monomial_sets, inequalities, level):
         """Calculates the block_struct array for the output file.
         """
-        for monomials in monomial_sets:
-            self.block_struct.append(len(monomials))
+        if  self.hierarchy == "moroder":
+            self.block_struct.append(len(monomial_sets[0])*len(monomial_sets[1]))
+        else:
+            for monomials in monomial_sets:
+                self.block_struct.append(len(monomials))
         for ineq in inequalities:
             # Find the order of the localizing matrix
             ineq_order = ncdegree(ineq)
@@ -279,7 +327,9 @@ class SdpRelaxation(object):
             localizing_monomials = \
                 pick_monomials_up_to_degree(flatten(monomial_sets),
                                             localization_order)
-            self.block_struct.append(len(localizing_monomials)/len(monomial_sets))
+            if self.hierarchy == "nieto-silleras":
+                localizing_monomials = [1]
+            self.block_struct.append(len(localizing_monomials))
 
     def get_relaxation(self, obj, inequalities, equalities,
                        monomial_substitutions, level,
@@ -303,7 +353,7 @@ class SdpRelaxation(object):
         self.monomial_substitutions = monomial_substitutions
         # Generate monomials and remove substituted ones
         monomial_sets = []
-        if self.independent_algebras:
+        if not self.hierarchy == "npa":
             k = 0
             for variables in self.variables:
                 extramonomials_ = None
@@ -327,18 +377,23 @@ class SdpRelaxation(object):
                 inequalities.append(-equality)
 
         self.__calculate_block_structure(monomial_sets, inequalities, level)
-        if self.independent_algebras:
+        if self.hierarchy == "nieto-silleras":
             self.block_struct.append(2)
 
         self.n_vars = 0
-        for monomials in monomial_sets:
-            n_monomials = len(monomials)
-
-            # The minus one compensates for the constant term in the
-            # top left corner of the moment matrix
+        if not self.hierarchy == "moroder":
+            for monomials in monomial_sets:
+                n_monomials = len(monomials)
+    
+                # The minus one compensates for the constant term in the
+                # top left corner of the moment matrix
+                self.n_vars += int(n_monomials * (n_monomials + 1) / 2)
+                if self.hierarchy == "npa":
+                    self.n_vars -= 1
+        else:
+            n_monomials = len(monomial_sets[0])*len(monomial_sets[1])
             self.n_vars += int(n_monomials * (n_monomials + 1) / 2)
-            if not self.independent_algebras:
-                self.n_vars -= 1
+            self.n_vars -= 1
 
         n_rows = 0
         for block_size in self.block_struct:
@@ -351,13 +406,17 @@ class SdpRelaxation(object):
        # Generate moment matrices
         new_n_vars, block_index = 0, 0
         var_offsets = [new_n_vars]
-        for monomials in monomial_sets:
+        if self.hierarchy == "moroder":
             new_n_vars, block_index = \
-                self.__generate_moment_matrix(
-                    new_n_vars,
-                    block_index,
-                    monomials)
-            var_offsets.append(new_n_vars)
+                self.__generate_moroder_moment_matrix(new_n_vars, block_index, monomial_sets[0], monomial_sets[1])
+        else:
+            for monomials in monomial_sets:
+                new_n_vars, block_index = \
+                    self.__generate_moment_matrix(
+                        new_n_vars,
+                        block_index,
+                        monomials)
+                var_offsets.append(new_n_vars)
         self.n_vars = new_n_vars
         # The initial estimate for the size of F_struct was overly
         # generous. We correct the size here.
@@ -392,7 +451,7 @@ class SdpRelaxation(object):
             A = self.__process_equalities(equalities, flatten(monomial_sets),
                                           level)
             self.__remove_equalities(equalities, A)
-        if self.independent_algebras:
+        if self.hierarchy == "nieto-silleras":
             self.F_struct[-1, 0] = -1
             self.F_struct[-4, 0] = 1
             for var in var_offsets[:-1]:
