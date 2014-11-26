@@ -1,3 +1,8 @@
+Since 1.4:
+  - Support for Moroder hierarchy (doi:10.1103/PhysRevLett.111.030501).
+  - Further symmetries are discovered when all variables are Hermitian.
+  - Normalization can be turned off.
+
 Version 1.4: 2014-11-18
   - Pypy support restored with limitations.
   - Direct export to and optimization by MOSEK.

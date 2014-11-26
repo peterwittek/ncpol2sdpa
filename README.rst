@@ -8,6 +8,7 @@ The objective is to be able to solve very large scale optimization problems. Exa
   operators.
 - Maximum quantum violation of Bell inequalities.
 - Nieto-Silleras-type hierarchy for quantifying randomness.
+- Moroder-type hierarchy to enable PPT-style and other additional constraints.
 
 The implementation has an intuitive syntax for entering problems and it scales for a larger number of noncommutative variables using a sparse representation of the SDP problem. 
 
