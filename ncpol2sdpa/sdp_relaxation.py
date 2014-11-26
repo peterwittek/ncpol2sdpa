@@ -27,6 +27,7 @@ class SdpRelaxation(object):
 
     """Class for obtaining sparse SDP relaxation.
     """
+    hierarchy_types = ["npa", "nieto-silleras", "moroder"]
 
     def __init__(self, variables, verbose=0, hierarchy="npa"):
         self.monomial_substitutions = {}
@@ -38,7 +39,10 @@ class SdpRelaxation(object):
         self.variables = []
         self.verbose = verbose
         self.localization_order = []
-        self.hierarchy = hierarchy
+        if hierarchy in self.hierarchy_types:
+            self.hierarchy = hierarchy
+        else:
+            raise Exception('Not allowed hierarchy type:', hierarchy)
         if isinstance(variables, list):
             self.variables = variables
         else:
