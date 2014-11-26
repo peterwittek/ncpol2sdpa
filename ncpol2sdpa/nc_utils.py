@@ -21,7 +21,7 @@ def flatten(lol):
     """
     new_list = []
     for element in lol:
-        if isinstance(element, Symbol):
+        if isinstance(element, Symbol) or isinstance(element, Operator):
             new_list.append(element)
         elif isinstance(element[0], list):
             element = flatten(element)

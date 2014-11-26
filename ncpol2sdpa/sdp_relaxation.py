@@ -47,6 +47,12 @@ class SdpRelaxation(object):
             self.variables = variables
         else:
             self.variables = [variables]
+        self.is_hermitian_variables = True
+        # Check hermicity of all variables
+        for var in flatten(self.variables):
+            if not var.is_hermitian:
+                self.is_hermitian_variables = False
+                break
 
     def __get_index_of_monomial(self, element, enablesubstitution=True):
         """Returns the index of a monomial.
@@ -145,11 +151,23 @@ class SdpRelaxation(object):
             # previous variable to denote this entry in the matrix
             k = self.monomial_dictionary[monomial]
         except KeyError:
-            # Otherwise we define a new entry in the associated
-            # array recording the monomials, and add an entry in
-            # the moment matrix
-            k = n_vars + 1
-            self.monomial_dictionary[monomial] = k
+            # An extra round of substitutions is granted on the conjugate of 
+            # the monomial if all the variables are Hermitian
+            need_new_variable = True
+            if self.is_hermitian_variables:            
+                daggered_monomial = apply_substitutions(Dagger(monomial),
+                                       self.monomial_substitutions)
+                try:
+                    k = self.monomial_dictionary[daggered_monomial]
+                    need_new_variable=False
+                except KeyError:
+                    need_new_variable = True
+            if need_new_variable:
+                # Otherwise we define a new entry in the associated
+                # array recording the monomials, and add an entry in
+                # the moment matrix
+                k = n_vars + 1
+                self.monomial_dictionary[monomial] = k
         return k
 
     def __generate_moroder_moment_matrix(self, n_vars, block_index,
@@ -354,6 +372,7 @@ class SdpRelaxation(object):
         extramonomials -- monomials to be included, on top of the requested
                           level of relaxation
         """
+       
         self.monomial_substitutions = monomial_substitutions
         # Generate monomials and remove substituted ones
         monomial_sets = []
