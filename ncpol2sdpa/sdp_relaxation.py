@@ -29,7 +29,7 @@ class SdpRelaxation(object):
     """
     hierarchy_types = ["npa", "nieto-silleras", "moroder"]
 
-    def __init__(self, variables, verbose=0, hierarchy="npa"):
+    def __init__(self, variables, verbose=0, hierarchy="npa", normalized=True):
         self.monomial_substitutions = {}
         self.monomial_dictionary = {}
         self.n_vars = 0
@@ -39,6 +39,7 @@ class SdpRelaxation(object):
         self.variables = []
         self.verbose = verbose
         self.localization_order = []
+        self.normalized = normalized
         if hierarchy in self.hierarchy_types:
             self.hierarchy = hierarchy
         else:
@@ -199,7 +200,7 @@ class SdpRelaxation(object):
                         # Apply the substitutions if any
                         monomial = apply_substitutions(monomial,
                                                        self.monomial_substitutions)
-                        if monomial == 1:
+                        if monomial == 1 and self.normalized:
                             self.F_struct[row_offset + rowA * N*len(monomialsB) + 
                                           rowB * N + 
                                           columnA * len(monomialsB) + columnB, 0] = 1
@@ -235,7 +236,7 @@ class SdpRelaxation(object):
                 # Apply the substitutions if any
                 monomial = apply_substitutions(monomial,
                                                self.monomial_substitutions)
-                if monomial == 1:
+                if monomial == 1 and self.normalized:
                     if self.hierarchy == "nieto-silleras":
                         k = n_vars + 1
                         n_vars = k
@@ -474,7 +475,7 @@ class SdpRelaxation(object):
             A = self.__process_equalities(equalities, flatten(monomial_sets),
                                           level)
             self.__remove_equalities(equalities, A)
-        if self.hierarchy == "nieto-silleras":
+        if self.hierarchy == "nieto-silleras"  and self.normalized:
             self.F_struct[-1, 0] = -1
             self.F_struct[-4, 0] = 1
             for var in var_offsets[:-1]:
