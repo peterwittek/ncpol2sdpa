@@ -221,7 +221,7 @@ def maximum_violation(A_configuration, B_configuration, I, level):
 
     objective = define_objective_with_I(I, A, B)
 
-    sdpRelaxation = SdpRelaxation(flatten([A, B]), verbose=2)
+    sdpRelaxation = SdpRelaxation(flatten([A, B]), verbose=0)
     sdpRelaxation.get_relaxation(objective, [], [],
                                  monomial_substitutions, level)
     return solve_sdp(sdpRelaxation)
