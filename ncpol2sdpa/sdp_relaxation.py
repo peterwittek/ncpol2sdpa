@@ -30,6 +30,25 @@ class SdpRelaxation(object):
     hierarchy_types = ["npa", "nieto-silleras", "moroder"]
 
     def __init__(self, variables, verbose=0, hierarchy="npa", normalized=True):
+        """Constructor for the class.
+        
+        Arguments:
+        variables -- commutative or noncommutative, Hermitian or nonhermiatian
+                     variables, possibly a list of list of variables if the
+                     hierarchy is not NPA.
+        verbose -- level of verbosity:
+                       0: quiet
+                       1: verbose
+                       2: debug level
+        hierarchy -- type of hierarchy (default: "npa"):
+                       "npa": the standard NPA hierarchy (doi:10.1137/090760155)
+                       "nieto-silleras": doi:10.1088/1367-2630/16/1/013035
+                       "moroder": 10.1103/PhysRevLett.111.030501
+        normalized -- normalization of states over which the optimization
+                      happens. Turn it off if further processing is done on the 
+                      SDP matrix, for instance, in MATLAB.
+        """
+
         self.monomial_substitutions = {}
         self.monomial_dictionary = {}
         self.n_vars = 0
@@ -372,6 +391,9 @@ class SdpRelaxation(object):
                             solving the linear equations
         extramonomials -- monomials to be included, on top of the requested
                           level of relaxation
+        target -- target writing routine (default: "sdpa"):
+                     "sdpa": produces a sparse SDPA problem
+                     "picos": further processing is possible with PICOS
         """
        
         self.monomial_substitutions = monomial_substitutions
