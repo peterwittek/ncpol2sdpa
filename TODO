@@ -1,2 +1,4 @@
+  - Exploit sparsity of constraints and the objective function via chordal 
+    graphs as in SparsePOP.
   - Separate PICOS compatibility layer to picos_utils.py file.
   - Improve syntax of constraints.
