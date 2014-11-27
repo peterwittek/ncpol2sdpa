@@ -31,7 +31,7 @@ class SdpRelaxation(object):
 
     def __init__(self, variables, verbose=0, hierarchy="npa", normalized=True):
         """Constructor for the class.
-        
+
         Arguments:
         variables -- commutative or noncommutative, Hermitian or nonhermiatian
                      variables, possibly a list of list of variables if the
@@ -45,7 +45,7 @@ class SdpRelaxation(object):
                        "nieto-silleras": doi:10.1088/1367-2630/16/1/013035
                        "moroder": 10.1103/PhysRevLett.111.030501
         normalized -- normalization of states over which the optimization
-                      happens. Turn it off if further processing is done on the 
+                      happens. Turn it off if further processing is done on the
                       SDP matrix, for instance, in MATLAB.
         """
 
@@ -171,15 +171,16 @@ class SdpRelaxation(object):
             # previous variable to denote this entry in the matrix
             k = self.monomial_dictionary[monomial]
         except KeyError:
-            # An extra round of substitutions is granted on the conjugate of 
+            # An extra round of substitutions is granted on the conjugate of
             # the monomial if all the variables are Hermitian
             need_new_variable = True
-            if self.is_hermitian_variables:            
-                daggered_monomial = apply_substitutions(Dagger(monomial),
-                                       self.monomial_substitutions)
+            if self.is_hermitian_variables:
+                daggered_monomial = \
+                  apply_substitutions(Dagger(monomial),
+                                      self.monomial_substitutions)
                 try:
                     k = self.monomial_dictionary[daggered_monomial]
-                    need_new_variable=False
+                    need_new_variable = False
                 except KeyError:
                     need_new_variable = True
             if need_new_variable:
@@ -220,8 +221,8 @@ class SdpRelaxation(object):
                         monomial = apply_substitutions(monomial,
                                                        self.monomial_substitutions)
                         if monomial == 1 and self.normalized:
-                            self.F_struct[row_offset + rowA * N*len(monomialsB) + 
-                                          rowB * N + 
+                            self.F_struct[row_offset + rowA * N*len(monomialsB) +
+                                          rowB * N +
                                           columnA * len(monomialsB) + columnB, 0] = 1
 
                         elif monomial != 0:
@@ -229,8 +230,8 @@ class SdpRelaxation(object):
                             if k > n_vars:
                                 n_vars = k
                             # We push the entry to the moment matrix
-                            self.F_struct[row_offset + rowA * N*len(monomialsB) + 
-                                          rowB * N + 
+                            self.F_struct[row_offset + rowA * N*len(monomialsB) +
+                                          rowB * N +
                                           columnA * len(monomialsB) + columnB, k] = 1
         return n_vars, block_index + 1
 
@@ -395,7 +396,7 @@ class SdpRelaxation(object):
                      "sdpa": produces a sparse SDPA problem
                      "picos": further processing is possible with PICOS
         """
-       
+
         self.monomial_substitutions = monomial_substitutions
         # Generate monomials and remove substituted ones
         monomial_sets = []
@@ -430,7 +431,7 @@ class SdpRelaxation(object):
         if not self.hierarchy == "moroder":
             for monomials in monomial_sets:
                 n_monomials = len(monomials)
-    
+
                 # The minus one compensates for the constant term in the
                 # top left corner of the moment matrix
                 self.n_vars += int(n_monomials * (n_monomials + 1) / 2)
@@ -454,7 +455,9 @@ class SdpRelaxation(object):
         var_offsets = [new_n_vars]
         if self.hierarchy == "moroder":
             new_n_vars, block_index = \
-                self.__generate_moroder_moment_matrix(new_n_vars, block_index, monomial_sets[0], monomial_sets[1])
+                self.__generate_moroder_moment_matrix(new_n_vars, block_index,
+                                                      monomial_sets[0],
+                                                      monomial_sets[1])
         else:
             for monomials in monomial_sets:
                 new_n_vars, block_index = \
@@ -485,8 +488,7 @@ class SdpRelaxation(object):
             self.__get_facvar(
                 simplify_polynomial(
                     obj,
-                    self.monomial_substitutions)))[
-            1:]
+                    self.monomial_substitutions)))[1:]
         # Process inequalities
         if self.verbose > 0:
             print(('Processing %d inequalities...' % len(inequalities)))

@@ -106,7 +106,7 @@ class IndexMixin(object):
         """
         if (isinstance(index, (spmatrix, np.ndarray)) and
            (index.ndim == 2) and index.dtype.kind == 'b'):
-                return index.nonzero()
+            return index.nonzero()
 
         # Parse any ellipses.
         index = self._check_ellipsis(index)
@@ -169,8 +169,8 @@ class IndexMixin(object):
         # not work because spmatrix.ndim is always 2.
         if isspmatrix(row) or isspmatrix(col):
             raise IndexError("Indexing with sparse matrices is not supported"
-                    " except boolean indexing where matrix and index are equal"
-                    " shapes.")
+                             " except boolean indexing where matrix and index"
+                             " are equal shapes.")
         if isinstance(row, np.ndarray) and row.dtype.kind == 'b':
             row = self._boolean_index_to_array(row)
         if isinstance(col, np.ndarray) and col.dtype.kind == 'b':
@@ -186,13 +186,13 @@ class IndexMixin(object):
         i, j = self._check_boolean(i, j)
         i_slice = isinstance(i, slice)
         if i_slice:
-            i = self._slicetoarange(i, self.shape[0])[:,None]
+            i = self._slicetoarange(i, self.shape[0])[:, None]
         else:
             i = np.atleast_1d(i)
         if isinstance(j, slice):
-            j = self._slicetoarange(j, self.shape[1])[None,:]
+            j = self._slicetoarange(j, self.shape[1])[None, :]
             if i.ndim == 1:
-                i = i[:,None]
+                i = i[:, None]
             elif not i_slice:
                 raise IndexError('index returns 3-dim structure')
         elif isscalarlike(j):
@@ -294,7 +294,7 @@ class spmatrix(object):
         self._shape = None
         if self.format == 'spm':
             raise ValueError("This class is not intended"
-                            " to be instantiated directly.")
+                             "to be instantiated directly.")
 
     def get_shape(self):
         return self._shape
@@ -344,8 +344,8 @@ def _lil_fancy_get(M, N, rows, datas, new_rows, new_datas, i_idx, j_idx):
         new_data = []
 
         for y in range(j_idx.shape[1]):
-            i = i_idx[x,0]
-            j = j_idx[0,y]
+            i = i_idx[x, 0]
+            j = j_idx[0, y]
             value = lil_get1(M, N, rows, datas, i, j)
 
             if value is not 0:
@@ -355,7 +355,7 @@ def _lil_fancy_get(M, N, rows, datas, new_rows, new_datas, i_idx, j_idx):
 
         new_rows[x] = new_row
         new_datas[x] = new_data
-        
+
 def lil_deleteat_nocheck(row, data, j):
     """
     Delete a single item from a row in LIL matrix.
@@ -515,12 +515,12 @@ class lil_matrix(spmatrix, IndexMixin):
             self.dtype = A.dtype
             self.rows = A.rows
             self.data = A.data
-        elif isinstance(arg1,tuple):
+        elif isinstance(arg1, tuple):
             if isshape(arg1):
                 if shape is not None:
                     raise ValueError('invalid use of shape parameter')
                 M, N = arg1
-                self.shape = (M,N)
+                self.shape = (M, N)
                 pre_rows = []
                 pre_data = []
                 for i in range(M):
@@ -528,7 +528,7 @@ class lil_matrix(spmatrix, IndexMixin):
                     pre_data.append([])
                 self.rows = pre_rows
                 self.data = pre_data
-                
+
             else:
                 raise TypeError('unrecognized lil_matrix constructor usage')
         else:
@@ -538,14 +538,14 @@ class lil_matrix(spmatrix, IndexMixin):
             except TypeError:
                 raise TypeError('unsupported matrix type')
 
-    def set_shape(self,shape):
+    def set_shape(self, shape):
         shape = tuple(shape)
 
         if len(shape) != 2:
             raise ValueError("Only two-dimensional sparse arrays "
-                                     "are supported.")
+                             "are supported.")
         try:
-            shape = int(shape[0]),int(shape[1])  # floats, other weirdness
+            shape = int(shape[0]), int(shape[1])  # floats, other weirdness
         except:
             raise TypeError('invalid shape')
 
@@ -562,24 +562,24 @@ class lil_matrix(spmatrix, IndexMixin):
 
     shape = property(fget=spmatrix.get_shape, fset=set_shape)
 
-    def __iadd__(self,other):
-        self[:,:] = self + other
+    def __iadd__(self, other):
+        self[:, :] = self + other
         return self
 
-    def __isub__(self,other):
-        self[:,:] = self - other
+    def __isub__(self, other):
+        self[:, :] = self - other
         return self
 
-    def __imul__(self,other):
+    def __imul__(self, other):
         if isscalarlike(other):
-            self[:,:] = self * other
+            self[:, :] = self * other
             return self
         else:
             raise NotImplementedError
 
-    def __itruediv__(self,other):
+    def __itruediv__(self, other):
         if isscalarlike(other):
-            self[:,:] = self / other
+            self[:, :] = self / other
             return self
         else:
             raise NotImplementedError
@@ -642,11 +642,11 @@ class lil_matrix(spmatrix, IndexMixin):
         # Utilities found in IndexMixin
         i, j = self._unpack_index(index)
         i, j = self._index_to_arrays(i, j)
-        new = lil_matrix((i.shape[0],j.shape[1]), dtype=self.dtype)
+        new = lil_matrix((i.shape[0], j.shape[1]), dtype=self.dtype)
         _lil_fancy_get(self.shape[0], self.shape[1],
-                                    self.rows, self.data,
-                                    new.rows, new.data,
-                                    i, j)
+                       self.rows, self.data,
+                       new.rows, new.data,
+                       i, j)
         return new
 
     def __setitem__(self, index, x):
@@ -664,8 +664,8 @@ class lil_matrix(spmatrix, IndexMixin):
                     # Triggered if input was an ndarray
                     raise ValueError("Trying to assign a sequence to an item")
                 _lil_insert(self.shape[0], self.shape[1],
-                                         self.rows, self.data,
-                                         i, j, x)
+                            self.rows, self.data,
+                            i, j, x)
                 return
 
     def _mul_scalar(self, other):
@@ -689,13 +689,13 @@ class lil_matrix(spmatrix, IndexMixin):
         new.rows = deepcopy(self.rows)
         return new
 
-    def reshape(self,shape):
+    def reshape(self, shape):
         new = lil_matrix(shape, dtype=self.dtype)
         j_max = self.shape[1]
-        for i,row in enumerate(self.rows):
-            for col,j in enumerate(row):
-                new_r,new_c = np.unravel_index(i*j_max + j,shape)
-                new[new_r,new_c] = self[i,j]
+        for i, row in enumerate(self.rows):
+            for col, j in enumerate(row):
+                new_r, new_c = np.unravel_index(i*j_max + j, shape)
+                new[new_r, new_c] = self[i, j]
         return new
 
     def toarray(self, order=None, out=None):
