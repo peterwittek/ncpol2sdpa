@@ -1,3 +1,2 @@
-  - Support Moroder hierarchy (10.1103/PhysRevLett.111.030501)
   - Separate PICOS compatibility layer to picos_utils.py file.
   - Improve syntax of constraints.
