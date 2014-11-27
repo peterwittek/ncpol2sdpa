@@ -217,14 +217,13 @@ monomial_substitutions, equalities = bosonic_constraints(a)
 inequalities = []
 
 time0 = time.time()
-#Obtain SDP relaxation
+
 print("Obtaining SDP relaxation...")
 verbose = 1
 sdpRelaxation = SdpRelaxation(a)
-sdpRelaxation.get_relaxation(hamiltonian, inequalities, equalities, 
-                      monomial_substitutions, level, verbose)
-#Export relaxation to SDPA format
-print("Writing to disk...")
+sdpRelaxation.get_relaxation(hamiltonian, inequalities, equalities,
+                             monomial_substitutions, level,
+                             removeequalities=True)
 write_to_sdpa(sdpRelaxation, 'harmonic_oscillator.dat-s')                      
 \end{verbatim}
 
@@ -237,29 +236,161 @@ This is very close to the analytic result of 2. The result is similarly precise 
 
 It is remarkable that we get the correct value at the first level of relaxation, but this property is typical for bosonic systems~\citep{navascues2013paradox}.
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Example 4: Using the Nieto-Silleras hierarchy}
+One of the newer approaches to the SDP relaxations takes all joint probabilities into consideration when looking for a maximum guessing probability, and not just the ones included in a particular Bell inequality~\citep{nieto-silleras2014using,bancal2014more}. Ncpol2sdpa can generate the respective hierarchy.
+
+To deal with the joint probabilities necessary for setting constraints, we also rely on QuTiP~\citep{johansson2013qutip}:
+\begin{verbatim}
+from math import sqrt
+from qutip import tensor, basis, sigmax, sigmay, expect, qeye
+from ncpol2sdpa import SdpRelaxation, flatten, solve_sdp, \
+                       generate_measurements, \
+                       projective_measurement_constraints
+\end{verbatim}
+We will work in a CHSH scenario where we are trying to find the maximum guessing probability of the first projector of Alice's first measurement. We generate the joint probability distribution on the maximally entangled state with the measurements that give the maximum quantum violation of the CHSH inequality:
+\begin{verbatim}
+def joint_probabilities():
+    psi = (tensor(basis(2,0),basis(2,0)) + 
+           tensor(basis(2,1),basis(2,1))).unit()
+    A_0 = sigmax()
+    A_1 = sigmay()
+    B_0 = (-sigmay()+sigmax())/sqrt(2)
+    B_1 = (sigmay()+sigmax())/sqrt(2)
+
+    A_00 = (qeye(2) + A_0)/2
+    A_10 = (qeye(2) + A_1)/2
+    B_00 = (qeye(2) + B_0)/2
+    B_10 = (qeye(2) + B_1)/2
+
+    p=[]
+    p.append(expect(tensor(A_00, qeye(2)), psi))
+    p.append(expect(tensor(A_10, qeye(2)), psi))
+    p.append(expect(tensor(qeye(2), B_00), psi))
+    p.append(expect(tensor(qeye(2), B_10), psi))
+
+    p.append(expect(tensor(A_00, B_00), psi))
+    p.append(expect(tensor(A_00, B_10), psi))
+    p.append(expect(tensor(A_10, B_00), psi))
+    p.append(expect(tensor(A_10, B_10), psi))
+    return p
+\end{verbatim}
+Next we need the basic configuration of the projectors. We also set the level of the SDP relaxation and the objective. 
+\begin{verbatim}
+level = 1
+A_configuration = [2, 2]
+B_configuration = [2, 2]
+P_A = generate_measurements(A_configuration, 'P_A')
+P_B = generate_measurements(B_configuration, 'P_B')
+monomial_substitutions = projective_measurement_constraints(
+    P_A, P_B)
+objective = -P_A[0][0]
+\end{verbatim}
+We must define further constraints, namely that the joint probabilities must match: 
+\begin{verbatim}
+probabilities = joint_probabilities()
+equalities = []
+k=0
+for i in range(len(A_configuration)):
+    equalities.append(P_A[i][0] - probabilities[k])
+    k += 1
+for i in range(len(B_configuration)):
+    equalities.append(P_B[i][0] - probabilities[k])
+    k += 1
+for i in range(len(A_configuration)):
+    for j in range(len(B_configuration)):
+        equalities.append(P_A[i][0]*P_B[j][0] - probabilities[k])
+        k += 1
+\end{verbatim}
+From here, the solution follows the usual pathway, indicating that we are requesting the Nieto-Silleras hierarchy:
+\begin{verbatim}
+sdpRelaxation = SdpRelaxation([flatten([P_A, P_B])], verbose=2,
+                               hierarchy="nieto-silleras")
+sdpRelaxation.get_relaxation(objective, [], equalities,
+                             monomial_substitutions, level)
+
+print(solve_sdp(sdpRelaxation))
+\end{verbatim}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Example 5: Using the Moroder hierarchy}
+This type of hierarchy allows for a wider range of constraints of the optimization problems, including ones that are not of polynomial form~\citep{moroder2013device}. These constraints are hard to impose using SymPy and the sparse structures in Ncpol2Sdpa. For this reason, we separate two steps: generating the SDP and post-processing the SDP to impose extra constraints. This second step can be done in MATLAB, for instance. We need to import a slightly different set of functions: 
+\begin{verbatim}
+from ncpol2sdpa import SdpRelaxation, flatten, write_to_sdpa, \
+                       generate_measurements, \
+                       projective_measurement_constraints, \
+                       define_objective_with_I
+\end{verbatim}
+Then we set up the problem with specifically with the CHSH inequality in the probability picture as the objective function:
+\begin{verbatim}
+level = 1
+A_configuration = [2, 2]
+B_configuration = [2, 2]
+I = [[ 0,   -1,    0 ],
+     [-1,    1,    1 ], 
+     [ 0,    1,   -1 ]]
+A = generate_measurements(A_configuration, 'A')
+B = generate_measurements(B_configuration, 'B')
+monomial_substitutions = projective_measurement_constraints(A, B)
+objective = define_objective_with_I(I, A, B)
+\end{verbatim}
+When obtaining the relaxation for this kind of problem, it can prove useful to disable the normalization of the top-left element of the moment matrix. Naturally, before solving the problem this should be set to zero, but further processing of the SDP matrix can be easier without this constraint set a priori. Hence we write:
+\begin{verbatim}
+sdpRelaxation = SdpRelaxation([flatten(A), flatten(B)], verbose=2,
+                               hierarchy="moroder", normalized=False)
+sdpRelaxation.get_relaxation(objective, [], [],
+                             monomial_substitutions, level)
+write_to_sdpa(sdpRelaxation, "chsh-moroder.dat-s")  
+\end{verbatim}
+For instance, reading this file with SeDuMi's \verb+fromsdpa+ function~\citep{sturm1999sedumi}, we can impose the positivity of the partial trace of the moment matrix, or decompose the moment matrix in various forms.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{thebibliography}{}
+
+\bibitem[Bancal et~al., 2014]{bancal2014more}
+Bancal, J.-D., Sheridan, L. and Scarani, V. (2014). 
+\newblock More randomness from the same data.
+\newblock {\em New Journal of Physics}, 16(3):033011.
 
 \bibitem[Fayngold and Fayngold, 2013]{fayngold2013quantum}
 Fayngold, M. and Fayngold, V. (2013).
 \newblock {\em Quantum Mechanics and Quantum Information}.
 \newblock Wiley-VCH.
 
+\bibitem[Johansson et~al., 2013]{johansson2013qutip}
+Johansson, J., Nation, P. and Nori, F. (2013).
+\newblock A Python framework for the dynamics of open quantum systems.
+\newblock {\em Computer Physics Communications}, 184(4):1234--1240
+
 \bibitem[Joyner et~al., 2012]{joyner2012open}
 Joyner, D., {\v{C}}ert{\'\i}k, O., Meurer, A., and Granger, B.~E. (2012).
 \newblock Open source computer algebra systems: {SymPy}.
 \newblock {\em ACM Communications in Computer Algebra}, 45(3/4):225--234.
 
+\bibitem[Moroder et~al., 2013]{moroder2013device}
+Moroder, T., Bancal, J.-D., Liang, Y.-C., Hofmann, M. and G\"hne, O. (2013).
+\newblock Device-independent entanglement quantification and related applications
+\newblock {\em Physics Review Letters}, 111(3):030501.
+
 \bibitem[Navascu\'es et~al., 2013]{navascues2013paradox}
 Navascu\'es, M., Garc\'ia-S\'aez, A., Ac\'in, A., Pironio, S., and Plenio, M.~B. (2013).
 \newblock A paradox in bosonic energy computations via semidefinite programming relaxations.
-\newblock {\em New Journal of Physics}, 15(2): 023026.
+\newblock {\em New Journal of Physics}, 15(2):023026.
+
+\bibitem[Nieto-Silleras et~al., 2014]{nieto-silleras2014using}
+Nieto-Silleras, O., Pironio, S. and Silman, J. (2014)
+\newblock Using complete measurement statistics for optimal device-independent randomness evaluation.
+\newblock {\em New Journal of Physics}, 16(1):013035.
 
 \bibitem[Pironio et~al., 2010]{pironio2010convergent}
 Pironio, S., Navascues, M., and Ac\'in, A. (2010).
 \newblock Convergent relaxations of polynomial optimization problems with
   noncommuting variables.
 \newblock {\em SIAM Journal on Optimization}, 20(5):2157--2180.
+
+\bibitem[Sturm, 1999]{sturm1999sedumi}
+Sturm, J. (2010).
+\newblock Using SeDuMi 1.02, a MATLAB Toolbox for Optimization Over Symmetric Cones.
+\newblock {\em Optimization Methods and Software}, 11(1-4):625--653.
 
 \bibitem[Wittek, 2014]{wittek2014ncpol2sdpa}
 Wittek, P. (2014). 
