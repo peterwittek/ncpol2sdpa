@@ -18,16 +18,17 @@ if sys.version.find("PyPy") == -1:
 else:
     from .sparse_utils import lil_matrix
 from .nc_utils import apply_substitutions, build_monomial, \
-    pick_monomials_up_to_degree, ncdegree, \
+    pick_monomials_up_to_degree, ncdegree, get_support,\
     separate_scalar_factor, flatten, build_permutation_matrix, \
     simplify_polynomial, save_monomial_dictionary, get_monomials, unique
 from .sdpa_utils import convert_row_to_sdpa_index
+from .chordal_extension import generate_clique, find_clique_index
 
 class SdpRelaxation(object):
 
     """Class for obtaining sparse SDP relaxation.
     """
-    hierarchy_types = ["npa", "nieto-silleras", "moroder"]
+    hierarchy_types = ["npa", "npa_sparse", "nieto-silleras", "moroder"]
 
     def __init__(self, variables, verbose=0, hierarchy="npa", normalized=True):
         """Constructor for the class.
@@ -274,8 +275,9 @@ class SdpRelaxation(object):
                                   column, k] = 1
         return n_vars, block_index + 1
 
+
     def __process_inequalities(
-            self, inequalities, all_monomials, block_index):
+            self, inequalities, monomial_sets, clique_set, block_index):
         """Generate localizing matrices
 
         Arguments:
@@ -284,13 +286,22 @@ class SdpRelaxation(object):
         block_index -- the current block index in constraint matrices of the
                        SDP relaxation
         """
+
+        all_monomials = flatten(monomial_sets)
         initial_block_index = block_index
         for ineq in inequalities:
             block_index += 1
             localization_order = self.localization_order[
                 block_index - initial_block_index - 1]
-            monomials = \
-                pick_monomials_up_to_degree(all_monomials, localization_order)
+            if self.hierarchy == "npa_sparse":
+                index = find_clique_index(self.variables, ineq, clique_set)
+                monomials = pick_monomials_up_to_degree(monomial_sets[index],
+                                              localization_order)
+
+            else:
+                monomials = \
+                  pick_monomials_up_to_degree(all_monomials,
+                                              localization_order)
             monomials = unique(monomials)
             # Process M_y(gy)(u,w) entries
             for row in range(len(monomials)):
@@ -303,6 +314,7 @@ class SdpRelaxation(object):
                     self.__push_facvar_sparse(polynomial,
                                               block_index, row, column)
         return block_index
+
 
     def __process_equalities(
             self, equalities, all_monomials, level):
@@ -396,11 +408,11 @@ class SdpRelaxation(object):
                      "sdpa": produces a sparse SDPA problem
                      "picos": further processing is possible with PICOS
         """
-
         self.monomial_substitutions = monomial_substitutions
         # Generate monomials and remove substituted ones
         monomial_sets = []
-        if not self.hierarchy == "npa":
+        clique_set = []
+        if self.hierarchy == "nieto-silleras" or self.hierarchy == "moroder":
             k = 0
             for variables in self.variables:
                 extramonomials_ = None
@@ -411,6 +423,17 @@ class SdpRelaxation(object):
                                                    self.monomial_substitutions,
                                                    level))
                 k += 1
+        elif self.hierarchy == "npa_sparse":
+            clique_set = generate_clique(self.variables, obj, inequalities,
+                                         equalities)
+            if self.verbose>1:
+                print(clique_set)
+            for clique in clique_set:
+                variables = [self.variables[i] for i in np.nonzero(clique)[0]]
+                monomial_sets.append(get_monomials(variables,
+                                                   extramonomials,
+                                                   self.monomial_substitutions,
+                                                   level))
         else:
             monomial_sets.append(get_monomials(self.variables,
                                                extramonomials,
@@ -466,6 +489,7 @@ class SdpRelaxation(object):
                         block_index,
                         monomials)
                 var_offsets.append(new_n_vars)
+
         self.n_vars = new_n_vars
         # The initial estimate for the size of F_struct was overly
         # generous. We correct the size here.
@@ -493,7 +517,7 @@ class SdpRelaxation(object):
         if self.verbose > 0:
             print(('Processing %d inequalities...' % len(inequalities)))
 
-        self.__process_inequalities(inequalities, flatten(monomial_sets),
+        self.__process_inequalities(inequalities, monomial_sets, clique_set,
                                     block_index)
         if removeequalities:
             A = self.__process_equalities(equalities, flatten(monomial_sets),

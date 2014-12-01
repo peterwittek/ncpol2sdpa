@@ -23,6 +23,8 @@ def flatten(lol):
     for element in lol:
         if isinstance(element, Symbol) or isinstance(element, Operator):
             new_list.append(element)
+        elif isinstance(element, list) and len(element) == 0:
+            continue
         elif isinstance(element[0], list):
             element = flatten(element)
             new_list.extend(element)
@@ -92,6 +94,33 @@ def remove_scalar_factor(monomial):
     """
     monomial, dummy = separate_scalar_factor(monomial)
     return monomial
+
+
+def get_support(variables, polynomial):
+    """Works for commutative case.
+    TODO: Extend for noncommutative case.
+    """
+    support = []
+    if isinstance(polynomial, (int, float, complex)):
+        support.append([0] * len(variables))
+        return support
+    polynomial = polynomial.expand()
+    for monomial in polynomial.as_coefficients_dict():
+        tmp_support=[0] * len(variables)
+        monomial, scalar = separate_scalar_factor(monomial)
+        symbolic_support = flatten(split_commutative_parts(monomial))
+        for s in symbolic_support:
+            if isinstance(s, Pow):
+                base = s.base
+                if isinstance(base, Dagger):
+                    base = Dagger(base)
+                tmp_support[variables.index(base)] = s.exp
+            elif isinstance(s, Dagger):
+                tmp_support[variables.index(Dagger(s))] = 1
+            elif isinstance(s, Operator):
+                tmp_support[variables.index(s)] = 1
+        support.append(tmp_support)
+    return support
 
 
 def build_monomial(element):
