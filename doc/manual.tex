@@ -105,7 +105,7 @@ y_{22} & y_{221} & y_{222} & y_{2212} & y_{2221} & y_{2222}
 \]
 Apart from the matrices being symmetric, notice other regular patterns between the elements. These are taken care of as additional constraints in the implementation. The optimum for the objective function is $-3/4$. The implementation reads as follows:
 \begin{verbatim}
-from ncpol2sdpa import generate_variables, SdpRelaxation, write_to_sdpa
+from ncpol2sdpa import *
 
 # Number of Hermitian variables
 n_vars = 2
@@ -175,7 +175,36 @@ P.solve()
 \end{verbatim}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Example 3: Bosonic system}
+\subsection{Example 3: Mixed-level relaxation of a Bell inequality}\label{mixedlevel}
+It is often the case that moving to a higher-order relaxation is computationally prohibitive. For these cases, it is possible to inject extra monomials to a lower level relaxation. We refer to this case as a mixed-level relaxation.
+
+As an example, we consider the CHSH inequality in the probability picture at level 1+AB relaxation.
+\begin{verbatim}
+level = 1
+A_configuration = [2, 2]
+B_configuration = [2, 2]
+I = [[ 0,   -1,    0 ],
+     [-1,    1,    1 ], 
+     [ 0,    1,   -1 ]]
+A = generate_measurements(A_configuration, 'A')
+B = generate_measurements(B_configuration, 'B')
+monomial_substitutions = projective_measurement_constraints(A, B)
+objective = define_objective_with_I(I, A, B)
+\end{verbatim}
+Then we need to generate the monomials we would like to add to the relaxation.
+\begin{verbatim}
+AB = [Ai*Bj for Ai in flatten(A) for Bj in flatten(B)]  
+\end{verbatim}
+We have to tell when we ask for the relaxation that these extra monomials should be considered:
+\begin{verbatim}
+sdpRelaxation = SdpRelaxation(flatten([A, B]))
+sdpRelaxation.get_relaxation(objective, [], [],
+                             monomial_substitutions, level,
+                             extramonomials=AB)
+\end{verbatim}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Example 4: Bosonic system}
 A more sophisticated application is  also supplied with the code (test-harmonic\_oscillator.py), which implements the Hamiltonian of a bosonic system on a 1D line. Since it uses non-Hermitian variables, a C++ implementation is currently not feasible.
 
 The system Hamiltonian describes $N$ harmonic oscillators with a parameter $\omega$. It is the result of second quantization and it is subject to bosonic constraints on the ladder operators $a_{k}$ and $a_{k}^{\dagger}$ (see, for instance, Section~22.2 in \cite{fayngold2013quantum}). The Hamiltonian is written as
@@ -193,9 +222,6 @@ where $[.,.]$ stands for the commutation operator $[a,b]=ab-ba$.
 Clearly, most of the constraints are monomial substitutions, except $[a_{i},a_{i}^{\dagger}]=1$, which needs to be defined as an equality. The Python code for generating the SDP relaxation is provided below. We set $\omega=1$, and we also set Planck's constant $\hbar$ to one, to obtain numerical results that are easier to interpret.
 \begin{verbatim}
 from sympy.physics.quantum.dagger import Dagger
-from ncpol2sdpa import generate_variables,  \
-                       bosonic_constraints, \
-                       SdpRelaxation, write_to_sdp
 
 # level of relaxation
 level = 1
@@ -237,16 +263,13 @@ This is very close to the analytic result of 2. The result is similarly precise 
 It is remarkable that we get the correct value at the first level of relaxation, but this property is typical for bosonic systems~\citep{navascues2013paradox}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Example 4: Using the Nieto-Silleras hierarchy}
+\subsection{Example 5: Using the Nieto-Silleras hierarchy}
 One of the newer approaches to the SDP relaxations takes all joint probabilities into consideration when looking for a maximum guessing probability, and not just the ones included in a particular Bell inequality~\citep{nieto-silleras2014using,bancal2014more}. Ncpol2sdpa can generate the respective hierarchy.
 
 To deal with the joint probabilities necessary for setting constraints, we also rely on QuTiP~\citep{johansson2013qutip}:
 \begin{verbatim}
 from math import sqrt
 from qutip import tensor, basis, sigmax, sigmay, expect, qeye
-from ncpol2sdpa import SdpRelaxation, flatten, solve_sdp, \
-                       generate_measurements, \
-                       projective_measurement_constraints
 \end{verbatim}
 We will work in a CHSH scenario where we are trying to find the maximum guessing probability of the first projector of Alice's first measurement. We generate the joint probability distribution on the maximally entangled state with the measurements that give the maximum quantum violation of the CHSH inequality:
 \begin{verbatim}
@@ -312,15 +335,10 @@ sdpRelaxation.get_relaxation(objective, [], equalities,
 print(solve_sdp(sdpRelaxation))
 \end{verbatim}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Example 5: Using the Moroder hierarchy}
-This type of hierarchy allows for a wider range of constraints of the optimization problems, including ones that are not of polynomial form~\citep{moroder2013device}. These constraints are hard to impose using SymPy and the sparse structures in Ncpol2Sdpa. For this reason, we separate two steps: generating the SDP and post-processing the SDP to impose extra constraints. This second step can be done in MATLAB, for instance. We need to import a slightly different set of functions: 
-\begin{verbatim}
-from ncpol2sdpa import SdpRelaxation, flatten, write_to_sdpa, \
-                       generate_measurements, \
-                       projective_measurement_constraints, \
-                       define_objective_with_I
-\end{verbatim}
-Then we set up the problem with specifically with the CHSH inequality in the probability picture as the objective function:
+\subsection{Example 6: Using the Moroder hierarchy}
+This type of hierarchy allows for a wider range of constraints of the optimization problems, including ones that are not of polynomial form~\citep{moroder2013device}. These constraints are hard to impose using SymPy and the sparse structures in Ncpol2Sdpa. For this reason, we separate two steps: generating the SDP and post-processing the SDP to impose extra constraints. This second step can be done in MATLAB, for instance. 
+
+Then we set up the problem with specifically with the CHSH inequality in the probability picture as the objective function. This part is identical to the one discussed in Section~\ref{mixedlevel}.
 \begin{verbatim}
 level = 1
 A_configuration = [2, 2]
