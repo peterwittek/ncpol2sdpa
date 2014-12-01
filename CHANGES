@@ -1,3 +1,7 @@
+Since 1.5:
+  - Support for chordal graph extension in the commutative case
+    (doi:10.1137/050623802).
+
 Version 1.5: 2014-11-27
   - Support for Moroder hierarchy (doi:10.1103/PhysRevLett.111.030501).
   - Further symmetries are discovered when all variables are Hermitian.

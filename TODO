@@ -1,4 +1,3 @@
-  - Exploit sparsity of constraints and the objective function via chordal 
-    graphs as in SparsePOP.
+  - Extrend chordal extension to noncommutative case.
   - Separate PICOS compatibility layer to picos_utils.py file.
   - Improve syntax of constraints.
