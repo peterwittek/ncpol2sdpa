@@ -103,12 +103,25 @@ class SdpRelaxation(object):
                     coeff *= scalar_factor
                     k = self.monomial_dictionary[monomial]
                 except KeyError:
-                    if self.verbose > 1:
+                    # An extra round of substitutions is granted on the
+                    # conjugate of the monomial if all the variables are
+                    #Hermitian
+                    exists = False
+                    if self.is_hermitian_variables:
+                        daggered_monomial = \
+                          apply_substitutions(Dagger(monomial),
+                                              self.monomial_substitutions)
+                        try:
+                            k = self.monomial_dictionary[daggered_monomial]
+                            exists = True
+                        except KeyError:
+                            exists = False
+                    if not exists and self.verbose > 0:
                         [monomial, coeff] = build_monomial(element)
                         sub = apply_substitutions(Dagger(monomial),
                                                   self.monomial_substitutions)
-                        print(("DEBUG: %s, %s, %s" % (element,
-                                                      Dagger(monomial), sub)))
+                        print(("DEBUG: %s, %s, %s, %s" % (element,
+                              Dagger(monomial), sub)))
         return k, coeff
 
     def __push_facvar_sparse(self, polynomial, block_index, i, j):
@@ -126,7 +139,7 @@ class SdpRelaxation(object):
         # Simplifying here will trigger a bug in SymPy related to
         # the powers of daggered variables.
         # polynomial = polynomial.expand()
-        if polynomial == 0 or polynomial.is_Mul:
+        if isinstance(polynomial, float) or polynomial == 0 or polynomial.is_Mul:
             elements = [polynomial]
         else:
             elements = polynomial.as_coeff_mul()[1][0].as_coeff_add()[1]
