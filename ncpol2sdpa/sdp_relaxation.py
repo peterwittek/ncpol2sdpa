@@ -44,7 +44,7 @@ class SdpRelaxation(object):
         hierarchy -- type of hierarchy (default: "npa"):
                        "npa": the standard NPA hierarchy (doi:10.1137/090760155)
                        "nieto-silleras": doi:10.1088/1367-2630/16/1/013035
-                       "moroder": 10.1103/PhysRevLett.111.030501
+                       "moroder": doi:10.1103/PhysRevLett.111.030501
         normalized -- normalization of states over which the optimization
                       happens. Turn it off if further processing is done on the
                       SDP matrix, for instance, in MATLAB.
@@ -192,7 +192,7 @@ class SdpRelaxation(object):
                 self.monomial_dictionary[monomial] = k
         return k
 
-    def __generate_moroder_moment_matrix(self, n_vars, block_index,
+    def __generate_moment_matrix(self, n_vars, block_index,
                                          monomialsA, monomialsB):
         """Generate the moment matrix of monomials.
 
@@ -222,9 +222,16 @@ class SdpRelaxation(object):
                         monomial = apply_substitutions(monomial,
                                                        self.monomial_substitutions)
                         if monomial == 1 and self.normalized:
-                            self.F_struct[row_offset + rowA * N*len(monomialsB) +
-                                          rowB * N +
-                                          columnA * len(monomialsB) + columnB, 0] = 1
+                            if self.hierarchy == "nieto-silleras":
+                                k = n_vars + 1
+                                n_vars = k
+                                self.F_struct[row_offset + rowA * N*len(monomialsB) +
+                                                  rowB * N +
+                                                  columnA * len(monomialsB) + columnB, k] = 1
+                            else:
+                                    self.F_struct[row_offset + rowA * N*len(monomialsB) +
+                                                  rowB * N +
+                                                  columnA * len(monomialsB) + columnB, 0] = 1
 
                         elif monomial != 0:
                             k = self.__process_monomial(monomial, n_vars)
@@ -234,45 +241,6 @@ class SdpRelaxation(object):
                             self.F_struct[row_offset + rowA * N*len(monomialsB) +
                                           rowB * N +
                                           columnA * len(monomialsB) + columnB, k] = 1
-        return n_vars, block_index + 1
-
-
-    def __generate_moment_matrix(self, n_vars, block_index, monomials):
-        """Generate the moment matrix of monomials.
-
-        Arguments:
-        n_vars -- current number of variables
-        block_index -- current block index in the SDP matrix
-        monomials -- |W_d| set of words of length up to the relaxation level
-        """
-        row_offset = 0
-        if block_index > 0:
-            for block_size in self.block_struct[0:block_index]:
-                row_offset += block_size ** 2
-        # We process the M_d(u,w) entries in the moment matrix
-        for row in range(len(monomials)):
-            for column in range(row, len(monomials)):
-                # Calculate the monomial u*v
-                monomial = Dagger(monomials[row]) * monomials[column]
-                # Apply the substitutions if any
-                monomial = apply_substitutions(monomial,
-                                               self.monomial_substitutions)
-                if monomial == 1 and self.normalized:
-                    if self.hierarchy == "nieto-silleras":
-                        k = n_vars + 1
-                        n_vars = k
-                        self.F_struct[row_offset + row * len(monomials) +
-                                      column, k] = 1
-                    else:
-                        self.F_struct[row_offset + row * len(monomials) +
-                                      column, 0] = 1
-                elif monomial != 0:
-                    k = self.__process_monomial(monomial, n_vars)
-                    if k > n_vars:
-                        n_vars = k
-                    # We push the entry to the moment matrix
-                    self.F_struct[row_offset + row * len(monomials) +
-                                  column, k] = 1
         return n_vars, block_index + 1
 
 
@@ -478,16 +446,16 @@ class SdpRelaxation(object):
         var_offsets = [new_n_vars]
         if self.hierarchy == "moroder":
             new_n_vars, block_index = \
-                self.__generate_moroder_moment_matrix(new_n_vars, block_index,
-                                                      monomial_sets[0],
-                                                      monomial_sets[1])
+                self.__generate_moment_matrix(new_n_vars, block_index,
+                                              monomial_sets[0],
+                                              monomial_sets[1])
         else:
             for monomials in monomial_sets:
                 new_n_vars, block_index = \
                     self.__generate_moment_matrix(
                         new_n_vars,
                         block_index,
-                        monomials)
+                        monomials, [monomials[0]])
                 var_offsets.append(new_n_vars)
 
         self.n_vars = new_n_vars
