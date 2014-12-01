@@ -120,7 +120,7 @@ class SdpRelaxation(object):
                         [monomial, coeff] = build_monomial(element)
                         sub = apply_substitutions(Dagger(monomial),
                                                   self.monomial_substitutions)
-                        print(("DEBUG: %s, %s, %s, %s" % (element,
+                        print(("DEBUG: %s, %s, %s" % (element,
                               Dagger(monomial), sub)))
         return k, coeff
 
