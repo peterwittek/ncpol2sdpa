@@ -38,17 +38,14 @@ The following code replicates the toy example from Pironio, S.; Navascues, M. & 
   # Inequality constraints
   inequalities = [-X[1] ** 2 + X[1] + 0.5]
 
-  # Equality constraints
-  equalities = []
-
   # Simple monomial substitutions
   monomial_substitution = {}
   monomial_substitution[X[0] ** 2] = X[0]
 
   # Obtain SDP relaxation
   sdpRelaxation = SdpRelaxation(X)
-  sdpRelaxation.get_relaxation(obj, inequalities, equalities,
-                               monomial_substitution, level)
+  sdpRelaxation.get_relaxation(level, objective=obj, inequalities=inequalities,
+                               substitutions=monomial_substitution)
   write_to_sdpa(sdpRelaxation, 'examplenc.dat-s')
 
 

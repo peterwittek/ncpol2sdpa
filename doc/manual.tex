@@ -56,11 +56,11 @@ X = ... # Define noncommuting variables
 sdpRelaxation = SdpRelaxation(X)
 \end{verbatim}
 
-Getting the relaxation also follows an almost identical syntax. It requires all the information about the polynomial optimization problem itself: the objective function, an associative array of the inequalities, equalities, the monomial substitutions, and also the level of the relaxation:
+Getting the relaxation requires at least the level of relaxation:
 \begin{verbatim}
-sdpRelaxation.get_relaxation(obj, inequalities, equalities, 
-                      monomial_substitution, level)
+sdpRelaxation.get_relaxation(level)
 \end{verbatim}
+This will generate the moment matrix. Additional elements of the problem, such as the objective function, inequalities, equalities, and bounds on the variables.
 
 The last step in is to write out the relaxation to a sparse SDPA file. The method (\verb+write_to_sdpa+) takes one parameter, the file name. Alternatively, if SDPA is in the search path, then it can be solved by invoking a helper function (\verb+solve_sdp+). Alternatively, MOSEK\footnote{\url{http://www.mosek.com/}} is also supported for writing a problem and solving it. Using a compatibility layer to PICOS\footnote{\url{http://picos.zib.de/}}, it is also possible to solve the problem with a range of other solvers, including CVXOPT\footnote{\url{http://cvxopt.org/}}.
 
@@ -130,9 +130,9 @@ monomial_substitution[X[0] ** 2] = X[0]
 
 # Obtain SDP relaxation
 sdpRelaxation = SdpRelaxation(X)
-sdpRelaxation.get_relaxation(obj, inequalities, equalities,
-                             monomial_substitution, level)
-write_to_sdpa(sdpRelaxation, 'example_noncommutative.dat-s')
+sdpRelaxation.get_relaxation(level, objective=obj, inequalities=inequalities,
+                             substitutions=monomial_substitution)
+write_to_sdpa(sdpRelaxation, 'examplenc.dat-s')
 \end{verbatim}
 
 Any flavour of the SDPA family of solvers will solve the exported problem:
@@ -166,8 +166,10 @@ Please ensure that the MOSEK is operational.
 
 A compatibility layer with PICOS allows calling a wider ranger of solvers. Assuming that the PICOS dependencies are in \verb+PYTHONPATH+, we can pass an argument to the function \verb+get_relaxation+ to generate a PICOS optimization problem. Using the same example as before, we change the relevant function call to:
 \begin{verbatim}
-P = sdpRelaxation.get_relaxation(obj, inequalities, equalities,
-                           monomial_substitution, level, target='picos')
+sdpRelaxation = SdpRelaxation(X, target='picos')
+P = sdpRelaxation.get_relaxation(level, objective=obj,
+                                 inequalities=inequalities,
+                                 equalities=equalities)
 \end{verbatim}
 This returns a PICOS problem, and with that, we can solve it with any solver that PICOS supports:
 \begin{verbatim}
@@ -198,8 +200,8 @@ AB = [Ai*Bj for Ai in flatten(A) for Bj in flatten(B)]
 We have to tell when we ask for the relaxation that these extra monomials should be considered:
 \begin{verbatim}
 sdpRelaxation = SdpRelaxation(flatten([A, B]))
-sdpRelaxation.get_relaxation(objective, [], [],
-                             monomial_substitutions, level,
+sdpRelaxation.get_relaxation(level, objective=objective,
+                             substitutions=monomial_substitutions,
                              extramonomials=AB)
 \end{verbatim}
 
@@ -247,8 +249,9 @@ time0 = time.time()
 print("Obtaining SDP relaxation...")
 verbose = 1
 sdpRelaxation = SdpRelaxation(a)
-sdpRelaxation.get_relaxation(hamiltonian, inequalities, equalities,
-                             monomial_substitutions, level,
+sdpRelaxation.get_relaxation(level, objective=hamiltonian,
+                             equalities=equalities,
+                             substitutions=substitutions,
                              removeequalities=True)
 write_to_sdpa(sdpRelaxation, 'harmonic_oscillator.dat-s')                      
 \end{verbatim}
@@ -329,11 +332,13 @@ From here, the solution follows the usual pathway, indicating that we are reques
 \begin{verbatim}
 sdpRelaxation = SdpRelaxation([flatten([P_A, P_B])], verbose=2,
                                hierarchy="nieto-silleras")
-sdpRelaxation.get_relaxation(objective, [], equalities,
-                             monomial_substitutions, level)
+sdpRelaxation.get_relaxation(level, objective=objective, 
+                             equalities=equalities,
+                             substitutions=monomial_substitutions)
 
 print(solve_sdp(sdpRelaxation))
 \end{verbatim}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Example 6: Using the Moroder hierarchy}
 This type of hierarchy allows for a wider range of constraints of the optimization problems, including ones that are not of polynomial form~\citep{moroder2013device}. These constraints are hard to impose using SymPy and the sparse structures in Ncpol2Sdpa. For this reason, we separate two steps: generating the SDP and post-processing the SDP to impose extra constraints. This second step can be done in MATLAB, for instance. 
@@ -355,8 +360,8 @@ When obtaining the relaxation for this kind of problem, it can prove useful to d
 \begin{verbatim}
 sdpRelaxation = SdpRelaxation([flatten(A), flatten(B)], verbose=2,
                                hierarchy="moroder", normalized=False)
-sdpRelaxation.get_relaxation(objective, [], [],
-                             monomial_substitutions, level)
+sdpRelaxation.get_relaxation(level, objective=objective,
+                             substitutions=monomial_substitutions)
 write_to_sdpa(sdpRelaxation, "chsh-moroder.dat-s")  
 \end{verbatim}
 For instance, reading this file with SeDuMi's \verb+fromsdpa+ function~\citep{sturm1999sedumi}, we can impose the positivity of the partial trace of the moment matrix, or decompose the moment matrix in various forms.

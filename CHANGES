@@ -1,6 +1,16 @@
 Since 1.5:
+  - Syntax for passing parameters changed. Only the level of the relaxation is
+    compulsory for obtaining a relaxation.
+  - Extra parameter for bounds on the variables was added. Syntax is identical 
+    to the inequalities. The difference is that the inequalities in the bounds 
+    will not be relaxed by localizing matrices.
+  - Extra parameter for passing additional variables to the Nieto-Silleras
+    hierarchy. This is important because the top-left element of the blocks of 
+    moment matrices in the relaxation is not one: they add up to one. Hence
+    specifying the last element of a measurement becomes possible with this 
+    option.
   - Support for chordal graph extension in the commutative case
-    (doi:10.1137/050623802).
+    (doi:10.1137/050623802). Pass hierarchy="npa_sparse" to the constructor.
 
 Version 1.5: 2014-11-27
   - Support for Moroder hierarchy (doi:10.1103/PhysRevLett.111.030501).
