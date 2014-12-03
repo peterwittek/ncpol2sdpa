@@ -18,9 +18,9 @@ if sys.version.find("PyPy") == -1:
 else:
     from .sparse_utils import lil_matrix
 from .nc_utils import apply_substitutions, build_monomial, \
-    pick_monomials_up_to_degree, ncdegree, get_support,\
+    pick_monomials_up_to_degree, ncdegree, \
     separate_scalar_factor, flatten, build_permutation_matrix, \
-    simplify_polynomial, save_monomial_dictionary, get_monomials, unique
+    simplify_polynomial, save_monomial_index, get_monomials, unique
 from .sdpa_utils import convert_row_to_sdpa_index
 from .chordal_extension import generate_clique, find_clique_index
 
@@ -29,8 +29,10 @@ class SdpRelaxation(object):
     """Class for obtaining sparse SDP relaxation.
     """
     hierarchy_types = ["npa", "npa_sparse", "nieto-silleras", "moroder"]
+    targets = ["sdpa", "picos"]
 
-    def __init__(self, variables, verbose=0, hierarchy="npa", normalized=True):
+    def __init__(self, variables, verbose=0, hierarchy="npa", normalized=True,
+                 target='sdpa'):
         """Constructor for the class.
 
         Arguments:
@@ -42,16 +44,22 @@ class SdpRelaxation(object):
                        1: verbose
                        2: debug level
         hierarchy -- type of hierarchy (default: "npa"):
-                       "npa": the standard NPA hierarchy (doi:10.1137/090760155)
+                       "npa": the standard NPA hierarchy
+                              (doi:10.1137/090760155)
+                       "npa_sparse": chordal graph extension to improve
+                                     sparsity (doi:10.1137/050623802)
                        "nieto-silleras": doi:10.1088/1367-2630/16/1/013035
                        "moroder": doi:10.1103/PhysRevLett.111.030501
         normalized -- normalization of states over which the optimization
                       happens. Turn it off if further processing is done on the
                       SDP matrix, for instance, in MATLAB.
+        target -- target writing routine (default: "sdpa"):
+                     "sdpa": produces a sparse SDPA problem
+                     "picos": further processing is possible with PICOS
         """
 
-        self.monomial_substitutions = {}
-        self.monomial_dictionary = {}
+        self.substitutions = {}
+        self.monomial_index = {}
         self.n_vars = 0
         self.F_struct = None
         self.block_struct = []
@@ -60,6 +68,10 @@ class SdpRelaxation(object):
         self.verbose = verbose
         self.localization_order = []
         self.normalized = normalized
+        if target in self.targets:
+            self.target = target
+        else:
+            raise Exception('Not allowed target:', target)
         if hierarchy in self.hierarchy_types:
             self.hierarchy = hierarchy
         else:
@@ -81,7 +93,7 @@ class SdpRelaxation(object):
         monomial, coeff = build_monomial(element)
         if enablesubstitution:
             monomial = apply_substitutions(monomial,
-                                           self.monomial_substitutions)
+                                           self.substitutions)
         # Given the monomial, we need its mapping L_y(w) to push it into
         # a corresponding constraint matrix
         if monomial != 0:
@@ -93,15 +105,15 @@ class SdpRelaxation(object):
             k = 0
         else:
             try:
-                k = self.monomial_dictionary[monomial]
+                k = self.monomial_index[monomial]
             except KeyError:
                 try:
                     [monomial, coeff] = build_monomial(element)
                     monomial, scalar_factor = separate_scalar_factor(
                         apply_substitutions(Dagger(monomial),
-                                            self.monomial_substitutions))
+                                            self.substitutions))
                     coeff *= scalar_factor
-                    k = self.monomial_dictionary[monomial]
+                    k = self.monomial_index[monomial]
                 except KeyError:
                     # An extra round of substitutions is granted on the
                     # conjugate of the monomial if all the variables are
@@ -110,16 +122,16 @@ class SdpRelaxation(object):
                     if self.is_hermitian_variables:
                         daggered_monomial = \
                           apply_substitutions(Dagger(monomial),
-                                              self.monomial_substitutions)
+                                              self.substitutions)
                         try:
-                            k = self.monomial_dictionary[daggered_monomial]
+                            k = self.monomial_index[daggered_monomial]
                             exists = True
                         except KeyError:
                             exists = False
                     if not exists and self.verbose > 0:
                         [monomial, coeff] = build_monomial(element)
                         sub = apply_substitutions(Dagger(monomial),
-                                                  self.monomial_substitutions)
+                                                  self.substitutions)
                         print(("DEBUG: %s, %s, %s" % (element,
                               Dagger(monomial), sub)))
         return k, coeff
@@ -139,7 +151,8 @@ class SdpRelaxation(object):
         # Simplifying here will trigger a bug in SymPy related to
         # the powers of daggered variables.
         # polynomial = polynomial.expand()
-        if isinstance(polynomial, float) or polynomial == 0 or polynomial.is_Mul:
+        if isinstance(polynomial, float) or polynomial == 0 or\
+           polynomial.is_Mul:
             elements = [polynomial]
         else:
             elements = polynomial.as_coeff_mul()[1][0].as_coeff_add()[1]
@@ -183,17 +196,16 @@ class SdpRelaxation(object):
         try:
             # If yes, then we improve sparsity by reusing the
             # previous variable to denote this entry in the matrix
-            k = self.monomial_dictionary[monomial]
+            k = self.monomial_index[monomial]
         except KeyError:
             # An extra round of substitutions is granted on the conjugate of
             # the monomial if all the variables are Hermitian
             need_new_variable = True
             if self.is_hermitian_variables:
-                daggered_monomial = \
-                  apply_substitutions(Dagger(monomial),
-                                      self.monomial_substitutions)
+                daggered_monomial = apply_substitutions(Dagger(monomial),
+                                                        self.substitutions)
                 try:
-                    k = self.monomial_dictionary[daggered_monomial]
+                    k = self.monomial_index[daggered_monomial]
                     need_new_variable = False
                 except KeyError:
                     need_new_variable = True
@@ -202,8 +214,34 @@ class SdpRelaxation(object):
                 # array recording the monomials, and add an entry in
                 # the moment matrix
                 k = n_vars + 1
-                self.monomial_dictionary[monomial] = k
+                self.monomial_index[monomial] = k
         return k
+
+    def __push_monomial(self, monomial, n_vars, row_offset, rowA, columnA, N,
+                        rowB, columnB, lenB):
+        monomial = apply_substitutions(monomial,
+                                       self.substitutions)
+        if monomial == 1 and self.normalized:
+            if self.hierarchy == "nieto-silleras":
+                k = n_vars + 1
+                n_vars = k
+                self.F_struct[row_offset + rowA * N*lenB +
+                                  rowB * N +
+                                  columnA * lenB + columnB, k] = 1
+            else:
+                    self.F_struct[row_offset + rowA * N*lenB +
+                                  rowB * N +
+                                  columnA * lenB + columnB, 0] = 1
+
+        elif monomial != 0:
+            k = self.__process_monomial(monomial, n_vars)
+            if k > n_vars:
+                n_vars = k
+            # We push the entry to the moment matrix
+            self.F_struct[row_offset + rowA * N*lenB +
+                          rowB * N +
+                          columnA * lenB + columnB, k] = 1
+        return n_vars
 
     def __generate_moment_matrix(self, n_vars, block_index,
                                          monomialsA, monomialsB):
@@ -232,28 +270,10 @@ class SdpRelaxation(object):
                                    Dagger(monomialsB[rowB]) * \
                                    monomialsB[columnB]
                         # Apply the substitutions if any
-                        monomial = apply_substitutions(monomial,
-                                                       self.monomial_substitutions)
-                        if monomial == 1 and self.normalized:
-                            if self.hierarchy == "nieto-silleras":
-                                k = n_vars + 1
-                                n_vars = k
-                                self.F_struct[row_offset + rowA * N*len(monomialsB) +
-                                                  rowB * N +
-                                                  columnA * len(monomialsB) + columnB, k] = 1
-                            else:
-                                    self.F_struct[row_offset + rowA * N*len(monomialsB) +
-                                                  rowB * N +
-                                                  columnA * len(monomialsB) + columnB, 0] = 1
-
-                        elif monomial != 0:
-                            k = self.__process_monomial(monomial, n_vars)
-                            if k > n_vars:
-                                n_vars = k
-                            # We push the entry to the moment matrix
-                            self.F_struct[row_offset + rowA * N*len(monomialsB) +
-                                          rowB * N +
-                                          columnA * len(monomialsB) + columnB, k] = 1
+                        n_vars = self.__push_monomial(monomial, n_vars,
+                                                      row_offset, rowA,
+                                                      columnA, N, rowB,
+                                                      columnB, len(monomialsB))
         return n_vars, block_index + 1
 
 
@@ -291,7 +311,7 @@ class SdpRelaxation(object):
                     polynomial = \
                         simplify_polynomial(
                             Dagger(monomials[row]) * ineq * monomials[column],
-                            self.monomial_substitutions)
+                            self.substitutions)
                     self.__push_facvar_sparse(polynomial,
                                               block_index, row, column)
         return block_index
@@ -332,7 +352,7 @@ class SdpRelaxation(object):
                     polynomial = \
                         simplify_polynomial(Dagger(monomials[row]) *
                                             equality * monomials[column],
-                                            self.monomial_substitutions)
+                                            self.substitutions)
                     A[n_rows] = self.__get_facvar(polynomial)
                     # This is something really weird: we want the constant
                     # terms in equalities to be positive. Otherwise funny
@@ -343,7 +363,8 @@ class SdpRelaxation(object):
                     n_rows += 1
         return A
 
-    def __calculate_block_structure(self, monomial_sets, inequalities, level):
+    def __calculate_block_structure(self, monomial_sets, inequalities, bounds,
+                                    level):
         """Calculates the block_struct array for the output file.
         """
         if  self.hierarchy == "moroder":
@@ -355,10 +376,12 @@ class SdpRelaxation(object):
             # Find the order of the localizing matrix
             ineq_order = ncdegree(ineq)
             if ineq_order > 2 * level:
-                print(("A constraint has degree %d. Choose a higher level of\
-                      relaxation." % ineq_order))
+                print(("A constraint has degree %d. Choose a higher level of" +
+                      " relaxation." % ineq_order))
                 raise Exception
             localization_order = int(floor((2 * level - ineq_order) / 2))
+            if self.hierarchy == "nieto-silleras":
+                localization_order = 0
             self.localization_order.append(localization_order)
             localizing_monomials = \
                 pick_monomials_up_to_degree(flatten(monomial_sets),
@@ -366,31 +389,13 @@ class SdpRelaxation(object):
             if self.hierarchy == "nieto-silleras":
                 localizing_monomials = [1]
             self.block_struct.append(len(localizing_monomials))
+        if bounds != None:
+            for bound in bounds:
+                self.localization_order.append(0)
+                self.block_struct.append(1)
 
-    def get_relaxation(self, obj, inequalities, equalities,
-                       monomial_substitutions, level,
-                       removeequalities=False,
-                       extramonomials=None, target='sdpa'):
-        """Get the SDP relaxation of a noncommutative polynomial optimization
-        problem.
-
-        Arguments:
-        obj -- the objective function
-        inequalities -- list of inequality constraints
-        equalities -- list of equality constraints
-        monomial_substitutions -- monomials that can be replaced
-                                  (e.g., idempotent variables)
-        level -- the level of the relaxation
-        removeequalities -- whether to attempt removing the equalities by
-                            solving the linear equations
-        extramonomials -- monomials to be included, on top of the requested
-                          level of relaxation
-        target -- target writing routine (default: "sdpa"):
-                     "sdpa": produces a sparse SDPA problem
-                     "picos": further processing is possible with PICOS
-        """
-        self.monomial_substitutions = monomial_substitutions
-        # Generate monomials and remove substituted ones
+    def generate_monomial_sets(self, objective, inequalities, equalities,
+                               extramonomials, level):
         monomial_sets = []
         clique_set = []
         if self.hierarchy == "nieto-silleras" or self.hierarchy == "moroder":
@@ -401,36 +406,28 @@ class SdpRelaxation(object):
                     extramonomials_ = extramonomials[k]
                 monomial_sets.append(get_monomials(variables,
                                                    extramonomials_,
-                                                   self.monomial_substitutions,
+                                                   self.substitutions,
                                                    level))
                 k += 1
         elif self.hierarchy == "npa_sparse":
-            clique_set = generate_clique(self.variables, obj, inequalities,
-                                         equalities)
+            clique_set = generate_clique(self.variables, objective,
+                                         inequalities, equalities)
             if self.verbose>1:
                 print(clique_set)
             for clique in clique_set:
                 variables = [self.variables[i] for i in np.nonzero(clique)[0]]
                 monomial_sets.append(get_monomials(variables,
                                                    extramonomials,
-                                                   self.monomial_substitutions,
+                                                   self.substitutions,
                                                    level))
         else:
             monomial_sets.append(get_monomials(self.variables,
                                                extramonomials,
-                                               self.monomial_substitutions,
+                                               self.substitutions,
                                                level))
+        return monomial_sets, clique_set
 
-        if not (removeequalities or target == 'picos'):
-            # Equalities are converted to pairs of inequalities
-            for equality in equalities:
-                inequalities.append(equality)
-                inequalities.append(-equality)
-
-        self.__calculate_block_structure(monomial_sets, inequalities, level)
-        if self.hierarchy == "nieto-silleras":
-            self.block_struct.append(2)
-
+    def estimate_n_vars(self, monomial_sets):
         self.n_vars = 0
         if not self.hierarchy == "moroder":
             for monomials in monomial_sets:
@@ -446,9 +443,89 @@ class SdpRelaxation(object):
             self.n_vars += int(n_monomials * (n_monomials + 1) / 2)
             self.n_vars -= 1
 
+    def set_objective_function(self, objective, nsextraobjvars, var_offsets):
+        if objective != None:
+            self.obj_facvar = (
+                self.__get_facvar(
+                    simplify_polynomial(
+                        objective,
+                        self.substitutions)))[1:]
+        else:
+            self.obj_facvar = self.__get_facvar(0)
+        if nsextraobjvars != None:
+            if self.hierarchy == "nieto-silleras":
+                if len(nsextraobjvars) == len(var_offsets)-1:
+                    for i, coeff in enumerate(nsextraobjvars):
+                        self.obj_facvar[var_offsets[i]] = coeff
+                else:
+                    raise Exception("The length of nsextraobjvars does not " +
+                                    "match the number of blocks in the Nieto-"+
+                                    "Silleras relaxation")
+            else:
+                raise Exception("nsextraobjvars is only meaningful with the " +
+                                "Nieto-Silleras relaxation")
+
+
+    def get_relaxation(self, level, objective=None, inequalities=None,
+                       equalities=None, substitutions=None, bounds=None,
+                       removeequalities=False, extramonomials=None,
+                       nsextraobjvars=None):
+        """Get the SDP relaxation of a noncommutative polynomial optimization
+        problem.
+
+        Arguments:
+        level -- the level of the relaxation
+
+        Optional arguments:
+        obj -- the objective function
+        inequalities -- list of inequality constraints
+        equalities -- list of equality constraints
+        substitutions -- monomials that can be replaced (e.g., idempotent
+                         variables)
+        bounds -- bounds on variables (will not be relaxed)
+        removeequalities -- whether to attempt removing the equalities by
+                            solving the linear equations
+        extramonomials -- monomials to be included, on top of the requested
+                          level of relaxation
+        nsextraobjvars -- the coefficients of unnormalized top left elements
+                          of the moment matrices of the Nieto-Silleras
+                          hierarchy that should be included in the objective
+                          function
+
+        """
+        if substitutions == None:
+            self.substitutions = {}
+        else:
+            self.substitutions = substitutions
+        # Generate monomials and remove substituted ones
+        monomial_sets, clique_set = self.generate_monomial_sets(objective,
+                                                                inequalities,
+                                                                equalities,
+                                                                extramonomials,
+                                                                level)
+        if inequalities == None:
+            constraints = []
+        else:
+            constraints = inequalities
+        if not (removeequalities or self.target == 'picos' or
+                equalities == None):
+            # Equalities are converted to pairs of inequalities
+            for equality in equalities:
+                constraints.append(equality)
+                constraints.append(-equality)
+
+        # Figure out basic structure of the SDP
+        self.__calculate_block_structure(monomial_sets, constraints,
+                                         bounds, level)
+        if bounds != None:
+            for bound in bounds:
+                constraints.append(bound)
+        if self.hierarchy == "nieto-silleras":
+            self.block_struct.append(2)
         n_rows = 0
         for block_size in self.block_struct:
             n_rows += block_size ** 2
+        self.estimate_n_vars(monomial_sets)
         self.F_struct = lil_matrix((n_rows, self.n_vars + 1))
 
         if self.verbose > 0:
@@ -471,36 +548,31 @@ class SdpRelaxation(object):
                         monomials, [monomials[0]])
                 var_offsets.append(new_n_vars)
 
-        self.n_vars = new_n_vars
         # The initial estimate for the size of F_struct was overly
         # generous. We correct the size here.
+        self.n_vars = new_n_vars
         self.F_struct = self.F_struct[:, 0:self.n_vars + 1]
 
         if self.verbose > 0:
             print(('Reduced number of SDP variables: %d' % self.n_vars))
         if self.verbose > 1:
-            save_monomial_dictionary(
-                "monomials.txt",
-                self.monomial_dictionary,
-                self.n_vars)
+            save_monomial_index("monomials.txt", self.monomial_index,
+                                     self.n_vars)
 
-        if target == 'picos':
-            return self.__convert_to_picos(inequalities, equalities, obj,
+        if self.target == 'picos':
+            return self.__convert_to_picos(constraints, equalities, objective,
                                            monomial_sets)
 
         # Objective function
-        self.obj_facvar = (
-            self.__get_facvar(
-                simplify_polynomial(
-                    obj,
-                    self.monomial_substitutions)))[1:]
-        # Process inequalities
-        if self.verbose > 0:
-            print(('Processing %d inequalities...' % len(inequalities)))
+        self.set_objective_function(objective, nsextraobjvars, var_offsets)
 
-        self.__process_inequalities(inequalities, monomial_sets, clique_set,
+        # Process constraints
+        if self.verbose > 0:
+            print(('Processing %d constraints...' % len(constraints)))
+
+        self.__process_inequalities(constraints, monomial_sets, clique_set,
                                     block_index)
-        if removeequalities:
+        if removeequalities and equalities != None:
             A = self.__process_equalities(equalities, flatten(monomial_sets),
                                           level)
             self.__remove_equalities(equalities, A)
@@ -537,7 +609,7 @@ class SdpRelaxation(object):
         """Swaps the objective function while keeping the moment matrix and
         the localizing matrices untouched"""
         self.obj_facvar = (
-            self.__get_facvar(simplify_polynomial(new_objective, self.monomial_substitutions)))[1:]
+            self.__get_facvar(simplify_polynomial(new_objective, self.substitutions)))[1:]
 
     def __to_affine_expression(self, polynomial, X, row_offsets):
         """Helper function to create PICOS affine expressions from SymPy
@@ -612,7 +684,7 @@ class SdpRelaxation(object):
                     polynomial = \
                         simplify_polynomial(
                             Dagger(monomials[row]) * ineq * monomials[column],
-                            self.monomial_substitutions)
+                            self.substitutions)
                     affine_expression = \
                         self.__to_affine_expression(polynomial, X, row_offsets)
                     P.add_constraint(Y[row, column] == affine_expression)

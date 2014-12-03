@@ -11,8 +11,8 @@ import time
 
 # Number of Hermitian variables
 n_vars = 2
-# Order of relaxation
-order = 1
+# Level of relaxation
+level = 1
 
 # Get Hermitian variables
 X = generate_variables(n_vars, hermitian=True)
@@ -23,25 +23,22 @@ for i in range(n_vars):
     for j in range(n_vars):
         obj += X[i] * X[j]
 
-# Inequality constraints
-inequalities = []
-
 # Equality constraints
 equalities = []
 for i in range(n_vars):
     equalities.append(X[i] * X[i] - 1.0)
 
 # Simple monomial substitutions
-monomial_substitution = {}
+substitutions = {}
 for i in range(n_vars):
     for j in range(i + 1, n_vars):
         # [X_i, X_j] = 0
-        monomial_substitution[X[i] * X[j]] = X[j] * X[i]
+        substitutions[X[i] * X[j]] = X[j] * X[i]
 
 # Obtain SDP relaxation
 time0 = time.time()
 sdpRelaxation = SdpRelaxation(X)
-sdpRelaxation.get_relaxation(obj, inequalities, equalities,
-                             monomial_substitution, order)
+sdpRelaxation.get_relaxation(level, objective=obj, equalities=equalities,
+                             substitutions=substitutions)
 write_to_sdpa(sdpRelaxation, 'benchmark.dat-s')
 print('%0.2f s' % ((time.time() - time0)))

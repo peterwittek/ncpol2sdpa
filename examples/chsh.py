@@ -37,12 +37,13 @@ for i in range(int(n_vars / 2)):
 A = [M[0], M[1]]
 B = [M[2], M[3]]
 
-monomial_substitutions = projective_measurement_constraints(A, B)
+substitutions = projective_measurement_constraints(A, B)
 
 C = expectation_values(M, outcomes)
 
-objective = -(C[0] * C[2] + C[0] * C[3] + C[1] * C[2] - C[1] * C[3])
+chsh = -(C[0] * C[2] + C[0] * C[3] + C[1] * C[2] - C[1] * C[3])
 
 sdpRelaxation = SdpRelaxation(E, verbose=2)
-sdpRelaxation.get_relaxation(objective, [], [], monomial_substitutions, level)
+sdpRelaxation.get_relaxation(level, objective=chsh,
+                             substitutions=substitutions)
 print(solve_sdp(sdpRelaxation))

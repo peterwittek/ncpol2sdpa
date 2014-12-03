@@ -31,12 +31,10 @@ inequalities = [-X[1] ** 2 + X[1] + 0.5]
 # Equality constraints
 equalities = []
 equalities.append(X[0] ** 2 - X[0])
-# Simple monomial substitutions
-monomial_substitution = {}
-#monomial_substitution[X[0] ** 2] = X[0]
 
 # Obtain SDP relaxation
-sdpRelaxation = SdpRelaxation(X)
-P = sdpRelaxation.get_relaxation(obj, inequalities, equalities,
-                                 monomial_substitution, level, target='picos')
+sdpRelaxation = SdpRelaxation(X, target='picos')
+P = sdpRelaxation.get_relaxation(level, objective=obj,
+                                 inequalities=inequalities,
+                                 equalities=equalities)
 P.solve(solver='mosek7')

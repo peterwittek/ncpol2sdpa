@@ -26,7 +26,7 @@ objective = define_objective_with_I(I, A, B)
 AB = [Ai*Bj for Ai in flatten(A) for Bj in flatten(B)]
 
 sdpRelaxation = SdpRelaxation(flatten([A, B]))
-sdpRelaxation.get_relaxation(objective, [], [],
-                             monomial_substitutions, level,
+sdpRelaxation.get_relaxation(level, objective=objective,
+                             substitutions=monomial_substitutions,
                              extramonomials=AB)
-print solve_sdp(sdpRelaxation)
+print(solve_sdp(sdpRelaxation))

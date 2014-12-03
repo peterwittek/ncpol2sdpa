@@ -21,5 +21,5 @@ g0 = 4 * x1 ** 2 + x1 * x2 - 4 * x2 ** 2 - \
 
 # Obtain SDP relaxation
 sdpRelaxation = SdpRelaxation([x1, x2])
-sdpRelaxation.get_relaxation(g0, [], [], {}, 3)
+sdpRelaxation.get_relaxation(3, objective=g0)
 write_to_sdpa(sdpRelaxation, 'gloptipoly_demo.dat-s')

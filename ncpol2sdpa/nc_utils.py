@@ -358,17 +358,17 @@ def ncdegree(polynomial):
     return degree
 
 
-def get_monomials(variables, extramonomials, monomial_substitutions, degree):
+def get_monomials(variables, extramonomials, substitutions, degree):
     """Return the monomials of a certain degree.
     """
     monomials = get_ncmonomials(variables, degree)
     if extramonomials is not None:
         monomials.extend(extramonomials)
     monomials = [monomial for monomial in monomials if monomial not
-                 in monomial_substitutions]
+                 in substitutions]
     monomials = [remove_scalar_factor(apply_substitutions(monomial,
-                                                          monomial_substitutions))
-                 for monomial in monomials]
+                                                          substitutions))
+             for monomial in monomials]
     monomials = unique(monomials)
     return monomials
 
@@ -392,11 +392,11 @@ def pick_monomials_of_degree(monomials, degree):
     return selected_monomials
 
 
-def save_monomial_dictionary(filename, monomial_dictionary, n_vars):
+def save_monomial_index(filename, monomial_index, n_vars):
     """Save a monomial dictionary for debugging purposes.
     """
     monomial_translation = [''] * (n_vars + 1)
-    for key, k in monomial_dictionary.items():
+    for key, k in monomial_index.items():
         monomial = ('%s' % key)
         monomial = monomial.replace('Dagger(', '')
         monomial = monomial.replace(')', 'T')

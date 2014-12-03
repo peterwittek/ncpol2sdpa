@@ -31,7 +31,9 @@ for i in range(n):
 
 objective = simplify(np.dot(x, np.dot(Q, np.transpose(x))))
 
+level = 1
+
 sdpRelaxation = SdpRelaxation(x)
-sdpRelaxation.get_relaxation(objective, [], equalities, {}, 1,
+sdpRelaxation.get_relaxation(level, objective=objective, equalities=equalities,
                              removeequalities=True)
 write_to_sdpa(sdpRelaxation, 'max_cut.dat-s')

@@ -33,15 +33,16 @@ hamiltonian = 0
 for i in range(N):
     hamiltonian += hbar * omega * (Dagger(a[i]) * a[i] + 0.5)
 
-monomial_substitutions, equalities = bosonic_constraints(a)
+substitutions, equalities = bosonic_constraints(a)
 inequalities = []
 
 time0 = time.time()
 # Obtain SDP relaxation
 print("Obtaining SDP relaxation...")
 sdpRelaxation = SdpRelaxation(a, verbose=1)
-sdpRelaxation.get_relaxation(hamiltonian, inequalities, equalities,
-                             monomial_substitutions, level,
+sdpRelaxation.get_relaxation(level, objective=hamiltonian,
+                             equalities=equalities,
+                             substitutions=substitutions,
                              removeequalities=True)
 # Export relaxation to SDPA format
 print("Writing to disk...")
