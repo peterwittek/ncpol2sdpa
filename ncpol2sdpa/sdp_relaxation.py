@@ -61,6 +61,7 @@ class SdpRelaxation(object):
         self.substitutions = {}
         self.monomial_index = {}
         self.n_vars = 0
+        self.var_offsets = [0]
         self.F_struct = None
         self.block_struct = []
         self.obj_facvar = 0
@@ -394,7 +395,7 @@ class SdpRelaxation(object):
                 self.localization_order.append(0)
                 self.block_struct.append(1)
 
-    def generate_monomial_sets(self, objective, inequalities, equalities,
+    def __generate_monomial_sets(self, objective, inequalities, equalities,
                                extramonomials, level):
         monomial_sets = []
         clique_set = []
@@ -427,7 +428,7 @@ class SdpRelaxation(object):
                                                level))
         return monomial_sets, clique_set
 
-    def estimate_n_vars(self, monomial_sets):
+    def __estimate_n_vars(self, monomial_sets):
         self.n_vars = 0
         if not self.hierarchy == "moroder":
             for monomials in monomial_sets:
@@ -443,7 +444,7 @@ class SdpRelaxation(object):
             self.n_vars += int(n_monomials * (n_monomials + 1) / 2)
             self.n_vars -= 1
 
-    def set_objective_function(self, objective, nsextraobjvars, var_offsets):
+    def set_objective(self, objective, nsextraobjvars=None):
         if objective != None:
             self.obj_facvar = (
                 self.__get_facvar(
@@ -454,9 +455,9 @@ class SdpRelaxation(object):
             self.obj_facvar = self.__get_facvar(0)
         if nsextraobjvars != None:
             if self.hierarchy == "nieto-silleras":
-                if len(nsextraobjvars) == len(var_offsets)-1:
+                if len(nsextraobjvars) == len(self.var_offsets)-1:
                     for i, coeff in enumerate(nsextraobjvars):
-                        self.obj_facvar[var_offsets[i]] = coeff
+                        self.obj_facvar[self.var_offsets[i]] = coeff
                 else:
                     raise Exception("The length of nsextraobjvars does not " +
                                     "match the number of blocks in the Nieto-"+
@@ -498,11 +499,9 @@ class SdpRelaxation(object):
         else:
             self.substitutions = substitutions
         # Generate monomials and remove substituted ones
-        monomial_sets, clique_set = self.generate_monomial_sets(objective,
-                                                                inequalities,
-                                                                equalities,
-                                                                extramonomials,
-                                                                level)
+        monomial_sets, clique_set = \
+           self.__generate_monomial_sets(objective, inequalities, equalities,
+                                         extramonomials, level)
         if inequalities == None:
             constraints = []
         else:
@@ -525,7 +524,7 @@ class SdpRelaxation(object):
         n_rows = 0
         for block_size in self.block_struct:
             n_rows += block_size ** 2
-        self.estimate_n_vars(monomial_sets)
+        self.__estimate_n_vars(monomial_sets)
         self.F_struct = lil_matrix((n_rows, self.n_vars + 1))
 
         if self.verbose > 0:
@@ -533,7 +532,6 @@ class SdpRelaxation(object):
             print('Generating moment matrix...')
        # Generate moment matrices
         new_n_vars, block_index = 0, 0
-        var_offsets = [new_n_vars]
         if self.hierarchy == "moroder":
             new_n_vars, block_index = \
                 self.__generate_moment_matrix(new_n_vars, block_index,
@@ -546,7 +544,7 @@ class SdpRelaxation(object):
                         new_n_vars,
                         block_index,
                         monomials, [monomials[0]])
-                var_offsets.append(new_n_vars)
+                self.var_offsets.append(new_n_vars)
 
         # The initial estimate for the size of F_struct was overly
         # generous. We correct the size here.
@@ -564,7 +562,7 @@ class SdpRelaxation(object):
                                            monomial_sets)
 
         # Objective function
-        self.set_objective_function(objective, nsextraobjvars, var_offsets)
+        self.set_objective(objective, nsextraobjvars)
 
         # Process constraints
         if self.verbose > 0:
@@ -579,7 +577,7 @@ class SdpRelaxation(object):
         if self.hierarchy == "nieto-silleras"  and self.normalized:
             self.F_struct[-1, 0] = -1
             self.F_struct[-4, 0] = 1
-            for var in var_offsets[:-1]:
+            for var in self.var_offsets[:-1]:
                 self.F_struct[-1, var + 1] = 1
                 self.F_struct[-4, var + 1] = -1
 
@@ -604,12 +602,6 @@ class SdpRelaxation(object):
                                 self.F_struct[:, 1:].dot(H)])
         self.F_struct = self.F_struct.tolil()
         self.n_vars = self.F_struct.shape[1] - 1
-
-    def swap_objective(self, new_objective):
-        """Swaps the objective function while keeping the moment matrix and
-        the localizing matrices untouched"""
-        self.obj_facvar = (
-            self.__get_facvar(simplify_polynomial(new_objective, self.substitutions)))[1:]
 
     def __to_affine_expression(self, polynomial, X, row_offsets):
         """Helper function to create PICOS affine expressions from SymPy
