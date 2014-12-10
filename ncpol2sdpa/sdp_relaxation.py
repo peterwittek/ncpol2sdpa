@@ -127,14 +127,11 @@ class SdpRelaxation(object):
                               Dagger(monomial), sub)))
         return k, coeff
 
-    def __push_facvar_sparse(self, polynomial, block_index, i, j):
+    def __push_facvar_sparse(self, polynomial, block_index, row_offset, i, j):
         """Calculate the sparse vector representation of a polynomial
         and pushes it to the F structure.
         """
 
-        row_offset = 0
-        for block_size in self.block_struct[0:block_index - 1]:
-            row_offset += block_size ** 2
         width = self.block_struct[block_index - 1]
         # Preprocess the polynomial for uniform handling later
         # DO NOT EXPAND THE POLYNOMIAL HERE!!!!!!!!!!!!!!!!!!!
@@ -281,6 +278,9 @@ class SdpRelaxation(object):
 
         all_monomials = flatten(monomial_sets)
         initial_block_index = block_index
+        row_offsets = [0]
+        for block, block_size in enumerate(self.block_struct):
+            row_offsets.append(row_offsets[block] + block_size ** 2)
         for ineq in inequalities:
             block_index += 1
             localization_order = self.localization_order[
@@ -303,8 +303,9 @@ class SdpRelaxation(object):
                         simplify_polynomial(
                             Dagger(monomials[row]) * ineq * monomials[column],
                             self.substitutions)
-                    self.__push_facvar_sparse(polynomial,
-                                              block_index, row, column)
+                    self.__push_facvar_sparse(polynomial, block_index,
+                                              row_offsets[block_index-1],
+                                              row, column)
         return block_index
 
 
