@@ -21,7 +21,6 @@ from .nc_utils import apply_substitutions, build_monomial, \
     pick_monomials_up_to_degree, ncdegree, \
     separate_scalar_factor, flatten, build_permutation_matrix, \
     simplify_polynomial, save_monomial_index, get_monomials, unique
-from .sdpa_utils import convert_row_to_sdpa_index
 from .chordal_extension import generate_clique, find_clique_index
 
 class SdpRelaxation(object):
@@ -29,10 +28,8 @@ class SdpRelaxation(object):
     """Class for obtaining sparse SDP relaxation.
     """
     hierarchy_types = ["npa", "npa_sparse", "nieto-silleras", "moroder"]
-    targets = ["sdpa", "picos"]
 
-    def __init__(self, variables, verbose=0, hierarchy="npa", normalized=True,
-                 target='sdpa'):
+    def __init__(self, variables, verbose=0, hierarchy="npa", normalized=True):
         """Constructor for the class.
 
         Arguments:
@@ -53,9 +50,6 @@ class SdpRelaxation(object):
         normalized -- normalization of states over which the optimization
                       happens. Turn it off if further processing is done on the
                       SDP matrix, for instance, in MATLAB.
-        target -- target writing routine (default: "sdpa"):
-                     "sdpa": produces a sparse SDPA problem
-                     "picos": further processing is possible with PICOS
         """
 
         self.substitutions = {}
@@ -69,10 +63,6 @@ class SdpRelaxation(object):
         self.verbose = verbose
         self.localization_order = []
         self.normalized = normalized
-        if target in self.targets:
-            self.target = target
-        else:
-            raise Exception('Not allowed target:', target)
         if hierarchy in self.hierarchy_types:
             self.hierarchy = hierarchy
         else:
@@ -364,6 +354,28 @@ class SdpRelaxation(object):
                     n_rows += 1
         return A
 
+    def __remove_equalities(self, equalities, A):
+        """Attempt to remove equalities by solving the linear equations.
+        """
+        if len(equalities) == 0:
+            return
+        c = np.array(self.obj_facvar)
+        Q, R, P = qr(np.transpose(A[:, 1:]), pivoting=True)
+        E = build_permutation_matrix(P)
+        n = np.max(np.nonzero(np.sum(np.abs(R), axis=1) > 0)) + 1
+        x = np.dot(Q[:, 0:n], np.linalg.solve(np.transpose(R[0:n, :]),
+                                              E.T.dot(-A[:, 0])))
+        x = np.append(1, x)
+        H = lil_matrix(Q[:, n:])  # New basis
+        # Transforming the objective function
+        self.obj_facvar = H.T.dot(c)
+        # Transforming the moment matrix and localizing matrices
+        new_constant_column = lil_matrix(self.F_struct.dot(x))
+        self.F_struct = hstack([new_constant_column.T,
+                                self.F_struct[:, 1:].dot(H)])
+        self.F_struct = self.F_struct.tolil()
+        self.n_vars = self.F_struct.shape[1] - 1
+
     def __calculate_block_structure(self, monomial_sets, inequalities, bounds,
                                     level):
         """Calculates the block_struct array for the output file.
@@ -506,8 +518,7 @@ class SdpRelaxation(object):
             constraints = []
         else:
             constraints = inequalities
-        if not (removeequalities or self.target == 'picos' or
-                equalities == None):
+        if not (removeequalities or equalities == None):
             # Equalities are converted to pairs of inequalities
             for equality in equalities:
                 constraints.append(equality)
@@ -550,17 +561,11 @@ class SdpRelaxation(object):
         # generous. We correct the size here.
         self.n_vars = new_n_vars
         self.F_struct = self.F_struct[:, 0:self.n_vars + 1]
-
         if self.verbose > 0:
             print(('Reduced number of SDP variables: %d' % self.n_vars))
         if self.verbose > 1:
             save_monomial_index("monomials.txt", self.monomial_index,
                                      self.n_vars)
-
-        if self.target == 'picos':
-            return self.__convert_to_picos(constraints, equalities, objective,
-                                           monomial_sets)
-
         # Objective function
         self.set_objective(objective, nsextraobjvars)
 
@@ -580,112 +585,3 @@ class SdpRelaxation(object):
             for var in self.var_offsets[:-1]:
                 self.F_struct[-1, var + 1] = 1
                 self.F_struct[-4, var + 1] = -1
-
-    def __remove_equalities(self, equalities, A):
-        """Attempt to remove equalities by solving the linear equations.
-        """
-        if len(equalities) == 0:
-            return
-        c = np.array(self.obj_facvar)
-        Q, R, P = qr(np.transpose(A[:, 1:]), pivoting=True)
-        E = build_permutation_matrix(P)
-        n = np.max(np.nonzero(np.sum(np.abs(R), axis=1) > 0)) + 1
-        x = np.dot(Q[:, 0:n], np.linalg.solve(np.transpose(R[0:n, :]),
-                                              E.T.dot(-A[:, 0])))
-        x = np.append(1, x)
-        H = lil_matrix(Q[:, n:])  # New basis
-        # Transforming the objective function
-        self.obj_facvar = H.T.dot(c)
-        # Transforming the moment matrix and localizing matrices
-        new_constant_column = lil_matrix(self.F_struct.dot(x))
-        self.F_struct = hstack([new_constant_column.T,
-                                self.F_struct[:, 1:].dot(H)])
-        self.F_struct = self.F_struct.tolil()
-        self.n_vars = self.F_struct.shape[1] - 1
-
-    def __to_affine_expression(self, polynomial, X, row_offsets):
-        """Helper function to create PICOS affine expressions from SymPy
-        polynomials.
-        """
-        facvar = self.__get_facvar(polynomial)
-        affine_expression = 0
-        for k in range(len(facvar)):
-            if facvar[k] != 0:
-                row0 = self.F_struct[:, k].nonzero()[0][0]
-                block_index, i, j = \
-                    convert_row_to_sdpa_index(
-                        self.block_struct,
-                        row_offsets,
-                        row0)
-                affine_expression += facvar[k] * X[i, j]
-        return affine_expression
-
-    def __convert_to_picos(self, inequalities, equalities, obj, all_monomials):
-        """PICOS compatibility layer.
-        """
-        if len(all_monomials) > 1:
-            print('Independent algebras are not support by the PICOS \
-                  compatibility layer')
-            exit()
-        all_monomials = all_monomials[0]
-        import picos as pic
-        P = pic.Problem()
-        # Defining the momement matrix
-        X = P.add_variable('X', (self.n_vars, self.n_vars), 'symmetric')
-        P.add_constraint(X >> 0)
-        P.add_constraint(X[0, 0] == 1)
-        row_offsets = [0]
-        cumulative_sum = 0
-        for block_size in self.block_struct:
-            cumulative_sum += block_size ** 2
-            row_offsets.append(cumulative_sum)
-        # Defining the symmetries of the moment matrix
-        for k in range(self.n_vars):
-            if self.F_struct[:self.block_struct[0] ** 2, k].getnnz() > 1:
-                row0 = self.F_struct[:self.block_struct[0] ** 2,
-                                     k].nonzero()[0][0]
-                for row in self.F_struct[:self.block_struct[0] ** 2,
-                                         k].nonzero()[0][1:]:
-                    block_index, i1, j1 = \
-                        convert_row_to_sdpa_index(
-                            self.block_struct,
-                            row_offsets,
-                            row0)
-                    block_index, i2, j2 = \
-                        convert_row_to_sdpa_index(
-                            self.block_struct,
-                            row_offsets,
-                            row)
-                    if not (i1 == i2 and j1 == j2):
-                        P.add_constraint(X[i2, j2] == X[i1, j1])
-        # Iterate over the inequalities
-        block_index = 0
-        for ineq in inequalities:
-            block_index += 1
-            localization_order = self.localization_order[
-                block_index - 1]
-            monomials = \
-                pick_monomials_up_to_degree(all_monomials, localization_order)
-            Y = P.add_variable(('Y%s' % block_index),
-                               (len(monomials), len(monomials)), 'symmetric')
-            P.add_constraint(Y >> 0)
-            # Process M_y(gy)(u,w) entries
-            for row in range(len(monomials)):
-                for column in range(row, len(monomials)):
-                    # Calculate the moments of polynomial entries
-                    polynomial = \
-                        simplify_polynomial(
-                            Dagger(monomials[row]) * ineq * monomials[column],
-                            self.substitutions)
-                    affine_expression = \
-                        self.__to_affine_expression(polynomial, X, row_offsets)
-                    P.add_constraint(Y[row, column] == affine_expression)
-        for equality in equalities:
-            affine_expression = self.__to_affine_expression(equality, X,
-                                                            row_offsets)
-            P.add_constraint(affine_expression == 0)
-
-        # Set the objective
-        affine_expression = self.__to_affine_expression(obj, X, row_offsets)
-        P.set_objective('min', affine_expression)
-        return P

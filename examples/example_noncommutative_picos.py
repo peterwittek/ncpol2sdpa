@@ -12,7 +12,7 @@ Created on Fri May 10 09:45:11 2013
 @author: Peter Wittek
 """
 
-from ncpol2sdpa import generate_variables, SdpRelaxation
+from ncpol2sdpa import generate_variables, SdpRelaxation, convert_to_picos
 
 # Number of Hermitian variables
 n_vars = 2
@@ -33,8 +33,9 @@ equalities = []
 equalities.append(X[0] ** 2 - X[0])
 
 # Obtain SDP relaxation
-sdpRelaxation = SdpRelaxation(X, target='picos')
-P = sdpRelaxation.get_relaxation(level, objective=obj,
-                                 inequalities=inequalities,
-                                 equalities=equalities)
-P.solve(solver='mosek7')
+sdpRelaxation = SdpRelaxation(X)
+sdpRelaxation.get_relaxation(level, objective=obj,
+                             inequalities=inequalities,
+                             equalities=equalities)
+P = convert_to_picos(sdpRelaxation)
+P.solve()

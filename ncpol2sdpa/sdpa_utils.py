@@ -25,9 +25,16 @@ def read_sdpa_out(filename):
     return primal, dual
 
 
-def solve_sdp(sdp_problem):
+def solve_sdp(sdp_problem, solverexecutable="sdpa"):
     """Helper function to write out the SDP problem to a temporary
     file, call the solver, and parse the output.
+
+    Arguments:
+    sdp_problem -- the SDP relaxation to be solved
+
+    Optional arguments:
+    solverexecutable -- if sdpa is not in the path or has a different name,
+                        this parameter can specify the name of the executable
     """
     primal, dual = 0, 0
     tempfile_ = tempfile.NamedTemporaryFile()
@@ -36,7 +43,7 @@ def solve_sdp(sdp_problem):
     tmp_dats_filename = tmp_filename + ".dat-s"
     tmp_out_filename = tmp_filename + ".out"
     write_to_sdpa(sdp_problem, tmp_dats_filename)
-    call(["sdpa", tmp_dats_filename, tmp_out_filename])
+    call([solverexecutable, tmp_dats_filename, tmp_out_filename])
     primal, dual = read_sdpa_out(tmp_out_filename)
     return primal, dual
 
