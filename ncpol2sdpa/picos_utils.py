@@ -10,6 +10,9 @@ from .sdpa_utils import convert_row_to_sdpa_index
 
 def row_to_affine_expression(row_vector, F_struct, row_offsets,
                              block_of_last_moment_matrix, block_struct, X):
+    """Helper function to create an affine expression based on the variables
+    in the moment matrices.
+    """
     if row_vector.getnnz()>0:
         affine_expression = 0
         row, columns = row_vector.nonzero()
@@ -28,6 +31,9 @@ def row_to_affine_expression(row_vector, F_struct, row_offsets,
 
 def objective_to_affine_expression(objective, F_struct, row_offsets,
                              block_of_last_moment_matrix, block_struct, X):
+    """Helper function to create an affine expression based on the variables
+    in the moment matrices from the dense vector describing the objective.
+    """
     affine_expression = 0
     for k, v in enumerate(objective):
         if v!=0:
@@ -39,6 +45,11 @@ def objective_to_affine_expression(objective, F_struct, row_offsets,
     return affine_expression
 
 def convert_to_picos(sdp_problem):
+    """Convert an SDP relaxation to a PICOS problem.
+
+    Arguments:
+    sdp_problem -- the SDP relaxation to be converted to a PICOS problem.
+    """  
     import picos as pic
     P = pic.Problem()
     row_offsets = [0]

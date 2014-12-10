@@ -75,6 +75,9 @@ def convert_to_mosek_matrix(sdp_problem):
 
 def convert_to_mosek(sdp_problem):
     """Convert an SDP relaxation to a MOSEK task.
+
+    Arguments:
+    sdp_problem -- the SDP relaxation to be converted to a MOSEK task.
     """
     import mosek
     barci, barcj, barcval, barai, baraj, baraval = \
