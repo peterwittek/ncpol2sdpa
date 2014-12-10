@@ -62,7 +62,7 @@ sdpRelaxation.get_relaxation(level)
 \end{verbatim}
 This will generate the moment matrix. Additional elements of the problem, such as the objective function, inequalities, equalities, and bounds on the variables.
 
-The last step in is to write out the relaxation to a sparse SDPA file. The method (\verb+write_to_sdpa+) takes one parameter, the file name. Alternatively, if SDPA is in the search path, then it can be solved by invoking a helper function (\verb+solve_sdp+). Alternatively, MOSEK\footnote{\url{http://www.mosek.com/}} is also supported for writing a problem and solving it. Using a compatibility layer to PICOS\footnote{\url{http://picos.zib.de/}}, it is also possible to solve the problem with a range of other solvers, including CVXOPT\footnote{\url{http://cvxopt.org/}}.
+The last step in is to write out the relaxation to a sparse SDPA file. The method (\verb+write_to_sdpa+) takes one parameter, the file name. Alternatively, if SDPA is in the search path, then it can be solved by invoking a helper function (\verb+solve_sdp+). Alternatively, MOSEK\footnote{\url{http://www.mosek.com/}} is also supported for writing a problem and solving it. Using a converter to PICOS\footnote{\url{http://picos.zib.de/}}, it is also possible to solve the problem with a range of other solvers, including CVXOPT\footnote{\url{http://cvxopt.org/}}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Examples}
@@ -162,14 +162,11 @@ task = convert_to_mosek(sdpRelaxation)
 task.optimize()
 task.solutionsummary(mosek.streamtype.msg)
 \end{verbatim}
-Please ensure that the MOSEK is operational.
+Please ensure that the MOSEK installation is operational.
 
 A compatibility layer with PICOS allows calling a wider ranger of solvers. Assuming that the PICOS dependencies are in \verb+PYTHONPATH+, we can pass an argument to the function \verb+get_relaxation+ to generate a PICOS optimization problem. Using the same example as before, we change the relevant function call to:
 \begin{verbatim}
-sdpRelaxation = SdpRelaxation(X, target='picos')
-P = sdpRelaxation.get_relaxation(level, objective=obj,
-                                 inequalities=inequalities,
-                                 equalities=equalities)
+P = convert_to_picos(sdpRelaxation)
 \end{verbatim}
 This returns a PICOS problem, and with that, we can solve it with any solver that PICOS supports:
 \begin{verbatim}
