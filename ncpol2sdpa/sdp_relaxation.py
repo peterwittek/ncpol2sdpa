@@ -378,7 +378,7 @@ class SdpRelaxation(object):
         self.n_vars = self.F_struct.shape[1] - 1
 
     def __calculate_block_structure(self, monomial_sets, inequalities, bounds,
-                                    level):
+                                    clique_set, level):
         """Calculates the block_struct array for the output file.
         """
         if  self.hierarchy == "moroder":
@@ -397,9 +397,15 @@ class SdpRelaxation(object):
             if self.hierarchy == "nieto-silleras":
                 localization_order = 0
             self.localization_order.append(localization_order)
-            localizing_monomials = \
-                pick_monomials_up_to_degree(flatten(monomial_sets),
-                                            localization_order)
+            if self.hierarchy == "npa_sparse":
+                index = find_clique_index(self.variables, ineq, clique_set)
+                localizing_monomials = \
+                    pick_monomials_up_to_degree(monomial_sets[index],
+                                                localization_order)
+            else:
+                localizing_monomials = \
+                    pick_monomials_up_to_degree(flatten(monomial_sets),
+                                                localization_order)
             if self.hierarchy == "nieto-silleras":
                 localizing_monomials = [1]
             self.block_struct.append(len(localizing_monomials))
@@ -527,7 +533,7 @@ class SdpRelaxation(object):
 
         # Figure out basic structure of the SDP
         self.__calculate_block_structure(monomial_sets, constraints,
-                                         bounds, level)
+                                         bounds, clique_set, level)
         if bounds != None:
             for bound in bounds:
                 constraints.append(bound)
