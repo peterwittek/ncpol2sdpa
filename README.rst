@@ -1,6 +1,6 @@
 Ncpol2sdpa
 ==========
-Ncpol2sdpa is a set of scripts to convert a polynomial optimization problem of either commutative or noncommutative variables to a sparse semidefinite programming (SDP) problem that can be processed by the `SDPA <http://sdpa.sourceforge.net/>`_ family of solvers, `MOSEK <http://www.mosek.com/>`_, or further processed by `PICOS <http://picos.zib.de/>`_ to solve the problem by `CVXOPT <http://cvxopt.org/>`_ . The optimization problem can be unconstrained or constrained by equalities and inequalities.
+Ncpol2sdpa is a tool to convert a polynomial optimization problem of either commutative or noncommutative variables to a sparse semidefinite programming (SDP) problem that can be processed by the `SDPA <http://sdpa.sourceforge.net/>`_ family of solvers, `MOSEK <http://www.mosek.com/>`_, or further processed by `PICOS <http://picos.zib.de/>`_ to solve the problem by `CVXOPT <http://cvxopt.org/>`_ . The optimization problem can be unconstrained or constrained by equalities and inequalities.
 
 The objective is to be able to solve very large scale optimization problems. Example applications include:
 
@@ -69,4 +69,4 @@ More Information
 ================
 For more information refer to the following manuscript:
 
-`http://arxiv.org/abs/1308.6029 <http://arxiv.org/abs/1308.6029>`_
+Wittek, P. (2014). `Ncpol2sdpa -- Sparse Semidefinite Programming Relaxations for Polynomial Optimization Problems of Noncommuting Variables<http://arxiv.org/abs/1308.6029>`_. To Appear in ACM Transactions on Mathematical Software.

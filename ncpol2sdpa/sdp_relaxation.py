@@ -26,30 +26,37 @@ from .chordal_extension import generate_clique, find_clique_index
 class SdpRelaxation(object):
 
     """Class for obtaining sparse SDP relaxation.
+    
+    :param variables: Commutative or noncommutative, Hermitian or nonhermiatian
+                      variables, possibly a list of list of variables if the
+                      hierarchy is not NPA.
+    :type variables: list of :class:`sympy.physics.quantum.operator.Operator` or
+                     :class:`sympy.physics.quantum.operator.HermitianOperator`
+                     or a list of list.
+    :param verbose: Optional parameter for level of verbosity:
+    
+                       * 0: quiet
+                       * 1: verbose
+                       * 2: debug level
+    :type verbose: int.
+    :param hierarchy:  Optional parameter for defining the type of hierarchy
+                       (default: "npa"):
+                       
+                       * "npa": the standard NPA hierarchy (`doi:10.1137/090760155 <http://dx.doi.org/10.1137/090760155>`_)
+                       * "npa_sparse": chordal graph extension to improve sparsity (`doi:10.1137/050623802 <http://dx.doi.org/doi:10.1137/050623802>`_)
+                       * "nieto-silleras": `doi:10.1088/1367-2630/16/1/013035 <http://dx.doi.org/10.1088/1367-2630/16/1/013035>`_
+                       * "moroder": `doi:10.1103/PhysRevLett.111.030501 <http://dx.doi.org/10.1103/PhysRevLett.111.030501>`_
+    :type hierarchy: str.
+    :param normalized: Optional parameter for changing the normalization of
+                       states over which the optimization happens. Turn it off
+                       if further processing is done on the SDP matrix before
+                       solving it.
+    :type normalized: bool.
     """
     hierarchy_types = ["npa", "npa_sparse", "nieto-silleras", "moroder"]
 
     def __init__(self, variables, verbose=0, hierarchy="npa", normalized=True):
         """Constructor for the class.
-
-        Arguments:
-        variables -- commutative or noncommutative, Hermitian or nonhermiatian
-                     variables, possibly a list of list of variables if the
-                     hierarchy is not NPA.
-        verbose -- level of verbosity:
-                       0: quiet
-                       1: verbose
-                       2: debug level
-        hierarchy -- type of hierarchy (default: "npa"):
-                       "npa": the standard NPA hierarchy
-                              (doi:10.1137/090760155)
-                       "npa_sparse": chordal graph extension to improve
-                                     sparsity (doi:10.1137/050623802)
-                       "nieto-silleras": doi:10.1088/1367-2630/16/1/013035
-                       "moroder": doi:10.1103/PhysRevLett.111.030501
-        normalized -- normalization of states over which the optimization
-                      happens. Turn it off if further processing is done on the
-                      SDP matrix, for instance, in MATLAB.
         """
 
         self.substitutions = {}
