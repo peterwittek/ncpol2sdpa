@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-The module contains helper functions to work with noncommutative polynomials
+This file contains helper functions to work with noncommutative polynomials
 and Hamiltonians.
 
 Created on Thu May  2 16:03:05 2013
@@ -18,10 +18,15 @@ if sys.version.find("PyPy") == -1:
 
 def flatten(lol):
     """Flatten a list of lists to a list.
+
+    :param lol: A list of lists in arbitrary depth.
+    :type lol: list of list.
+
+    :returns: flat list of elements.
     """
     new_list = []
     for element in lol:
-        if element==None or (isinstance(element, list) and len(element) == 0):
+        if element == None or (isinstance(element, list) and len(element) == 0):
             continue
         elif isinstance(element, Symbol) or isinstance(element, Operator):
             new_list.append(element)
@@ -97,8 +102,7 @@ def remove_scalar_factor(monomial):
 
 
 def get_support(variables, polynomial):
-    """Works for commutative case.
-    TODO: Extend for noncommutative case.
+    """Gets the support of a polynomial.
     """
     support = []
     if isinstance(polynomial, (int, float, complex)):
@@ -106,7 +110,7 @@ def get_support(variables, polynomial):
         return support
     polynomial = polynomial.expand()
     for monomial in polynomial.as_coefficients_dict():
-        tmp_support=[0] * len(variables)
+        tmp_support = [0] * len(variables)
         monomial, scalar = separate_scalar_factor(monomial)
         symbolic_support = flatten(split_commutative_parts(monomial))
         for s in symbolic_support:
@@ -150,12 +154,11 @@ def count_ncmonomials(monomials, degree):
     or less. The function is useful when certain monomials were eliminated
     from the basis.
 
-    Arguments:
-    variables -- the noncommutative variables making up the monomials
-    monomials -- the list of monomials (the monomial basis)
-    degree -- maximum degree to count
+    :param variables: The noncommutative variables making up the monomials
+    :param monomials: List of monomials (the monomial basis).
+    :param degree:  Maximum degree to count.
 
-    Returns the count of appropriate monomials.
+    :returns: The count of appropriate monomials.
     """
     ncmoncount = 0
     for monomial in monomials:
@@ -171,10 +174,9 @@ def fast_substitute(monomial, old_sub, new_sub):
     cases of noncommutative algebras. In rare cases, it fails to find a
     substitution. Use it with proper testing.
 
-    Arguments:
-    monomial -- the monomial with parts need to be substituted
-    old_sub -- the part to be replaced
-    new_sub -- the replacement
+    :param monomial: The monomial with parts need to be substituted.
+    :param old_sub: The part to be replaced.
+    :param new_sub: The replacement.
     """
     if isinstance(monomial, Number):
         return monomial
@@ -282,12 +284,14 @@ def fast_substitute(monomial, old_sub, new_sub):
 
 
 def generate_variables(n_vars, hermitian=False, commutative=False, name='x'):
-    """Generates a number of noncommutative variables
+    """Generates a number of commutative or noncommutative variables
 
-    Arguments:
-    n_vars -- the number of variables
+    :param n_vars: The number of variables.
+    :type n_vars: int.
 
-    Returns a list of noncommutative variables
+    :returns: list of :class:`sympy.physics.quantum.operator.Operator` or
+              :class:`sympy.physics.quantum.operator.HermitianOperator`
+              variables
     """
 
     variables = []
@@ -303,11 +307,13 @@ def generate_variables(n_vars, hermitian=False, commutative=False, name='x'):
 def get_ncmonomials(variables, degree):
     """Generates all noncommutative monomials up to a degree
 
-    Arguments:
-    variables -- the noncommutative variables to generate monomials from
-    degree -- the maximum degree
+    :param variables: The noncommutative variables to generate monomials from
+    :type variables: list of :class:`sympy.physics.quantum.operator.Operator` or
+                     :class:`sympy.physics.quantum.operator`.
+    :param degree: The maximum degree.
+    :type degree: int.
 
-    Returns a list of monomials
+    :returns: list of monomials.
     """
     if not variables:
         return [S.One]
@@ -341,7 +347,13 @@ def get_variables_of_polynomial(polynomial):
 
 
 def ncdegree(polynomial):
-    """Returns the degree of a noncommutative polynomial."""
+    """Returns the degree of a noncommutative polynomial.
+
+    :param polynomial: Polynomial of noncommutive variables.
+    :type polynomial: :class:`sympy.core.expr.Expr`.
+
+    :returns: int -- the degree of the polynomial.
+    """
     degree = 0
     if isinstance(polynomial, (int, float, complex)):
         return degree
@@ -368,7 +380,7 @@ def get_monomials(variables, extramonomials, substitutions, degree):
                  in substitutions]
     monomials = [remove_scalar_factor(apply_substitutions(monomial,
                                                           substitutions))
-             for monomial in monomials]
+                 for monomial in monomials]
     monomials = unique(monomials)
     return monomials
 

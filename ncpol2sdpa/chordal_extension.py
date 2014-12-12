@@ -18,26 +18,26 @@ def generate_clique(variables, obj, inequalities, equalities):
     #Objective: if x_i & x_j in monomial, rmat_ij = rand
     for support in get_support(variables, obj):
         nonzeros = np.nonzero(support)[0]
-        value =  random.random()
+        value = random.random()
         for i in nonzeros:
             for j in nonzeros:
-                rmat[i,j] = value
+                rmat[i, j] = value
     #Constraints: if x_i & x_j in support, rmat_ij = rand
     for polynomial in flatten([inequalities, equalities]):
         support = np.any(get_support(variables, polynomial), axis=0)
         nonzeros = np.nonzero(support)[0]
-        value =  random.random()
+        value = random.random()
         for i in nonzeros:
             for j in nonzeros:
-                rmat[i,j] = value
-    rmat = rmat + 5*n_dim*np.eye(n_dim);
+                rmat[i, j] = value
+    rmat = rmat + 5*n_dim*np.eye(n_dim)
     #TODO: approximate minimum degree ordering should go before the Cholesky
     #decomposition
     R = np.linalg.cholesky(rmat).T
     R[np.nonzero(R)] = 1
     remaining_indices = [0]
     for i in range(1, n_dim):
-        check_set = R[i,i:n_dim]
+        check_set = R[i, i:n_dim]
         one = np.nonzero(check_set)[0]
         n_ones = len(one)
         clique_result = np.dot(R[:i, i:n_dim], check_set.T)

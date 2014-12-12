@@ -124,7 +124,7 @@ class SdpRelaxation(object):
                         sub = apply_substitutions(Dagger(monomial),
                                                   self.substitutions)
                         print(("DEBUG: %s, %s, %s" % (element,
-                              Dagger(monomial), sub)))
+                               Dagger(monomial), sub)))
         return k, coeff
 
     def __push_facvar_sparse(self, polynomial, block_index, row_offset, i, j):
@@ -214,12 +214,10 @@ class SdpRelaxation(object):
                 k = n_vars + 1
                 n_vars = k
                 self.F_struct[row_offset + rowA * N*lenB +
-                                  rowB * N +
-                                  columnA * lenB + columnB, k] = 1
+                              rowB * N + columnA * lenB + columnB, k] = 1
             else:
-                    self.F_struct[row_offset + rowA * N*lenB +
-                                  rowB * N +
-                                  columnA * lenB + columnB, 0] = 1
+                self.F_struct[row_offset + rowA * N*lenB +
+                              rowB * N + columnA * lenB + columnB, 0] = 1
 
         elif monomial != 0:
             k = self.__process_monomial(monomial, n_vars)
@@ -232,7 +230,7 @@ class SdpRelaxation(object):
         return n_vars
 
     def __generate_moment_matrix(self, n_vars, block_index,
-                                         monomialsA, monomialsB):
+                                 monomialsA, monomialsB):
         """Generate the moment matrix of monomials.
 
         Arguments:
@@ -288,7 +286,7 @@ class SdpRelaxation(object):
             if self.hierarchy == "npa_sparse":
                 index = find_clique_index(self.variables, ineq, clique_set)
                 monomials = pick_monomials_up_to_degree(monomial_sets[index],
-                                              localization_order)
+                                                        localization_order)
 
             else:
                 monomials = \
@@ -391,7 +389,7 @@ class SdpRelaxation(object):
             ineq_order = ncdegree(ineq)
             if ineq_order > 2 * level:
                 print(("A constraint has degree %d. Choose a higher level of" +
-                      " relaxation." % ineq_order))
+                       " relaxation." % ineq_order))
                 raise Exception
             localization_order = int(floor((2 * level - ineq_order) / 2))
             if self.hierarchy == "nieto-silleras":
@@ -410,12 +408,12 @@ class SdpRelaxation(object):
                 localizing_monomials = [1]
             self.block_struct.append(len(localizing_monomials))
         if bounds != None:
-            for bound in bounds:
+            for _ in bounds:
                 self.localization_order.append(0)
                 self.block_struct.append(1)
 
     def __generate_monomial_sets(self, objective, inequalities, equalities,
-                               extramonomials, level):
+                                 extramonomials, level):
         monomial_sets = []
         clique_set = []
         if self.hierarchy == "nieto-silleras" or self.hierarchy == "moroder":
@@ -432,7 +430,7 @@ class SdpRelaxation(object):
         elif self.hierarchy == "npa_sparse":
             clique_set = generate_clique(self.variables, objective,
                                          inequalities, equalities)
-            if self.verbose>1:
+            if self.verbose > 1:
                 print(clique_set)
             for clique in clique_set:
                 variables = [self.variables[i] for i in np.nonzero(clique)[0]]
@@ -464,6 +462,17 @@ class SdpRelaxation(object):
             self.n_vars -= 1
 
     def set_objective(self, objective, nsextraobjvars=None):
+        """Set or change the objective function of the polynomial optimization
+        problem.
+
+        :param objective: Describes the objective function.
+        :type objective: :class:`sympy.core.expr.Expr`
+        :param nsextraobjvars: Optional parameter of the coefficients of
+                               unnormalized top left elements of the moment
+                               matrices of the Nieto-Silleras hierarchy that
+                               should be included in the objective function.
+        :type nsextraobjvars: list of float.
+        """
         if objective != None:
             self.obj_facvar = (
                 self.__get_facvar(
@@ -493,25 +502,31 @@ class SdpRelaxation(object):
         """Get the SDP relaxation of a noncommutative polynomial optimization
         problem.
 
-        Arguments:
-        level -- the level of the relaxation
-
-        Optional arguments:
-        obj -- the objective function
-        inequalities -- list of inequality constraints
-        equalities -- list of equality constraints
-        substitutions -- monomials that can be replaced (e.g., idempotent
-                         variables)
-        bounds -- bounds on variables (will not be relaxed)
-        removeequalities -- whether to attempt removing the equalities by
-                            solving the linear equations
-        extramonomials -- monomials to be included, on top of the requested
-                          level of relaxation
-        nsextraobjvars -- the coefficients of unnormalized top left elements
-                          of the moment matrices of the Nieto-Silleras
-                          hierarchy that should be included in the objective
-                          function
-
+        :param level: The level of the relaxation
+        :type level: int.
+        :param obj: Optional parameter to describe the objective function.
+        :type obj: :class:`sympy.core.exp.Expr`.
+        :param inequalities: Optional parameter to list inequality constraints.
+        :type inequalities: list of :class:`sympy.core.exp.Expr`.
+        :param equalities: Optional parameter to list equality constraints.
+        :type equalities: list of :class:`sympy.core.exp.Expr`.
+        :param substitutions: Optional parameter containing monomials that can
+                              be replaced (e.g., idempotent variables).
+        :type substitutions: dict of :class:`sympy.core.exp.Expr`.
+        :param bounds: Optional parameter of bounds on variables which will not
+                       be relaxed by localizing matrices.
+        :type bounds: list of :class:`sympy.core.exp.Expr`.
+        :param removeequalities: Optional parameter to attempt removing the
+                                 equalities by solving the linear equations.
+        :type removeequalities: bool.
+        :param extramonomials: Optional paramter of monomials to be included, on
+                               top of the requested level of relaxation.
+        :type extramonomials: list of :class:`sympy.core.exp.Expr`.
+        :param nsextraobjvars: Optional parameter of the coefficients of
+                               unnormalized top left elements of the moment
+                               matrices of the Nieto-Silleras hierarchy that
+                               should be included in the objective function.
+        :type nsextraobjvars: list of float.
         """
         if substitutions == None:
             self.substitutions = {}
@@ -572,7 +587,7 @@ class SdpRelaxation(object):
             print(('Reduced number of SDP variables: %d' % self.n_vars))
         if self.verbose > 1:
             save_monomial_index("monomials.txt", self.monomial_index,
-                                     self.n_vars)
+                                self.n_vars)
         # Objective function
         self.set_objective(objective, nsextraobjvars)
 

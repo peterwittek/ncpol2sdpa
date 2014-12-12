@@ -15,11 +15,17 @@ from .sdp_relaxation import SdpRelaxation
 def get_neighbors(index, lattice_length, width=0, periodic=False):
     """Get the neighbors of an operator in a lattice.
 
-    Arguments:
-    index -- linear index of operator
-    lattice_length -- the size of the 2D lattice in either dimension
+    :param index: Linear index of operator.
+    :type index: int.
+    :param lattice_length: The size of the 2D lattice in either dimension
+    :type lattice_length: int.
+    :param width: Optional parameter to define width.
+    :type width: int.
+    :param periodic: Optional parameter to indicate periodic boundary
+                     conditions.
+    :type periodic: bool
 
-    Returns a list of neighbors in linear index.
+    :returns: list of int -- the neighbors in linear index.
     """
     if width == 0:
         width = lattice_length
@@ -37,8 +43,11 @@ def get_neighbors(index, lattice_length, width=0, periodic=False):
 
 
 def bosonic_constraints(a):
-    """Return a set of constraints that define bosonic ladder
-    operators.
+    """Return a set of constraints that define bosonic ladder operators.
+
+    :param a: The non-Hermitian variables.
+    :type a: list of :class:`sympy.physics.quantum.operator.Operator`.
+    :returns: tuple of dict of substitutions and list of equalities.
     """
     n_vars = len(a)
     monomial_substitutions = {}
@@ -61,8 +70,12 @@ def bosonic_constraints(a):
 
 
 def fermionic_constraints(a):
-    """Return  a set of constraints that define fermionic ladder
-    operators.
+    """Return  a set of constraints that define fermionic ladder operators.
+
+    :param a: The non-Hermitian variables.
+    :type a: list of :class:`sympy.physics.quantum.operator.Operator`.
+    :returns: tuple of dict of substitutions and list of equalities and
+              inequalities.
     """
     n_vars = len(a)
     monomial_substitutions = {}
@@ -102,6 +115,15 @@ def fermionic_constraints(a):
 
 def pauli_constraints(X, Y, Z):
     """Return  a set of constraints that define Pauli spin operators.
+
+    :param X: List of Pauli X operator on sites.
+    :type X: list of :class:`sympy.physics.quantum.operator.HermitianOperator`.
+    :param Y: List of Pauli Y operator on sites.
+    :type Y: list of :class:`sympy.physics.quantum.operator.HermitianOperator`.
+    :param Z: List of Pauli Z operator on sites.
+    :type Z: list of :class:`sympy.physics.quantum.operator.HermitianOperator`.
+
+    :returns: tuple of substitutions and equalities.
     """
     monomial_substitutions = {}
     equalities = []
@@ -136,6 +158,14 @@ def pauli_constraints(X, Y, Z):
 
 def generate_measurements(party, label):
     """Generate variables that behave like measurements.
+
+    :param party: The list of number of measurement outputs a party has.
+    :type party: list of int.
+    :param label: The label to be given to the symbolic variables.
+    :type label: str.
+
+    :returns: list of list of
+             :class:`sympy.physics.quantum.operator.HermitianOperator`.
     """
     measurements = []
     for i in range(len(party)):
@@ -145,8 +175,17 @@ def generate_measurements(party, label):
 
 
 def projective_measurement_constraints(A, B):
-    """Return a set of constraints that define projective
-    measurements.
+    """Return a set of constraints that define projective measurements.
+
+    :param A: Measurements of Alice.
+    :type A: list of list of
+             :class:`sympy.physics.quantum.operator.HermitianOperator`.
+    :param B: Measurements of Bob.
+    :type B: list of list of
+             :class:`sympy.physics.quantum.operator.HermitianOperator`.
+
+    :returns: substitutions containing idempotency, orthogonality and
+              commutation relations.
     """
     monomial_substitutions = {}
     for Mk in [M for M_list in [A, B] for M in M_list]:
@@ -171,6 +210,19 @@ def projective_measurement_constraints(A, B):
 def define_objective_with_I(I, A, B):
     """Define a polynomial using measurements and an I matrix describing a Bell
     inequality.
+
+    :param I: The I matrix of a Bell inequality in the Collins-Gisin notation.
+    :type I: list of list of int.
+    :param A: Measurements of Alice.
+    :type A: list of list of
+             :class:`sympy.physics.quantum.operator.HermitianOperator`.
+    :param B: Measurements of Bob.
+    :type B: list of list of
+             :class:`sympy.physics.quantum.operator.HermitianOperator`.
+
+    :returns: :class:`sympy.core.expr.Expr` -- the objective function to be
+              solved by SDPA as minimization problem to find the maximum quantum
+              violation.
     """
     objective = 0
     i, j = 0, 1  # Row and column index in I
@@ -193,6 +245,15 @@ def define_objective_with_I(I, A, B):
 
 def correlator(A, B):
     """Correlators between the probabilities of two parties.
+
+    :param A: Measurements of Alice.
+    :type A: list of list of
+             :class:`sympy.physics.quantum.operator.HermitianOperator`.
+    :param B: Measurements of Bob.
+    :type B: list of list of
+             :class:`sympy.physics.quantum.operator.HermitianOperator`.
+
+    :returns: list of correlators.
     """
     correlators = []
     for i in range(len(A)):
@@ -212,6 +273,17 @@ def correlator(A, B):
 
 def maximum_violation(A_configuration, B_configuration, I, level):
     """Get the maximum violation of a Bell inequality.
+
+    :param A_configuration: Measurement settings of Alice.
+    :type A_configuration: list of int.
+    :param B_configuration: Measurement settings of Bob.
+    :type B_configuration: list of int.
+    :param I: The I matrix of a Bell inequality in the Collins-Gisin notation.
+    :type I: list of list of int.
+    :param level: Level of relaxation.
+    :type level: int.
+
+    :returns: tuple of primal and dual solutions of the SDP relaxation.
     """
     A = generate_measurements(A_configuration, 'A')
     B = generate_measurements(B_configuration, 'B')
