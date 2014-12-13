@@ -42,8 +42,9 @@ class SdpRelaxation(object):
     :param hierarchy:  Optional parameter for defining the type of hierarchy
                        (default: "npa"):
 
-                       * "npa": the standard NPA hierarchy (`doi:10.1137/090760155 <http://dx.doi.org/10.1137/090760155>`_)
-                       * "npa_sparse": chordal graph extension to improve sparsity (`doi:10.1137/050623802 <http://dx.doi.org/doi:10.1137/050623802>`_)
+                       * "npa": the standard NPA hierarchy (`doi:10.1137/090760155 <http://dx.doi.org/10.1137/090760155>`_). When the variables are commutative,
+                       this formulation is identical to the Lasserre hierarchy.
+                       * "npa_chordal": chordal graph extension to improve sparsity (`doi:10.1137/050623802 <http://dx.doi.org/doi:10.1137/050623802>`_)
                        * "nieto-silleras": `doi:10.1088/1367-2630/16/1/013035 <http://dx.doi.org/10.1088/1367-2630/16/1/013035>`_
                        * "moroder": `doi:10.1103/PhysRevLett.111.030501 <http://dx.doi.org/10.1103/PhysRevLett.111.030501>`_
     :type hierarchy: str.
@@ -53,7 +54,7 @@ class SdpRelaxation(object):
                        solving it.
     :type normalized: bool.
     """
-    hierarchy_types = ["npa", "npa_sparse", "nieto-silleras", "moroder"]
+    hierarchy_types = ["npa", "npa_chordal", "nieto-silleras", "moroder"]
 
     def __init__(self, variables, verbose=0, hierarchy="npa", normalized=True):
         """Constructor for the class.
@@ -295,7 +296,7 @@ class SdpRelaxation(object):
             block_index += 1
             localization_order = self.localization_order[
                 block_index - initial_block_index - 1]
-            if self.hierarchy == "npa_sparse":
+            if self.hierarchy == "npa_chordal":
                 index = find_clique_index(self.variables, ineq, clique_set)
                 monomials = pick_monomials_up_to_degree(monomial_sets[index],
                                                         localization_order)
@@ -410,7 +411,7 @@ class SdpRelaxation(object):
             if self.hierarchy == "nieto-silleras":
                 localization_order = 0
             self.localization_order.append(localization_order)
-            if self.hierarchy == "npa_sparse":
+            if self.hierarchy == "npa_chordal":
                 index = find_clique_index(self.variables, ineq, clique_set)
                 localizing_monomials = \
                     pick_monomials_up_to_degree(monomial_sets[index],
@@ -442,7 +443,7 @@ class SdpRelaxation(object):
                                                    self.substitutions,
                                                    level))
                 k += 1
-        elif self.hierarchy == "npa_sparse":
+        elif self.hierarchy == "npa_chordal":
             clique_set = generate_clique(self.variables, objective,
                                          inequalities, equalities)
             if self.verbose > 1:
