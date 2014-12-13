@@ -5,11 +5,11 @@ Ncpol2sdpa is a tool to convert a polynomial optimization problem of either comm
 
 The objective is to be able to solve very large scale optimization problems. Example applications include:
 
-- Ground-state energy problems: bosonic and fermionic systems, Pauli spin 
-  operators.
-- Maximum quantum violation of Bell inequalities.
-- Nieto-Silleras-type hierarchy for quantifying randomness.
-- Moroder-type hierarchy to enable PPT-style and other additional constraints.
+- `Ground-state energy problems <http://dx.doi.org/10.1137/090760155>`_: bosonic and `fermionic systems <http://nbviewer.ipython.org/github/peterwittek/ipython-notebooks/blob/master/Comparing_DMRG_ED_and_SDP.ipynb>`_, Pauli spin operators.
+- `Maximum quantum violation <http:/dx.doi.org/10.1103/PhysRevLett.98.010401>`_ of `Bell inequalities <http://peterwittek.com/2014/06/quantum-bound-on-the-chsh-inequality-using-sdp/>`_.
+- `Nieto-Silleras <http://dx.doi.org/10.1088/1367-2630/16/1/013035>`_ hierarchy for `quantifying randomness <http://peterwittek.com/2014/11/the-nieto-silleras-and-moroder-hierarchies-in-ncpol2sdpa/>`_.
+- `Moroder <http://dx.doi.org/10.1103/PhysRevLett.111.030501>`_ hierarchy to enable PPT-style and other additional constraints.
+- If using commutative variables, the hierarchy is identical to `Lasserre's <http://dx.doi.org/10.1137/S1052623400366802>`_.
 
 The implementation has an intuitive syntax for entering problems and it scales for a larger number of noncommutative variables using a sparse representation of the SDP problem. Further details are found in the following paper:
 

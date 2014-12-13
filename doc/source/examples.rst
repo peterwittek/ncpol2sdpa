@@ -40,7 +40,7 @@ to PICOS, it is also possible to solve the problem with a range of
 other solvers, including CVXOPT.
 
 
-Example 1: Toy example
+Example 1: Toy Example
 ==================================================
 
 Consider the following polynomial optimization problem (Pironio,
@@ -133,7 +133,6 @@ Python:
 
 ::
 
-    from ncpol2sdpa import solve_sdp
     primal, dual = solve_sdp(sdpRelaxation)
 
 The relevant part of the output shows the optimum for the objective
@@ -178,7 +177,7 @@ solver that PICOS supports:
 
     P.solve()
 
-Example 3: Mixed-level relaxation of a Bell inequality
+Example 3: Mixed-Level Relaxation of a Bell Inequality
 ======================================================
 
 It is often the case that moving to a higher-order relaxation is
@@ -219,7 +218,7 @@ monomials should be considered:
                                  substitutions=monomial_substitutions,
                                  extramonomials=AB)
 
-Example 4: Bosonic system
+Example 4: Bosonic System
 ==================================================
 
 The system Hamiltonian describes :math:`N` harmonic oscillators with a
@@ -299,7 +298,7 @@ It is remarkable that we get the correct value at the first level of
 relaxation, but this property is typical for bosonic systems (Navascués
 et al. 2013).
 
-Example 5: Using the Nieto-Silleras hierarchy
+Example 5: Using the Nieto-Silleras Hierarchy
 ==================================================
 
 One of the newer approaches to the SDP relaxations takes all joint
@@ -395,7 +394,7 @@ are requesting the Nieto-Silleras hierarchy:
 
     print(solve_sdp(sdpRelaxation))
 
-Example 6: Using the Moroder hierarchy
+Example 6: Using the Moroder Hierarchy
 ==================================================
 
 This type of hierarchy allows for a wider range of constraints of the
