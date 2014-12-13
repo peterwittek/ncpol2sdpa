@@ -42,7 +42,8 @@ class SdpRelaxation(object):
     :param hierarchy:  Optional parameter for defining the type of hierarchy
                        (default: "npa"):
 
-                       * "npa": the standard NPA hierarchy (`doi:10.1137/090760155 <http://dx.doi.org/10.1137/090760155>`_). When the variables are commutative, this formulation is identical to the Lasserre hierarchy.
+                       * "npa": the standard NPA hierarchy (`doi:10.1137/090760155 <http://dx.doi.org/10.1137/090760155>`_). When the variables are commutative,
+                       this formulation is identical to the Lasserre hierarchy.
                        * "npa_chordal": chordal graph extension to improve sparsity (`doi:10.1137/050623802 <http://dx.doi.org/doi:10.1137/050623802>`_)
                        * "nieto-silleras": `doi:10.1088/1367-2630/16/1/013035 <http://dx.doi.org/10.1088/1367-2630/16/1/013035>`_
                        * "moroder": `doi:10.1103/PhysRevLett.111.030501 <http://dx.doi.org/10.1103/PhysRevLett.111.030501>`_
@@ -594,10 +595,11 @@ class SdpRelaxation(object):
                         monomials, [monomials[0]])
                 self.var_offsets.append(new_n_vars)
 
-        # The initial estimate for the size of F_struct was overly
-        # generous. We correct the size here.
+        # The initial estimate for the size of F_struct was overly generous.
         self.n_vars = new_n_vars
-        self.F_struct = self.F_struct[:, 0:self.n_vars + 1]
+        # We don't correct the size of F_struct, because that would trigger
+        # memory copies, and extra columns in lil_matrix are free anyway.
+        #self.F_struct = self.F_struct[:, 0:self.n_vars + 1]
         if self.verbose > 0:
             print(('Reduced number of SDP variables: %d' % self.n_vars))
         if self.verbose > 1:
