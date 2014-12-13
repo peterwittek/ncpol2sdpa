@@ -1,2 +1,3 @@
-  - Extrend chordal extension to noncommutative case.
   - Improve syntax of constraints.
+  - Implement group theoretic constraints to improve sparsity.
+  
