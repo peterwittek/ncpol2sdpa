@@ -197,7 +197,7 @@ class SdpRelaxation(object):
             # An extra round of substitutions is granted on the conjugate of
             # the monomial if all the variables are Hermitian
             need_new_variable = True
-            if self.is_hermitian_variables:
+            if self.is_hermitian_variables and ncdegree(monomial)>2:
                 daggered_monomial = apply_substitutions(Dagger(monomial),
                                                         self.substitutions)
                 try:
