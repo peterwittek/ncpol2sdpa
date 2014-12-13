@@ -6,4 +6,5 @@
    
    download.rst
    exampleshtml.rst
+   revision_history.rst
    reference.rst

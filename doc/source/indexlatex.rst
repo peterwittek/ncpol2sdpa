@@ -11,5 +11,7 @@ Ncpol2sdpa User's Guide
    introduction.rst
    download.rst
    examples.rst
-   bibliography.rst
+   revision_history.rst
    reference.rst
+   bibliography.rst
+   
