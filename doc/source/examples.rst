@@ -440,6 +440,24 @@ For instance, reading this file with SeDuMi’s ``fromsdpa``
 function (Sturm 1999), we can impose the positivity of the partial trace
 of the moment matrix, or decompose the moment matrix in various forms.
 
+Example 7: Sparse Relaxation with Chordal Extension
+===================================================
+This method replicates the behaviour of SparsePOP (Waki et. al, 2008). It is 
+invoked by defining the hierarchy as ``"npa_chordal"``. The following is a 
+simple example:
+
+::
+
+    level = 2
+    X = generate_variables(3, commutative=True)
+
+    obj = X[1] - 2*X[0]*X[1] + X[1]*X[2]
+    inequalities = [1-X[0]**2-X[1]**2, 1-X[1]**2-X[2]**2]
+
+    sdpRelaxation = SdpRelaxation(X, hierarchy="npa_chordal")
+    sdpRelaxation.get_relaxation(level, objective=obj, inequalities=inequalities)
+    print(solve_sdp(sdpRelaxation))
+
 References
 ==================================================
 Bancal, Jean-Daniel, Lana Sheridan, and Valerio Scarani. 2014. “More
@@ -478,6 +496,9 @@ doi:\ `10.1137/090760155 <http://dx.doi.org/10.1137/090760155>`__.
 Sturm, J.F. 1999. “Using SeDuMi 1.02, a MATLAB Toolbox for Optimization
 over Symmetric Cones.” *Optimization Methods and Software* 11 (1-4):
 625–53.
+
+Waki, H.; S. Kim, M. Kojima, M. Muramatsu, and H. Sugimoto. 2008. “Algorithm 883: SparsePOP---A Sparse Semidefinite Programming Relaxation of Polynomial Optimization Problems.” ACM Transactions on Mathematical Software, 2008, 35(2), 15.
+doi:\ `10.1145/1377612.1377619 <http://dx.doi.org/10.1145/1377612.1377619>`__.
 
 Yamashita, M., K. Fujisawa, and M. Kojima. 2003. “SDPARA: Semidefinite
 Programming Algorithm Parallel Version.” *Parallel Computing* 29 (8):
