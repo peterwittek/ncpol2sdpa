@@ -26,7 +26,7 @@ from .chordal_extension import generate_clique, find_clique_index
 class SdpRelaxation(object):
 
     """Class for obtaining sparse SDP relaxation.
-    
+
     :param variables: Commutative or noncommutative, Hermitian or nonhermiatian
                       variables, possibly a list of list of variables if the
                       hierarchy is not NPA.
@@ -34,14 +34,14 @@ class SdpRelaxation(object):
                      :class:`sympy.physics.quantum.operator.HermitianOperator`
                      or a list of list.
     :param verbose: Optional parameter for level of verbosity:
-    
+
                        * 0: quiet
                        * 1: verbose
                        * 2: debug level
     :type verbose: int.
     :param hierarchy:  Optional parameter for defining the type of hierarchy
                        (default: "npa"):
-                       
+
                        * "npa": the standard NPA hierarchy (`doi:10.1137/090760155 <http://dx.doi.org/10.1137/090760155>`_)
                        * "npa_sparse": chordal graph extension to improve sparsity (`doi:10.1137/050623802 <http://dx.doi.org/doi:10.1137/050623802>`_)
                        * "nieto-silleras": `doi:10.1088/1367-2630/16/1/013035 <http://dx.doi.org/10.1088/1367-2630/16/1/013035>`_
@@ -267,6 +267,11 @@ class SdpRelaxation(object):
                                                       row_offset, rowA,
                                                       columnA, N, rowB,
                                                       columnB, len(monomialsB))
+                        if self.verbose > 0:
+                            sys.stdout.write("\r\x1b[KCurrent SDP vars: %d" % n_vars)
+                            sys.stdout.flush()
+        if self.verbose > 0:
+            sys.stdout.write("\r")
         return n_vars, block_index + 1
 
 
@@ -386,6 +391,9 @@ class SdpRelaxation(object):
                                     clique_set, level):
         """Calculates the block_struct array for the output file.
         """
+        self.block_struct = []
+        if self.verbose > 0:
+            print("Calculating block structure...")
         if  self.hierarchy == "moroder":
             self.block_struct.append(len(monomial_sets[0])*len(monomial_sets[1]))
         else:
