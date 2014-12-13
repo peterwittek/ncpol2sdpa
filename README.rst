@@ -18,7 +18,7 @@ The code requires `SymPy <http://sympy.org/>`_>=0.7.2 and `SciPy <http://scipy.o
 
 Usage
 =====
-The following code replicates the toy example from Pironio, S.; Navascues, M. & Acin, A. Convergent relaxations of polynomial optimization problems with noncommuting variables SIAM Journal on Optimization, SIAM, 2010, 20, 2157-2180.
+Documentation is available `online <http://peterwittek.github.io/ncpol2sdpa/>`_. The following code replicates the toy example from Pironio, S.; Navascues, M. & Acin, A. Convergent relaxations of polynomial optimization problems with noncommuting variables SIAM Journal on Optimization, SIAM, 2010, 20, 2157-2180.
 
 ::
 
@@ -49,7 +49,7 @@ The following code replicates the toy example from Pironio, S.; Navascues, M. & 
   write_to_sdpa(sdpRelaxation, 'examplenc.dat-s')
 
 
-Further examples are in the examples folder and also in the manual.
+Further instances are in the examples folder and also in the manual.
 
 Installation
 ============
