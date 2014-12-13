@@ -5,7 +5,7 @@
 SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build2
 PAPER         =
-BUILDDIR      = build
+BUILDDIR      = .
 
 # User-friendly check for sphinx-build2
 ifeq ($(shell which $(SPHINXBUILD) >/dev/null 2>&1; echo $$?), 1)

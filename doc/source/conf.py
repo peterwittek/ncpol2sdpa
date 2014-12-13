@@ -72,7 +72,7 @@ release = '1.5'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = []
+exclude_patterns = ['']
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
@@ -167,7 +167,7 @@ html_static_path = ['_static']
 #html_split_index = False
 
 # If true, links to the reST sources are added to the pages.
-#html_show_sourcelink = True
+html_show_sourcelink = False
 
 # If true, "Created using Sphinx" is shown in the HTML footer. Default is True.
 #html_show_sphinx = True
@@ -197,14 +197,14 @@ latex_elements = {
 #'pointsize': '10pt',
 
 # Additional stuff for the LaTeX preamble.
-#'preamble': '',
+'preamble': '\usepackage{amssymb}',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-  ('index', 'ncpol2sdpa.tex', u'ncpol2sdpa Documentation',
+  ('indexlatex', 'ncpol2sdpa.tex', u'Ncpol2sdpa Documentation',
    u'Peter Wittek', 'manual'),
 ]
 
@@ -223,7 +223,7 @@ latex_documents = [
 #latex_show_urls = False
 
 # Documents to append as an appendix to all manuals.
-#latex_appendices = []
+latex_appendices = []
 
 # If false, no module index is generated.
 #latex_domain_indices = True

@@ -10,8 +10,9 @@ Since 1.5:
     specifying the last element of a measurement becomes possible with this 
     option.
   - Support for chordal graph extension in the commutative case
-    (doi:10.1137/050623802). Pass hierarchy="npa_sparse" to the constructor.
+    (doi:10.1137/050623802). Pass hierarchy="npa_chordal" to the constructor.
   - PICOS conversion routines were separated.
+  - Moved documentation to Sphinx.
 
 Version 1.5: 2014-11-27
   - Support for Moroder hierarchy (doi:10.1103/PhysRevLett.111.030501).
