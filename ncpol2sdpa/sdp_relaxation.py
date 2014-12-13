@@ -269,7 +269,7 @@ class SdpRelaxation(object):
                                                       columnA, N, rowB,
                                                       columnB, len(monomialsB))
                         if self.verbose > 0:
-                            sys.stdout.write("\r\x1b[KCurrent SDP vars: %d" % n_vars)
+                            sys.stdout.write("\r\x1b[KCurrent number SDP variables: %d" % n_vars)
                             sys.stdout.flush()
         if self.verbose > 0:
             sys.stdout.write("\r")
@@ -292,7 +292,7 @@ class SdpRelaxation(object):
         row_offsets = [0]
         for block, block_size in enumerate(self.block_struct):
             row_offsets.append(row_offsets[block] + block_size ** 2)
-        for ineq in inequalities:
+        for k, ineq in enumerate(inequalities):
             block_index += 1
             localization_order = self.localization_order[
                 block_index - initial_block_index - 1]
@@ -317,6 +317,11 @@ class SdpRelaxation(object):
                     self.__push_facvar_sparse(polynomial, block_index,
                                               row_offsets[block_index-1],
                                               row, column)
+            if self.verbose > 0:
+                sys.stdout.write("\r\x1b[KProcessing %d/%d constraints..." % (k+1, len(inequalities)))
+                sys.stdout.flush()
+        if self.verbose > 0:
+            sys.stdout.write("\n")
         return block_index
 
 
@@ -577,7 +582,7 @@ class SdpRelaxation(object):
         self.F_struct = lil_matrix((n_rows, self.n_vars + 1))
 
         if self.verbose > 0:
-            print(('Number of SDP variables: %d' % self.n_vars))
+            print(('Estimated number of SDP variables: %d' % self.n_vars))
             print('Generating moment matrix...')
        # Generate moment matrices
         new_n_vars, block_index = 0, 0
@@ -609,9 +614,6 @@ class SdpRelaxation(object):
         self.set_objective(objective, nsextraobjvars)
 
         # Process constraints
-        if self.verbose > 0:
-            print(('Processing %d constraints...' % len(constraints)))
-
         self.__process_inequalities(constraints, monomial_sets, clique_set,
                                     block_index)
         if removeequalities and equalities != None:
