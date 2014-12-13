@@ -640,6 +640,9 @@ class lil_matrix(spmatrix, IndexMixin):
         Python lists return copies.
         """
         # Utilities found in IndexMixin
+        if isinstance(index[0], int) and isinstance(index[1], int):
+            return lil_get1(self.shape[0], self.shape[1], self.rows, self.data,
+                            index[0], index[1])
         i, j = self._unpack_index(index)
         i, j = self._index_to_arrays(i, j)
         new = lil_matrix((i.shape[0], j.shape[1]), dtype=self.dtype)

@@ -157,7 +157,7 @@ class SdpRelaxation(object):
             k, coeff = self.__get_index_of_monomial(element)
             # k identifies the mapped value of a word (monomial) w
             if k > -1 and coeff != 0:
-                self.F_struct[row_offset + i * width + j, k] = coeff
+                self.F_struct[row_offset + i * width + j, k] += coeff
 
     def __get_facvar(self, polynomial):
         """Return dense vector representation of a polynomial. This function is
