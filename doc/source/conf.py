@@ -204,7 +204,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-  ('indexlatex', 'ncpol2sdpa.tex', u'Ncpol2sdpa Documentation',
+  ('indexlatex', 'manual.tex', u'Ncpol2sdpa Documentation',
    u'Peter Wittek', 'manual'),
 ]
 
