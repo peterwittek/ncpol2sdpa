@@ -33,6 +33,10 @@ class SdpRelaxation(object):
     :type variables: list of :class:`sympy.physics.quantum.operator.Operator` or
                      :class:`sympy.physics.quantum.operator.HermitianOperator`
                      or a list of list.
+    :param nonrelaxed: Optional variables which are not to be relaxed.
+    :type nonrelaxed: list of :class:`sympy.physics.quantum.operator.Operator` or
+                     :class:`sympy.physics.quantum.operator.HermitianOperator`
+                     or a list of list.
     :param verbose: Optional parameter for level of verbosity:
 
                        * 0: quiet
@@ -55,7 +59,8 @@ class SdpRelaxation(object):
     """
     hierarchy_types = ["npa", "npa_chordal", "nieto-silleras", "moroder"]
 
-    def __init__(self, variables, verbose=0, hierarchy="npa", normalized=True):
+    def __init__(self, variables, nonrelaxed=None,verbose=0, hierarchy="npa",
+                 normalized=True):
         """Constructor for the class.
         """
 
@@ -84,6 +89,7 @@ class SdpRelaxation(object):
             if not var.is_hermitian:
                 self.is_hermitian_variables = False
                 break
+        self.nonrelaxed = nonrelaxed
 
     def __get_index_of_monomial(self, element, enablesubstitution=True):
         """Returns the index of a monomial.
@@ -399,6 +405,8 @@ class SdpRelaxation(object):
         self.block_struct = []
         if self.verbose > 0:
             print("Calculating block structure...")
+        if self.nonrelaxed != None:
+            self.block_struct.append(-len(self.nonrelaxed))
         if  self.hierarchy == "moroder":
             self.block_struct.append(len(monomial_sets[0])*len(monomial_sets[1]))
         else:
@@ -423,7 +431,8 @@ class SdpRelaxation(object):
                 localizing_monomials = \
                     pick_monomials_up_to_degree(flatten(monomial_sets),
                                                 localization_order)
-            if self.hierarchy == "nieto-silleras":
+            if self.hierarchy == "nieto-silleras" or \
+              len(localizing_monomials) == 0:
                 localizing_monomials = [1]
             self.block_struct.append(len(localizing_monomials))
 
@@ -432,6 +441,7 @@ class SdpRelaxation(object):
                           " level relaxation or ensure that a mixed-order "\
                           "relaxation has the necessary monomials" %
                           (ineq_order), UserWarning)
+
         if bounds != None:
             for _ in bounds:
                 self.localization_order.append(0)
@@ -472,6 +482,8 @@ class SdpRelaxation(object):
 
     def __estimate_n_vars(self, monomial_sets):
         self.n_vars = 0
+        if self.nonrelaxed != None:
+            self.n_vars = len(self.nonrelaxed)
         if not self.hierarchy == "moroder":
             for monomials in monomial_sets:
                 n_monomials = len(monomials)
@@ -518,6 +530,16 @@ class SdpRelaxation(object):
             else:
                 raise Exception("nsextraobjvars is only meaningful with the " +
                                 "Nieto-Silleras relaxation")
+
+    def add_non_relaxed(self):
+        new_n_vars, block_index = 0, 0
+        if self.nonrelaxed != None:
+            block_index = 1
+            for var in self.nonrelaxed:
+                new_n_vars += 1
+                self.monomial_index[var] = new_n_vars
+                self.F_struct[new_n_vars - 1, new_n_vars] = 1
+        return new_n_vars, block_index
 
 
     def get_relaxation(self, level, objective=None, inequalities=None,
@@ -589,7 +611,7 @@ class SdpRelaxation(object):
             print(('Estimated number of SDP variables: %d' % self.n_vars))
             print('Generating moment matrix...')
        # Generate moment matrices
-        new_n_vars, block_index = 0, 0
+        new_n_vars, block_index = self.add_non_relaxed()
         if self.hierarchy == "moroder":
             new_n_vars, block_index = \
                 self.__generate_moment_matrix(new_n_vars, block_index,
