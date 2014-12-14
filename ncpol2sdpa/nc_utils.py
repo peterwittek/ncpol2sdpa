@@ -28,7 +28,8 @@ def flatten(lol):
     for element in lol:
         if element == None or (isinstance(element, list) and len(element) == 0):
             continue
-        elif isinstance(element, Symbol) or isinstance(element, Operator):
+        elif isinstance(element, Symbol) or isinstance(element, Operator) or\
+          isinstance(element, int):
             new_list.append(element)
         elif isinstance(element[0], list):
             element = flatten(element)
