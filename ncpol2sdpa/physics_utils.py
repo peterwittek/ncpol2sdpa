@@ -174,38 +174,36 @@ def generate_measurements(party, label):
     return measurements
 
 
-def projective_measurement_constraints(A, B):
+def projective_measurement_constraints(*parties):
     """Return a set of constraints that define projective measurements.
 
-    :param A: Measurements of Alice.
-    :type A: list of list of
-             :class:`sympy.physics.quantum.operator.HermitianOperator`.
-    :param B: Measurements of Bob.
-    :type B: list of list of
+    :param parties: Measurements of different parties.
+    :type A: list or tuple of list of list of
              :class:`sympy.physics.quantum.operator.HermitianOperator`.
 
     :returns: substitutions containing idempotency, orthogonality and
               commutation relations.
     """
-    monomial_substitutions = {}
-    for Mk in [M for M_list in [A, B] for M in M_list]:
-        for Ei in Mk:
-            for Ej in Mk:
-                if Ei != Ej:
-                    # They are orthogonal in each M_k
-                    monomial_substitutions[Ei * Ej] = 0
-                    monomial_substitutions[Ej * Ei] = 0
-                else:
-                    # Every projector is idempotent
-                    monomial_substitutions[Ei * Ei] = Ei
-
-    # Projectors in A and B commute
-    for Ei in [E for Mk in A for E in Mk]:
-        for Ej in [F for Ml in B for F in Ml]:
-            monomial_substitutions[Ej * Ei] = Ei * Ej
-
-    return monomial_substitutions
-
+    substitutions = {}
+    #Idempotency and orthogonality of projectors
+    for party in parties:
+        for measurement in party:
+            for projector1 in measurement:
+                for projector2 in measurement:
+                    if (projector1==projector2):
+                        substitutions[projector1**2] = projector1
+                    else:
+                        substitutions[projector1*projector2] = 0
+                        substitutions[projector2*projector1] = 0
+    #Projectors commute between parties in a partition
+    for n1 in range(len(parties)):
+        for n2 in range(n1+1, len(parties)):
+            for measurement1 in parties[n1]:
+                for measurement2 in parties[n2]:
+                    for projector1 in measurement1:
+                        for projector2 in measurement2:
+                            substitutions[projector2*projector1] = projector1*projector2
+    return substitutions
 
 def define_objective_with_I(I, A, B):
     """Define a polynomial using measurements and an I matrix describing a Bell
