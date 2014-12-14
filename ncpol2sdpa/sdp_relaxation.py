@@ -11,7 +11,7 @@ from math import floor
 import numpy as np
 from sympy import Number
 from sympy.physics.quantum.dagger import Dagger
-import sys
+import sys, warnings
 if sys.version.find("PyPy") == -1:
     from scipy.linalg import qr
     from scipy.sparse import lil_matrix, hstack
@@ -404,13 +404,12 @@ class SdpRelaxation(object):
         else:
             for monomials in monomial_sets:
                 self.block_struct.append(len(monomials))
+        degree_warning = False
         for ineq in inequalities:
             # Find the order of the localizing matrix
             ineq_order = ncdegree(ineq)
             if ineq_order > 2 * level:
-                print(("A constraint has degree %d. Choose a higher level of" +
-                       " relaxation." % ineq_order))
-                raise Exception
+                degree_warning = True
             localization_order = int(floor((2 * level - ineq_order) / 2))
             if self.hierarchy == "nieto-silleras":
                 localization_order = 0
@@ -427,6 +426,12 @@ class SdpRelaxation(object):
             if self.hierarchy == "nieto-silleras":
                 localizing_monomials = [1]
             self.block_struct.append(len(localizing_monomials))
+
+        if degree_warning:
+            warnings.warn("A constraint has degree %d. Either choose a higher"\
+                          " level relaxation or ensure that a mixed-order "\
+                          "relaxation has the necessary monomials" %
+                          (ineq_order), UserWarning)
         if bounds != None:
             for _ in bounds:
                 self.localization_order.append(0)
