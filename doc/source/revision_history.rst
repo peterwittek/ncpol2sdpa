@@ -15,6 +15,8 @@ Revision History
     option.
   - Support for chordal graph extension in the commutative case
     (doi:`10.1137/050623802 <http://dx.doi.org/10.1137/050623802>`_). Pass ``hierarchy="npa_chordal"`` to the constructor.
+  - It is possible to pass variables which will not be relaxed. Pass ``nonrelaxed=[variables]`` to the constructor.
+  - It is possible to change the constraints once the moment matrix is generated. Refer to the new function ``process_constraints``.
   - PICOS conversion routines were separated.
   - Moved documentation to Sphinx.
 

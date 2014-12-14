@@ -11,7 +11,7 @@ from math import floor
 import numpy as np
 from sympy import Number
 from sympy.physics.quantum.dagger import Dagger
-import sys, warnings
+import sys
 if sys.version.find("PyPy") == -1:
     from scipy.linalg import qr
     from scipy.sparse import lil_matrix, hstack
@@ -75,6 +75,10 @@ class SdpRelaxation(object):
         self.verbose = verbose
         self.localization_order = []
         self.normalized = normalized
+        self.constraint_starting_block = 0
+        self.level = 0
+        self.clique_set = []
+        self.monomial_sets = []
         if hierarchy in self.hierarchy_types:
             self.hierarchy = hierarchy
         else:
@@ -331,7 +335,7 @@ class SdpRelaxation(object):
 
 
     def __process_equalities(
-            self, equalities, all_monomials, level):
+            self, equalities, all_monomials):
         """Generate localizing matrices
 
         Arguments:
@@ -343,11 +347,11 @@ class SdpRelaxation(object):
         for equality in equalities:
             # Find the order of the localizing matrix
             eq_order = ncdegree(equality)
-            if eq_order > 2 * level:
+            if eq_order > 2 * self.level:
                 print(("An equality constraint has degree %d. Choose a higher \
                       level of relaxation." % eq_order))
                 raise Exception
-            localization_order = int(floor((2 * level - eq_order) / 2))
+            localization_order = int(floor((2 * self.level - eq_order) / 2))
             if localization_order > max_localization_order:
                 max_localization_order = localization_order
         monomials = \
@@ -398,8 +402,8 @@ class SdpRelaxation(object):
         self.F_struct = self.F_struct.tolil()
         self.n_vars = self.F_struct.shape[1] - 1
 
-    def __calculate_block_structure(self, monomial_sets, inequalities, bounds,
-                                    clique_set, level):
+    def __calculate_block_structure(self, inequalities, equalities, bounds,
+                                    removeequalities):
         """Calculates the block_struct array for the output file.
         """
         self.block_struct = []
@@ -408,39 +412,53 @@ class SdpRelaxation(object):
         if self.nonrelaxed != None:
             self.block_struct.append(-len(self.nonrelaxed))
         if  self.hierarchy == "moroder":
-            self.block_struct.append(len(monomial_sets[0])*len(monomial_sets[1]))
+            self.block_struct.append(len(self.monomial_sets[0])*
+                                     len(self.monomial_sets[1]))
         else:
-            for monomials in monomial_sets:
+            for monomials in self.monomial_sets:
                 self.block_struct.append(len(monomials))
+        if self.hierarchy == "nieto-silleras":
+            self.block_struct.append(2)
         degree_warning = False
-        for ineq in inequalities:
+        if inequalities != None:
+            n_inequalities = len(inequalities)
+        else:
+            n_inequalities = 0
+        if removeequalities:
+            constraints = flatten([inequalities])
+        else:
+            constraints = enumerate(flatten([inequalities, equalities]))
+        for k, constraint in constraints:
             # Find the order of the localizing matrix
-            ineq_order = ncdegree(ineq)
-            if ineq_order > 2 * level:
+            ineq_order = ncdegree(constraint)
+            if ineq_order > 2 * self.level:
                 degree_warning = True
-            localization_order = int(floor((2 * level - ineq_order) / 2))
+            localization_order = int(floor((2 * self.level - ineq_order) / 2))
             if self.hierarchy == "nieto-silleras":
                 localization_order = 0
             self.localization_order.append(localization_order)
             if self.hierarchy == "npa_chordal":
-                index = find_clique_index(self.variables, ineq, clique_set)
+                index = find_clique_index(self.variables, constraint,
+                                          self.clique_set)
                 localizing_monomials = \
-                    pick_monomials_up_to_degree(monomial_sets[index],
+                    pick_monomials_up_to_degree(self.monomial_sets[index],
                                                 localization_order)
             else:
                 localizing_monomials = \
-                    pick_monomials_up_to_degree(flatten(monomial_sets),
+                    pick_monomials_up_to_degree(flatten(self.monomial_sets),
                                                 localization_order)
             if self.hierarchy == "nieto-silleras" or \
               len(localizing_monomials) == 0:
                 localizing_monomials = [1]
             self.block_struct.append(len(localizing_monomials))
+            if k>=n_inequalities:
+                self.localization_order.append(localization_order)
+                self.block_struct.append(len(localizing_monomials))
 
-        if degree_warning:
-            warnings.warn("A constraint has degree %d. Either choose a higher"\
-                          " level relaxation or ensure that a mixed-order "\
-                          "relaxation has the necessary monomials" %
-                          (ineq_order), UserWarning)
+        if degree_warning and self.verbose>0:
+            print("A constraint has degree %d. Either choose a higher level "\
+                  "relaxation or ensure that a mixed-order relaxation has the"\
+                  " necessary monomials" % (ineq_order))
 
         if bounds != None:
             for _ in bounds:
@@ -448,44 +466,41 @@ class SdpRelaxation(object):
                 self.block_struct.append(1)
 
     def __generate_monomial_sets(self, objective, inequalities, equalities,
-                                 extramonomials, level):
-        monomial_sets = []
-        clique_set = []
+                                 extramonomials):
         if self.hierarchy == "nieto-silleras" or self.hierarchy == "moroder":
             k = 0
             for variables in self.variables:
                 extramonomials_ = None
                 if extramonomials is not None:
                     extramonomials_ = extramonomials[k]
-                monomial_sets.append(get_monomials(variables,
-                                                   extramonomials_,
-                                                   self.substitutions,
-                                                   level))
+                self.monomial_sets.append(get_monomials(variables,
+                                                        extramonomials_,
+                                                        self.substitutions,
+                                                        self.level))
                 k += 1
         elif self.hierarchy == "npa_chordal":
-            clique_set = generate_clique(self.variables, objective,
+            self.clique_set = generate_clique(self.variables, objective,
                                          inequalities, equalities)
             if self.verbose > 1:
-                print(clique_set)
-            for clique in clique_set:
+                print(self.clique_set)
+            for clique in self.clique_set:
                 variables = [self.variables[i] for i in np.nonzero(clique)[0]]
-                monomial_sets.append(get_monomials(variables,
-                                                   extramonomials,
-                                                   self.substitutions,
-                                                   level))
+                self.monomial_sets.append(get_monomials(variables,
+                                                        extramonomials,
+                                                        self.substitutions,
+                                                        self.level))
         else:
-            monomial_sets.append(get_monomials(self.variables,
-                                               extramonomials,
-                                               self.substitutions,
-                                               level))
-        return monomial_sets, clique_set
+            self.monomial_sets.append(get_monomials(self.variables,
+                                                    extramonomials,
+                                                    self.substitutions,
+                                                    self.level))
 
-    def __estimate_n_vars(self, monomial_sets):
+    def __estimate_n_vars(self):
         self.n_vars = 0
         if self.nonrelaxed != None:
             self.n_vars = len(self.nonrelaxed)
         if not self.hierarchy == "moroder":
-            for monomials in monomial_sets:
+            for monomials in self.monomial_sets:
                 n_monomials = len(monomials)
 
                 # The minus one compensates for the constant term in the
@@ -494,7 +509,7 @@ class SdpRelaxation(object):
                 if self.hierarchy == "npa":
                     self.n_vars -= 1
         else:
-            n_monomials = len(monomial_sets[0])*len(monomial_sets[1])
+            n_monomials = len(self.monomial_sets[0])*len(self.monomial_sets[1])
             self.n_vars += int(n_monomials * (n_monomials + 1) / 2)
             self.n_vars -= 1
 
@@ -541,6 +556,42 @@ class SdpRelaxation(object):
                 self.F_struct[new_n_vars - 1, new_n_vars] = 1
         return new_n_vars, block_index
 
+    def process_constraints(self, inequalities=None, equalities=None, 
+                            bounds=None, block_index=0, removeequalities=False):
+        """Process the constraints and generate localizing matrices. Useful only
+        if the moment matrix already exists. Call it if you want to replace your
+        constraints. The number of the respective types of constraints and the
+        maximum degree of each constraint must remain the same.
+
+        :param inequalities: Optional parameter to list inequality constraints.
+        :type inequalities: list of :class:`sympy.core.exp.Expr`.
+        :param equalities: Optional parameter to list equality constraints.
+        :type equalities: list of :class:`sympy.core.exp.Expr`.
+        :type substitutions: dict of :class:`sympy.core.exp.Expr`.
+        :param bounds: Optional parameter of bounds on variables which will not
+                       be relaxed by localizing matrices.
+        :type bounds: list of :class:`sympy.core.exp.Expr`.
+        :param removeequalities: Optional parameter to attempt removing the
+                                 equalities by solving the linear equations.
+        :type removeequalities: bool.
+        """
+        if block_index == 0:
+            block_index = self.constraint_starting_block
+        constraints = flatten([inequalities])
+        if not (removeequalities or equalities == None):
+            # Equalities are converted to pairs of inequalities
+            for equality in equalities:
+                constraints.append(equality)
+                constraints.append(-equality)
+        if bounds != None:
+            for bound in bounds:
+                constraints.append(bound)
+        self.__process_inequalities(constraints, self.monomial_sets,
+                                    self.clique_set, block_index)
+        if removeequalities and equalities != None:
+            A = self.__process_equalities(equalities, flatten(self.monomial_sets))
+            self.__remove_equalities(equalities, A)
+
 
     def get_relaxation(self, level, objective=None, inequalities=None,
                        equalities=None, substitutions=None, bounds=None,
@@ -575,37 +626,20 @@ class SdpRelaxation(object):
                                should be included in the objective function.
         :type nsextraobjvars: list of float.
         """
+        self.level = level
         if substitutions == None:
             self.substitutions = {}
         else:
             self.substitutions = substitutions
         # Generate monomials and remove substituted ones
-        monomial_sets, clique_set = \
-           self.__generate_monomial_sets(objective, inequalities, equalities,
-                                         extramonomials, level)
-        if inequalities == None:
-            constraints = []
-        else:
-            constraints = inequalities
-        if not (removeequalities or equalities == None):
-            # Equalities are converted to pairs of inequalities
-            for equality in equalities:
-                constraints.append(equality)
-                constraints.append(-equality)
-
+        self.__generate_monomial_sets(objective, inequalities, equalities,
+                                      extramonomials)
         # Figure out basic structure of the SDP
-        self.__calculate_block_structure(monomial_sets, constraints,
-                                         bounds, clique_set, level)
-        if bounds != None:
-            for bound in bounds:
-                constraints.append(bound)
-        if self.hierarchy == "nieto-silleras":
-            self.block_struct.append(2)
-        n_rows = 0
-        for block_size in self.block_struct:
-            n_rows += block_size ** 2
-        self.__estimate_n_vars(monomial_sets)
-        self.F_struct = lil_matrix((n_rows, self.n_vars + 1))
+        self.__calculate_block_structure(inequalities, equalities, bounds,
+                                         removeequalities)
+        self.__estimate_n_vars()
+        self.F_struct = lil_matrix((sum([bs ** 2 for bs in self.block_struct]),
+                                    self.n_vars + 1))
 
         if self.verbose > 0:
             print(('Estimated number of SDP variables: %d' % self.n_vars))
@@ -615,10 +649,10 @@ class SdpRelaxation(object):
         if self.hierarchy == "moroder":
             new_n_vars, block_index = \
                 self.__generate_moment_matrix(new_n_vars, block_index,
-                                              monomial_sets[0],
-                                              monomial_sets[1])
+                                              self.monomial_sets[0],
+                                              self.monomial_sets[1])
         else:
-            for monomials in monomial_sets:
+            for monomials in self.monomial_sets:
                 new_n_vars, block_index = \
                     self.__generate_moment_matrix(
                         new_n_vars,
@@ -630,7 +664,17 @@ class SdpRelaxation(object):
         self.n_vars = new_n_vars
         # We don't correct the size of F_struct, because that would trigger
         # memory copies, and extra columns in lil_matrix are free anyway.
-        #self.F_struct = self.F_struct[:, 0:self.n_vars + 1]
+        # self.F_struct = self.F_struct[:, 0:self.n_vars + 1]
+
+        # Normalizing the Nieto-Silleras hierarchy before processing the
+        # constraints
+        if self.hierarchy == "nieto-silleras"  and self.normalized:
+            self.F_struct[-1, 0] = -1
+            self.F_struct[-4, 0] = 1
+            for var in self.var_offsets[:-1]:
+                self.F_struct[-1, var + 1] = 1
+                self.F_struct[-4, var + 1] = -1
+
         if self.verbose > 0:
             print(('Reduced number of SDP variables: %d' % self.n_vars))
         if self.verbose > 1:
@@ -640,15 +684,6 @@ class SdpRelaxation(object):
         self.set_objective(objective, nsextraobjvars)
 
         # Process constraints
-        self.__process_inequalities(constraints, monomial_sets, clique_set,
-                                    block_index)
-        if removeequalities and equalities != None:
-            A = self.__process_equalities(equalities, flatten(monomial_sets),
-                                          level)
-            self.__remove_equalities(equalities, A)
-        if self.hierarchy == "nieto-silleras"  and self.normalized:
-            self.F_struct[-1, 0] = -1
-            self.F_struct[-4, 0] = 1
-            for var in self.var_offsets[:-1]:
-                self.F_struct[-1, var + 1] = 1
-                self.F_struct[-4, var + 1] = -1
+        self.constraint_starting_block = block_index
+        self.process_constraints(inequalities, equalities, bounds, block_index,
+                                 removeequalities)
