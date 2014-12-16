@@ -19,6 +19,7 @@ Revision History
   - It is possible to change the constraints once the moment matrix is generated. Refer to the new function ``process_constraints``.
   - PICOS conversion routines were separated.
   - Moved documentation to Sphinx.
+  - SciPy dependency made optional.
 
 **Version 1.5 (2014-11-27)**
 

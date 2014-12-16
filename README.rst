@@ -14,7 +14,18 @@ The implementation has an intuitive syntax for entering problems and it scales f
 
 Dependencies
 ============
-The code requires `SymPy <http://sympy.org/>`_>=0.7.2 and `SciPy <http://scipy.org/>`_>=0.13 in the Python search path. The code is compatible with Python 3, but using it incurs a major decrease in performance. If you use Pypy, SciPy is not necessary, but removal of equations is not supported in this case.
+The implementation requires `SymPy <http://sympy.org/>`_ and `Numpy <http://www.numpy.org/>`_. The code is compatible with both Python 2 and 3, but using version 3 incurs a major decrease in performance. 
+
+While the default CPython interpreter is sufficient for small to medium-scale problems, execution time becomes excessive for larger problems. The code is compatible with Pypy. Using it yields a 10-20x speedup. If you use Pypy, you will need the `Pypy fork of Numpy <https://bitbucket.org/pypy/numpy>`_.
+
+Optional dependencies include:
+
+  - `SciPy <http://scipy.org/>`_ allows faster execution with the default CPython interpreter, and enables removal of equations and chordal graph extensions.
+  - `Chompack <http://chompack.readthedocs.org/en/latest/>`_ improves the sparsity of the chordal graph extension.
+  - `PICOS <http://picos.zib.de/>`_ is necessary for converting the problem to a PICOS problem.
+  - `MOSEK <http://mosek.com>`_ Python module is necessary to work with the MOSEK converter.
+  - `Cvxopt <http://cvxopt.org/>`_ is required by both Chompack and PICOS.
+
 
 Usage
 =====

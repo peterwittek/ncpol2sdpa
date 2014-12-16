@@ -12,10 +12,10 @@ import numpy as np
 from sympy import Number
 from sympy.physics.quantum.dagger import Dagger
 import sys
-if sys.version.find("PyPy") == -1:
+try:
     from scipy.linalg import qr
     from scipy.sparse import lil_matrix, hstack
-else:
+except ImportError:
     from .sparse_utils import lil_matrix
 from .nc_utils import apply_substitutions, build_monomial, \
     pick_monomials_up_to_degree, ncdegree, \
@@ -556,7 +556,7 @@ class SdpRelaxation(object):
                 self.F_struct[new_n_vars - 1, new_n_vars] = 1
         return new_n_vars, block_index
 
-    def process_constraints(self, inequalities=None, equalities=None, 
+    def process_constraints(self, inequalities=None, equalities=None,
                             bounds=None, block_index=0, removeequalities=False):
         """Process the constraints and generate localizing matrices. Useful only
         if the moment matrix already exists. Call it if you want to replace your

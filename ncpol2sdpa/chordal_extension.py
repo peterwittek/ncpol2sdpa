@@ -27,7 +27,7 @@ def sliding_cliques(k, n):
              cliques.append(clique)
      return cliques
 
-def generate_clique(variables, obj, inequalities, equalities):
+def _generate_clique(variables, obj, inequalities, equalities):
     n_dim = len(variables)
     rmat = np.eye(n_dim)
     #Objective: if x_i & x_j in monomial, rmat_ij = rand
@@ -66,9 +66,7 @@ def generate_clique(variables, obj, inequalities, equalities):
     clique_set = R[remaining_indices, :]
     return clique_set
 
-def generate_clique_alt(variables, obj, inequalities, equalities):
-    from cvxopt import spmatrix, amd
-    import chompack as cp
+def _generate_clique_alt(variables, obj, inequalities, equalities):
     n_dim = len(variables)
     rmat = spmatrix(1.0, range(n_dim), range(n_dim))
     for support in get_support(variables, obj):
@@ -86,17 +84,16 @@ def generate_clique_alt(variables, obj, inequalities, equalities):
                 rmat[i,j] = value
     rmat = rmat + 5*n_dim*spmatrix(1.0, range(n_dim), range(n_dim))
     # compute symbolic factorization using AMD ordering
-    #symb = cp.symbolic(rmat, p=amd.order)
-    #ip = symb.ip
-    symb = cp.symbolic(rmat)
-    ip = range(n_dim)
+    symb = cp.symbolic(rmat, p=amd.order)
+    ip = symb.ip
+    #symb = cp.symbolic(rmat)
+    #ip = range(n_dim)
     cliques = symb.cliques()
     R = np.zeros((len(cliques),n_dim))
     for i, clique in enumerate(cliques):
         for j in range(len(clique)):
             R[i,ip[cliques[i][j]]] = 1
-    #return R
-    return sliding_cliques(8, int(n_dim/2))
+    return R
 
 def find_clique_index(variables, polynomial, clique_set):
     support = np.any(get_support(variables, polynomial), axis=0)
@@ -105,3 +102,10 @@ def find_clique_index(variables, polynomial, clique_set):
         if np.dot(support, clique) == len(np.nonzero(support)[0]):
             return i
     return -1
+
+try:
+    from cvxopt import spmatrix, amd
+    import chompack as cp
+    generate_clique=_generate_clique_alt
+except ImportError:
+    generate_clique=_generate_clique
