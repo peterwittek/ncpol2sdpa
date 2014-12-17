@@ -91,7 +91,7 @@ def convert_to_picos(sdpRelaxation):
                     if not (i1 == i2 and j1 == j2):
                         P.add_constraint(X[block][i2, j2] == X[block][i1, j1])
     # Next we proceed to the constraints
-    for block in range(block_of_last_moment_matrix,
+    for block in range(block_of_last_moment_matrix+1,
                        len(sdpRelaxation.block_struct)):
         block_size = sdpRelaxation.block_struct[block]
         Y = P.add_variable('Y%s' % block, (block_size, block_size),
