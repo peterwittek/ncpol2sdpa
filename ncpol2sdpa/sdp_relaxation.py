@@ -148,7 +148,6 @@ class SdpRelaxation(object):
         """Calculate the sparse vector representation of a polynomial
         and pushes it to the F structure.
         """
-
         width = self.block_struct[block_index - 1]
         # Preprocess the polynomial for uniform handling later
         # DO NOT EXPAND THE POLYNOMIAL HERE!!!!!!!!!!!!!!!!!!!
@@ -286,7 +285,7 @@ class SdpRelaxation(object):
 
 
     def __process_inequalities(
-            self, inequalities, monomial_sets, clique_set, block_index):
+            self, inequalities, block_index):
         """Generate localizing matrices
 
         Arguments:
@@ -296,7 +295,7 @@ class SdpRelaxation(object):
                        SDP relaxation
         """
 
-        all_monomials = flatten(monomial_sets)
+        all_monomials = flatten(self.monomial_sets)
         initial_block_index = block_index
         row_offsets = [0]
         for block, block_size in enumerate(self.block_struct):
@@ -306,9 +305,10 @@ class SdpRelaxation(object):
             localization_order = self.localization_order[
                 block_index - initial_block_index - 1]
             if self.hierarchy == "npa_chordal":
-                index = find_clique_index(self.variables, ineq, clique_set)
-                monomials = pick_monomials_up_to_degree(monomial_sets[index],
-                                                        localization_order)
+                index = find_clique_index(self.variables, ineq, self.clique_set)
+                monomials = \
+                 pick_monomials_up_to_degree(self.monomial_sets[index],
+                                             localization_order)
 
             else:
                 monomials = \
@@ -556,6 +556,14 @@ class SdpRelaxation(object):
                 self.F_struct[new_n_vars - 1, new_n_vars] = 1
         return new_n_vars, block_index
 
+    def wipe_F_struct_from_constraints(self):
+        row_offset = 0
+        for block in range(self.constraint_starting_block):
+            row_offset += self.block_struct[block]**2
+        for row in range(row_offset, len(self.F_struct.rows)):
+            self.F_struct.rows[row]= []
+            self.F_struct.data[row] = []
+
     def process_constraints(self, inequalities=None, equalities=None,
                             bounds=None, block_index=0, removeequalities=False):
         """Process the constraints and generate localizing matrices. Useful only
@@ -577,6 +585,7 @@ class SdpRelaxation(object):
         """
         if block_index == 0:
             block_index = self.constraint_starting_block
+            self.wipe_F_struct_from_constraints()
         constraints = flatten([inequalities])
         if not (removeequalities or equalities == None):
             # Equalities are converted to pairs of inequalities
@@ -586,11 +595,23 @@ class SdpRelaxation(object):
         if bounds != None:
             for bound in bounds:
                 constraints.append(bound)
-        self.__process_inequalities(constraints, self.monomial_sets,
-                                    self.clique_set, block_index)
+        self.__process_inequalities(constraints, block_index)
         if removeequalities and equalities != None:
             A = self.__process_equalities(equalities, flatten(self.monomial_sets))
             self.__remove_equalities(equalities, A)
+
+    def normalize_nieto_silleras(self, block_index):
+        width = self.block_struct[block_index]
+        row_offset = 0
+        for block in range(block_index):
+            row_offset += self.block_struct[block]**2
+        if self.normalized:
+            self.F_struct[row_offset, 0] = -1
+            self.F_struct[row_offset + width + 1, 0] = 1
+            for var in self.var_offsets[:-1]:
+                self.F_struct[row_offset , var + 1] = 1
+                self.F_struct[row_offset + width + 1, var + 1] = -1
+        return block_index + 1
 
 
     def get_relaxation(self, level, objective=None, inequalities=None,
@@ -668,13 +689,8 @@ class SdpRelaxation(object):
 
         # Normalizing the Nieto-Silleras hierarchy before processing the
         # constraints
-        if self.hierarchy == "nieto-silleras"  and self.normalized:
-            self.F_struct[-1, 0] = -1
-            self.F_struct[-4, 0] = 1
-            for var in self.var_offsets[:-1]:
-                self.F_struct[-1, var + 1] = 1
-                self.F_struct[-4, var + 1] = -1
-
+        if self.hierarchy == "nieto-silleras":
+            block_index = self.normalize_nieto_silleras(block_index)
         if self.verbose > 0:
             print(('Reduced number of SDP variables: %d' % self.n_vars))
         if self.verbose > 1:
