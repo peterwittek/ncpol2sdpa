@@ -13,6 +13,7 @@ Functions to Work with SDPA, PICOS, and MOSEK
 .. autofunction:: ncpol2sdpa.write_to_sdpa
 .. autofunction:: ncpol2sdpa.convert_to_mosek
 .. autofunction:: ncpol2sdpa.convert_to_picos
+.. autofunction:: ncpol2sdpa.convert_to_picos_for_export
 
 Functions to Help Define Polynomial Optimization Problems
 =========================================================
