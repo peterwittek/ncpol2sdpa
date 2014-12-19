@@ -45,6 +45,23 @@ def _objective_to_affine_expression(objective, F_struct, row_offsets,
             affine_expression += v * X[block][i, j]
     return affine_expression
 
+def _objective_to_affine_expression_no_blocks(objective, F_struct, row_offsets,
+                                   block_of_last_moment_matrix, block_struct,
+                                   X):
+    """Helper function to create an affine expression based on the variables
+    in the moment matrices from the dense vector describing the objective.
+    """
+    affine_expression = 0
+    for k, v in enumerate(objective):
+        if v != 0:
+            row0 = F_struct[0:row_offsets[block_of_last_moment_matrix+1],
+                            k+1].nonzero()[0][0]
+            block, i, j = convert_row_to_sdpa_index(block_struct, row_offsets,
+                                                    row0)
+            affine_expression += v * X[i, j]
+    return affine_expression
+
+
 def convert_to_picos_for_export(sdpRelaxation):
     """Convert an SDP relaxation to a PICOS problem in a way that PICOS cannot
     solve. The advantage is that the exported .dat-s file is extremely sparse,
@@ -86,6 +103,19 @@ def convert_to_picos_for_export(sdpRelaxation):
         constraint._size=(block_size, block_size)
         P.add_constraint(constant + constraint>>0)
         row_offset += block_size**2
+    row_offsets = [0]
+    block_of_last_moment_matrix = 0
+    for block, block_size in enumerate(sdpRelaxation.block_struct):
+        if block > 0 and block_size < sdpRelaxation.block_struct[block]:
+            block_of_last_moment_matrix = block - 1
+        row_offsets.append(row_offsets[block]+block_size ** 2)
+    affine_expression = \
+      _objective_to_affine_expression_no_blocks(sdpRelaxation.obj_facvar,
+                                                sdpRelaxation.F_struct,
+                                                row_offsets,
+                                                block_of_last_moment_matrix,
+                                                sdpRelaxation.block_struct, X)
+    P.set_objective('min', affine_expression)
     return P
 
 def convert_to_picos(sdpRelaxation):
