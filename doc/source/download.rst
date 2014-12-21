@@ -1,7 +1,7 @@
 *************************
 Download and Installation
 *************************
-The entire package for is available as a `gzipped tar <https://pypi.python.org/packages/source/n/ncpol2sdpa/ncpol2sdpa-1.5.tar.gz>`_ file from the `Python Package Index <https://pypi.python.org/pypi/ncpol2sdpa/>`_, containing the source, documentation, and examples.
+The entire package for is available as a `gzipped tar <https://pypi.python.org/packages/source/n/ncpol2sdpa/ncpol2sdpa-1.6.tar.gz>`_ file from the `Python Package Index <https://pypi.python.org/pypi/ncpol2sdpa/>`_, containing the source, documentation, and examples.
 
 The latest development version is available on `GitHub <https://github.com/peterwittek/ncpol2sdpa>`_.
 

@@ -1,23 +1,15 @@
 Revision History
 ****************
 
-**Since version 1.5**
+**Version 1.6 (2014-12-22)**
 
-  - Syntax for passing parameters changed. Only the level of the relaxation is
-    compulsory for obtaining a relaxation.
-  - Extra parameter for bounds on the variables was added. Syntax is identical 
-    to the inequalities. The difference is that the inequalities in the bounds 
-    will not be relaxed by localizing matrices.
-  - Extra parameter for passing additional variables to the Nieto-Silleras
-    hierarchy. This is important because the top-left element of the blocks of 
-    moment matrices in the relaxation is not one: they add up to one. Hence
-    specifying the last element of a measurement becomes possible with this 
-    option.
-  - Support for chordal graph extension in the commutative case
-    (doi:`10.1137/050623802 <http://dx.doi.org/10.1137/050623802>`_). Pass ``hierarchy="npa_chordal"`` to the constructor.
+  - Syntax for passing parameters changed. Only the level of the relaxation is compulsory for obtaining a relaxation.
+  - Extra parameter for bounds on the variables was added. Syntax is identical to the inequalities. The difference is that the inequalities in the bounds will not be relaxed by localizing matrices.
+  - Support for chordal graph extension in the commutative case (doi:`10.1137/050623802 <http://dx.doi.org/10.1137/050623802>`_). Pass ``hierarchy="npa_chordal"`` to the constructor.
   - It is possible to pass variables which will not be relaxed. Pass ``nonrelaxed=[variables]`` to the constructor.
   - It is possible to change the constraints once the moment matrix is generated. Refer to the new function ``process_constraints``.
-  - PICOS conversion routines were separated.
+  - Extra parameter ``nsextraobjvars=[]`` was added for passing additional variables to the Nieto-Silleras hierarchy. This is important because the top-left elements of the blocks of moment matrices in the relaxation are not one: they add up to one. Hence specifying the last element of a measurement becomes possible with this option. The number of elements in this must match the number of behaviours.
+  - PICOS conversion routines were separated and reworked to ensure sparsity.
   - Moved documentation to Sphinx.
   - SciPy dependency made optional.
 

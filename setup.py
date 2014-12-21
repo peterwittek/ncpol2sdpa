@@ -14,7 +14,7 @@ from distutils.core import setup
 
 setup(
     name='ncpol2sdpa',
-    version='1.5',
+    version='1.6',
     author='Peter Wittek',
     author_email='peterwittek@users.noreply.github.com',
     packages=['ncpol2sdpa'],
@@ -41,6 +41,6 @@ setup(
     ],
     install_requires=[
         "sympy >= 0.7.2",
-        "scipy >= 0.13"
+        "numpy"
     ],
 )
