@@ -46,11 +46,10 @@ def _objective_to_affine_expression(objective, F_struct, row_offsets,
     return affine_expression
 
 def _convert_to_picos_compact(sdpRelaxation):
-    """Convert an SDP relaxation to a PICOS problem in a way that PICOS cannot
-    solve. The advantage is that the exported .dat-s file is extremely sparse,
-    there is not penalty imposed in terms of SDP variables or number of
-    constraints. This conversion can be used for imposing extra constraints
-    on the moment matrix, such as partial transpose.
+    """Convert an SDP relaxation to a PICOS problem such that the exported
+    .dat-s file is extremely sparse, there is not penalty imposed in terms of
+    SDP variables or number of constraints. This conversion can be used for
+    imposing extra constraints on the moment matrix, such as partial transpose.
 
     :param sdpRelaxation: The SDP relaxation to convert.
     :type sdpRelaxation: :class:`ncpol2sdpa.SdpRelaxation`.
