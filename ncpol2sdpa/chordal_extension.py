@@ -13,19 +13,19 @@ import numpy as np
 from .nc_utils import get_support, flatten
 
 def sliding_cliques(k, n):
-     one_sides = []
-     cliques = []
-     for i in range(n-int(k/2)+1):
-         side = [0] * n
-         for j in range(int(k/2)):
-             side[i+j] = 1
-         one_sides.append(side)
-     for side1 in one_sides:
-         for side2 in one_sides:
-             clique = list(side1)
-             clique.extend(side2)
-             cliques.append(clique)
-     return cliques
+    one_sides = []
+    cliques = []
+    for i in range(n-int(k/2)+1):
+        side = [0] * n
+        for j in range(int(k/2)):
+            side[i+j] = 1
+        one_sides.append(side)
+    for side1 in one_sides:
+        for side2 in one_sides:
+            clique = list(side1)
+            clique.extend(side2)
+            cliques.append(clique)
+    return cliques
 
 def _generate_clique(variables, obj, inequalities, equalities):
     n_dim = len(variables)
@@ -33,18 +33,18 @@ def _generate_clique(variables, obj, inequalities, equalities):
     #Objective: if x_i & x_j in monomial, rmat_ij = rand
     for support in get_support(variables, obj):
         nonzeros = np.nonzero(support)[0]
-        value =  random.random()
+        value = random.random()
         for i in nonzeros:
             for j in nonzeros:
-                rmat[i,j] = value
+                rmat[i, j] = value
     #Constraints: if x_i & x_j in support, rmat_ij = rand
     for polynomial in flatten([inequalities, equalities]):
         support = np.any(get_support(variables, polynomial), axis=0)
         nonzeros = np.nonzero(support)[0]
-        value =  random.random()
+        value = random.random()
         for i in nonzeros:
             for j in nonzeros:
-                rmat[i,j] = value
+                rmat[i, j] = value
     rmat = rmat + 5*n_dim*np.eye(n_dim)
     #TODO: approximate minimum degree ordering should go before the Cholesky
     #decomposition
@@ -52,7 +52,7 @@ def _generate_clique(variables, obj, inequalities, equalities):
     R[np.nonzero(R)] = 1
     remaining_indices = [0]
     for i in range(1, n_dim):
-        check_set = R[i,i:n_dim]
+        check_set = R[i, i:n_dim]
         one = np.nonzero(check_set)[0]
         n_ones = len(one)
         clique_result = np.dot(R[:i, i:n_dim], check_set.T)
@@ -74,14 +74,14 @@ def _generate_clique_alt(variables, obj, inequalities, equalities):
         value = random.random()
         for i in nonzeros:
             for j in nonzeros:
-                rmat[i,j] = value
+                rmat[i, j] = value
     for polynomial in flatten([inequalities, equalities]):
         support = np.any(get_support(variables, polynomial), axis=0)
         nonzeros = np.nonzero(support)[0]
-        value =  random.random()
+        value = random.random()
         for i in nonzeros:
             for j in nonzeros:
-                rmat[i,j] = value
+                rmat[i, j] = value
     rmat = rmat + 5*n_dim*spmatrix(1.0, range(n_dim), range(n_dim))
     # compute symbolic factorization using AMD ordering
     symb = cp.symbolic(rmat, p=amd.order)
@@ -89,10 +89,10 @@ def _generate_clique_alt(variables, obj, inequalities, equalities):
     #symb = cp.symbolic(rmat)
     #ip = range(n_dim)
     cliques = symb.cliques()
-    R = np.zeros((len(cliques),n_dim))
+    R = np.zeros((len(cliques), n_dim))
     for i, clique in enumerate(cliques):
         for j in range(len(clique)):
-            R[i,ip[cliques[i][j]]] = 1
+            R[i, ip[cliques[i][j]]] = 1
     return R
 
 def find_clique_index(variables, polynomial, clique_set):
@@ -106,6 +106,6 @@ def find_clique_index(variables, polynomial, clique_set):
 try:
     from cvxopt import spmatrix, amd
     import chompack as cp
-    generate_clique=_generate_clique_alt
+    generate_clique = _generate_clique_alt
 except ImportError:
-    generate_clique=_generate_clique
+    generate_clique = _generate_clique

@@ -59,7 +59,7 @@ class SdpRelaxation(object):
     """
     hierarchy_types = ["npa", "npa_chordal", "nieto-silleras", "moroder"]
 
-    def __init__(self, variables, nonrelaxed=None,verbose=0, hierarchy="npa",
+    def __init__(self, variables, nonrelaxed=None, verbose=0, hierarchy="npa",
                  normalized=True):
         """Constructor for the class.
         """
@@ -141,7 +141,7 @@ class SdpRelaxation(object):
                         sub = apply_substitutions(Dagger(monomial),
                                                   self.substitutions)
                         print(("DEBUG: %s, %s, %s" % (element,
-                               Dagger(monomial), sub)))
+                                                      Dagger(monomial), sub)))
         return k, coeff
 
     def __push_facvar_sparse(self, polynomial, block_index, row_offset, i, j):
@@ -205,7 +205,7 @@ class SdpRelaxation(object):
             # An extra round of substitutions is granted on the conjugate of
             # the monomial if all the variables are Hermitian
             need_new_variable = True
-            if self.is_hermitian_variables and ncdegree(monomial)>2:
+            if self.is_hermitian_variables and ncdegree(monomial) > 2:
                 daggered_monomial = apply_substitutions(Dagger(monomial),
                                                         self.substitutions)
                 try:
@@ -327,7 +327,8 @@ class SdpRelaxation(object):
                                               row_offsets[block_index-1],
                                               row, column)
             if self.verbose > 0:
-                sys.stdout.write("\r\x1b[KProcessing %d/%d constraints..." % (k+1, len(inequalities)))
+                sys.stdout.write("\r\x1b[KProcessing %d/%d constraints..." %
+                                 (k+1, len(inequalities)))
                 sys.stdout.flush()
         if self.verbose > 0:
             sys.stdout.write("\n")
@@ -451,11 +452,11 @@ class SdpRelaxation(object):
               len(localizing_monomials) == 0:
                 localizing_monomials = [1]
             self.block_struct.append(len(localizing_monomials))
-            if k>=n_inequalities:
+            if k >= n_inequalities:
                 self.localization_order.append(localization_order)
                 self.block_struct.append(len(localizing_monomials))
 
-        if degree_warning and self.verbose>0:
+        if degree_warning and self.verbose > 0:
             print("A constraint has degree %d. Either choose a higher level "\
                   "relaxation or ensure that a mixed-order relaxation has the"\
                   " necessary monomials" % (ineq_order))
@@ -480,7 +481,7 @@ class SdpRelaxation(object):
                 k += 1
         elif self.hierarchy == "npa_chordal":
             self.clique_set = generate_clique(self.variables, objective,
-                                         inequalities, equalities)
+                                              inequalities, equalities)
             if self.verbose > 1:
                 print(self.clique_set)
             for clique in self.clique_set:
@@ -561,7 +562,7 @@ class SdpRelaxation(object):
         for block in range(self.constraint_starting_block):
             row_offset += self.block_struct[block]**2
         for row in range(row_offset, len(self.F_struct.rows)):
-            self.F_struct.rows[row]= []
+            self.F_struct.rows[row] = []
             self.F_struct.data[row] = []
 
     def process_constraints(self, inequalities=None, equalities=None,
@@ -609,7 +610,7 @@ class SdpRelaxation(object):
             self.F_struct[row_offset, 0] = -1
             self.F_struct[row_offset + width + 1, 0] = 1
             for var in self.var_offsets[:-1]:
-                self.F_struct[row_offset , var + 1] = 1
+                self.F_struct[row_offset, var + 1] = 1
                 self.F_struct[row_offset + width + 1, var + 1] = -1
         return block_index + 1
 

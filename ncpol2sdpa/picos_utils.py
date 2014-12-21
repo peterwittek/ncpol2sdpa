@@ -9,7 +9,7 @@ Created on Wed Dec 10 18:33:34 2014
 from .sdpa_utils import convert_row_to_sdpa_index
 
 def _row_to_affine_expression(row_vector, F_struct, row_offsets,
-                             block_of_last_moment_matrix, block_struct, X):
+                              block_of_last_moment_matrix, block_struct, X):
     """Helper function to create an affine expression based on the variables
     in the moment matrices.
     """
@@ -30,8 +30,8 @@ def _row_to_affine_expression(row_vector, F_struct, row_offsets,
         return None
 
 def _objective_to_affine_expression(objective, F_struct, row_offsets,
-                                   block_of_last_moment_matrix, block_struct,
-                                   X):
+                                    block_of_last_moment_matrix, block_struct,
+                                    X):
     """Helper function to create an affine expression based on the variables
     in the moment matrices from the dense vector describing the objective.
     """
@@ -45,7 +45,7 @@ def _objective_to_affine_expression(objective, F_struct, row_offsets,
             affine_expression += v * X[block][i, j]
     return affine_expression
 
-def convert_to_picos_compact(sdpRelaxation):
+def _convert_to_picos_compact(sdpRelaxation):
     """Convert an SDP relaxation to a PICOS problem in a way that PICOS cannot
     solve. The advantage is that the exported .dat-s file is extremely sparse,
     there is not penalty imposed in terms of SDP variables or number of
@@ -73,7 +73,7 @@ def convert_to_picos_compact(sdpRelaxation):
                     Ix.append(i)
                     Jx.append(column-1)
                     i0 = (i/block_size)+(i%block_size)*block_size
-                    if i!=i0:
+                    if i != i0:
                         x.append(sdpRelaxation.F_struct.data[row_offset+i][j])
                         Ix.append(i0)
                         Jx.append(column-1)
@@ -85,11 +85,11 @@ def convert_to_picos_compact(sdpRelaxation):
                     Ic.append(0)
                     Jc.append(0)
         permutation = cvx.spmatrix(x, Ix, Jx)
-        constant = cvx.spmatrix(c, Ic, Jc, (block_size,block_size))
+        constant = cvx.spmatrix(c, Ic, Jc, (block_size, block_size))
         constraint = X.copy()
         for k in constraint.factors:
             constraint.factors[k] = permutation
-        constraint._size=(block_size, block_size)
+        constraint._size = (block_size, block_size)
         P.add_constraint(constant + constraint>>0)
         row_offset += block_size**2
     x, Ix, Jx = [], [], []
@@ -115,7 +115,7 @@ def convert_to_picos(sdpRelaxation):
     :returns: :class:`picos.Problem`.
     """
     if sdpRelaxation.hierarchy != "nieto-silleras":
-        return convert_to_picos_compact(sdpRelaxation)
+        return _convert_to_picos_compact(sdpRelaxation)
     import picos as pic
     P = pic.Problem()
     row_offsets = [0]
@@ -166,16 +166,16 @@ def convert_to_picos(sdpRelaxation):
             row_vector = sdpRelaxation.F_struct.getrow(row)
             affine_expression = \
               _row_to_affine_expression(row_vector, sdpRelaxation.F_struct,
-                                       row_offsets,
-                                       block_of_last_moment_matrix,
-                                       sdpRelaxation.block_struct, X)
+                                        row_offsets,
+                                        block_of_last_moment_matrix,
+                                        sdpRelaxation.block_struct, X)
             if affine_expression != None:
                 i, j = divmod(row-start, block_size)
                 P.add_constraint(Y[i, j] == affine_expression)
     affine_expression = \
       _objective_to_affine_expression(sdpRelaxation.obj_facvar,
-                                     sdpRelaxation.F_struct, row_offsets,
-                                     block_of_last_moment_matrix,
-                                     sdpRelaxation.block_struct, X)
+                                      sdpRelaxation.F_struct, row_offsets,
+                                      block_of_last_moment_matrix,
+                                      sdpRelaxation.block_struct, X)
     P.set_objective('min', affine_expression)
     return P

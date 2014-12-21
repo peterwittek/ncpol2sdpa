@@ -74,7 +74,7 @@ def write_to_sdpa(sdpRelaxation, filename):
     for block_size in sdpRelaxation.block_struct:
         cumulative_sum += block_size ** 2
         row_offsets.append(cumulative_sum)
-    lines = [ [] for _ in range(sdpRelaxation.n_vars+1)]
+    lines = [[] for _ in range(sdpRelaxation.n_vars+1)]
     for row in range(len(sdpRelaxation.F_struct.rows)):
         if len(sdpRelaxation.F_struct.rows[row]) > 0:
             col_index = 0
