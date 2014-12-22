@@ -20,11 +20,11 @@ While the default CPython interpreter is sufficient for small to medium-scale pr
 
 Optional dependencies include:
 
-  - `SciPy <http://scipy.org/>`_ allows faster execution with the default CPython interpreter, and enables removal of equations and chordal graph extensions.
-  - `Chompack <http://chompack.readthedocs.org/en/latest/>`_ improves the sparsity of the chordal graph extension.
-  - `PICOS <http://picos.zib.de/>`_ is necessary for converting the problem to a PICOS problem.
-  - `MOSEK <http://www.mosek.com/>`_ Python module is necessary to work with the MOSEK converter.
-  - `Cvxopt <http://cvxopt.org/>`_ is required by both Chompack and PICOS.
+- `SciPy <http://scipy.org/>`_ allows faster execution with the default CPython interpreter, and enables removal of equations and chordal graph extensions.
+- `Chompack <http://chompack.readthedocs.org/en/latest/>`_ improves the sparsity of the chordal graph extension.
+- `PICOS <http://picos.zib.de/>`_ is necessary for converting the problem to a PICOS problem.
+- `MOSEK <http://www.mosek.com/>`_ Python module is necessary to work with the MOSEK converter.
+- `Cvxopt <http://cvxopt.org/>`_ is required by both Chompack and PICOS.
 
 
 Usage
