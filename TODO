@@ -1,3 +1,2 @@
-  - Improve syntax of constraints.
-  - Implement group theoretic constraints to improve sparsity.
+  - Implement group theoretic symmetries to improve sparsity.
   
