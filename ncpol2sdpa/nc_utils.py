@@ -26,7 +26,7 @@ def flatten(lol):
     """
     new_list = []
     for element in lol:
-        if element == None or (isinstance(element, list) and len(element) == 0):
+        if element is None or (isinstance(element, list) and len(element) == 0):
             continue
         elif isinstance(element, Symbol) or isinstance(element, Operator) or\
           isinstance(element, int):

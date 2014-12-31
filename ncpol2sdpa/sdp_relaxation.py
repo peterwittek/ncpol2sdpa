@@ -410,7 +410,7 @@ class SdpRelaxation(object):
         self.block_struct = []
         if self.verbose > 0:
             print("Calculating block structure...")
-        if self.nonrelaxed != None:
+        if self.nonrelaxed is not None:
             self.block_struct.append(-len(self.nonrelaxed))
         if  self.hierarchy == "moroder":
             self.block_struct.append(len(self.monomial_sets[0])*
@@ -421,7 +421,7 @@ class SdpRelaxation(object):
         if self.hierarchy == "nieto-silleras":
             self.block_struct.append(2)
         degree_warning = False
-        if inequalities != None:
+        if inequalities is not None:
             n_inequalities = len(inequalities)
         else:
             n_inequalities = 0
@@ -461,7 +461,7 @@ class SdpRelaxation(object):
                   "relaxation or ensure that a mixed-order relaxation has the"\
                   " necessary monomials" % (ineq_order))
 
-        if bounds != None:
+        if bounds is not None:
             for _ in bounds:
                 self.localization_order.append(0)
                 self.block_struct.append(1)
@@ -498,7 +498,7 @@ class SdpRelaxation(object):
 
     def __estimate_n_vars(self):
         self.n_vars = 0
-        if self.nonrelaxed != None:
+        if self.nonrelaxed is not None:
             self.n_vars = len(self.nonrelaxed)
         if not self.hierarchy == "moroder":
             for monomials in self.monomial_sets:
@@ -526,7 +526,7 @@ class SdpRelaxation(object):
                                should be included in the objective function.
         :type nsextraobjvars: list of float.
         """
-        if objective != None:
+        if objective is not None:
             self.obj_facvar = (
                 self.__get_facvar(
                     simplify_polynomial(
@@ -534,7 +534,7 @@ class SdpRelaxation(object):
                         self.substitutions)))[1:]
         else:
             self.obj_facvar = self.__get_facvar(0)
-        if nsextraobjvars != None:
+        if nsextraobjvars is not None:
             if self.hierarchy == "nieto-silleras":
                 if len(nsextraobjvars) == len(self.var_offsets)-1:
                     for i, coeff in enumerate(nsextraobjvars):
@@ -549,7 +549,7 @@ class SdpRelaxation(object):
 
     def add_non_relaxed(self):
         new_n_vars, block_index = 0, 0
-        if self.nonrelaxed != None:
+        if self.nonrelaxed is not None:
             block_index = 1
             for var in self.nonrelaxed:
                 new_n_vars += 1
@@ -588,16 +588,16 @@ class SdpRelaxation(object):
             block_index = self.constraint_starting_block
             self.wipe_F_struct_from_constraints()
         constraints = flatten([inequalities])
-        if not (removeequalities or equalities == None):
+        if not (removeequalities or equalities is None):
             # Equalities are converted to pairs of inequalities
             for equality in equalities:
                 constraints.append(equality)
                 constraints.append(-equality)
-        if bounds != None:
+        if bounds is not None:
             for bound in bounds:
                 constraints.append(bound)
         self.__process_inequalities(constraints, block_index)
-        if removeequalities and equalities != None:
+        if removeequalities and equalities is not None:
             A = self.__process_equalities(equalities, flatten(self.monomial_sets))
             self.__remove_equalities(equalities, A)
 
@@ -649,7 +649,7 @@ class SdpRelaxation(object):
         :type nsextraobjvars: list of float.
         """
         self.level = level
-        if substitutions == None:
+        if substitutions is None:
             self.substitutions = {}
         else:
             self.substitutions = substitutions

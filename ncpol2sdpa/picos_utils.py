@@ -168,7 +168,7 @@ def convert_to_picos(sdpRelaxation):
                                         row_offsets,
                                         block_of_last_moment_matrix,
                                         sdpRelaxation.block_struct, X)
-            if affine_expression != None:
+            if affine_expression is not None:
                 i, j = divmod(row-start, block_size)
                 P.add_constraint(Y[i, j] == affine_expression)
     affine_expression = \
