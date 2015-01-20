@@ -277,7 +277,7 @@ class SdpRelaxation(object):
                                                       columnA, N, rowB,
                                                       columnB, len(monomialsB))
                         if self.verbose > 0:
-                            sys.stdout.write("\r\x1b[KCurrent number SDP variables: %d" % n_vars)
+                            sys.stdout.write("\r\x1b[KCurrent number of SDP variables: %d" % n_vars)
                             sys.stdout.flush()
         if self.verbose > 0:
             sys.stdout.write("\r")
