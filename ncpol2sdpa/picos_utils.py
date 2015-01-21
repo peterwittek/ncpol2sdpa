@@ -81,10 +81,10 @@ def inplace_partial_transpose(affine_expression, dim=None):
         I0 = []
         for i in spconstant.I:
             column, row = divmod(i, bsize)
-            row_block, lrow = divmod(row, subsize)
-            column_block, lcolumn = divmod(column, subsize)
-            row = row_block*subsize + lcolumn
-            column = column_block*subsize + lrow
+            row_block, lrow = divmod(row, dim[1])
+            column_block, lcolumn = divmod(column, dim[1])
+            row = row_block*dim[1] + lcolumn
+            column = column_block*dim[1] + lrow
             I0.append(column*bsize + row)
         affine_expression.constant = cvx.spmatrix(V,I0,J,spconstant.size)
     affine_expression._size=(affine_expression.size[1],affine_expression.size[0])
