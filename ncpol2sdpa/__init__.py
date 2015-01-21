@@ -32,4 +32,5 @@ from .physics_utils import bosonic_constraints, fermionic_constraints, \
     projective_measurement_constraints, \
     maximum_violation, define_objective_with_I
 from .mosek_utils import convert_to_mosek
-from .picos_utils import convert_to_picos
+from .picos_utils import convert_to_picos, write_picos_to_sdpa, \
+    convert_to_picos_extra_moment_matrix, partial_transpose
