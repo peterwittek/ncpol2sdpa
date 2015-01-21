@@ -46,43 +46,59 @@ def _objective_to_affine_expression(objective, F_struct, row_offsets,
             affine_expression += v * X[block][i, j]
     return affine_expression
 
-def inplace_partial_transpose(affine_expression):
+def inplace_partial_transpose(affine_expression, dim=None):
     import cvxopt as cvx
     import picos as pic
-    if isinstance(affine_expression, pic.Variable):
-        raise Exception('inplace_transpose should not be called on a Variable object')
+    if isinstance(affine_expression,pic.Variable):
+            raise Exception('inplace_transpose should not be called on a Variable object')
+    bsize=affine_expression.size[0]
+    if bsize != affine_expression.size[1]:
+        raise ValueError('partial_transpose can only be applied to square matrices')
+    if dim == None:
+        subsize = int((bsize)**0.5)
+        if subsize != (bsize)**0.5 or bsize != affine_expression.size[1]:
+            raise ValueError('partial_transpose can only be applied to n**2 x n**2 matrices without specifying the dimensions of the subsystems')
+        dim = [subsize, subsize]
+    if dim[0]*dim[1] != bsize:
+        raise ValueError('invalid dimensions')
+
     for k in affine_expression.factors:
         I0 = []
-        bsize = affine_expression.size[0]
-        subsize = int(sqrt(bsize))
-        J = affine_expression.factors[k].J
-        V = affine_expression.factors[k].V
+        J=affine_expression.factors[k].J
+        V=affine_expression.factors[k].V
         for i in affine_expression.factors[k].I:
-            row, column = divmod(i, bsize)
+            column, row = divmod(i, bsize)
+            row_block, lrow = divmod(row, dim[1])
+            column_block, lcolumn = divmod(column, dim[1])
+            row = row_block*dim[1] + lcolumn
+            column = column_block*dim[1] + lrow
+            I0.append(column*bsize + row)
+        affine_expression.factors[k]=cvx.spmatrix(V,I0,J,affine_expression.factors[k].size)
+    if not (affine_expression.constant is None):
+        spconstant=cvx.sparse(affine_expression.constant)
+        J=spconstant.J
+        V=spconstant.V
+        I0 = []
+        for i in spconstant.I:
+            column, row = divmod(i, bsize)
             row_block, lrow = divmod(row, subsize)
             column_block, lcolumn = divmod(column, subsize)
-            row = column_block*subsize + lrow
-            column = row_block*subsize + lcolumn
-            I0.append(row*bsize + column)
-        J = affine_expression.factors[k].J
-        V = affine_expression.factors[k].V
-        affine_expression.factors[k] = cvx.spmatrix(V, I0, J, affine_expression.factors[k].size)
-    if affine_expression.constant is not None:
-        affine_expression.constant = cvx.matrix(affine_expression.constant,
-                                                affine_expression.size).T[:]
-    affine_expression._size = (affine_expression.size[1],
-                               affine_expression.size[0])
-    if (('*' in affine_expression.affstring()) or ('/' in affine_expression.affstring())
-            or ('+' in affine_expression.affstring()) or ('-' in affine_expression.affstring())):
-        affine_expression.string = '( '+affine_expression.string+' ).Tx'
+            row = row_block*subsize + lcolumn
+            column = column_block*subsize + lrow
+            I0.append(column*bsize + row)
+        affine_expression.constant = cvx.spmatrix(V,I0,J,spconstant.size)
+    affine_expression._size=(affine_expression.size[1],affine_expression.size[0])
+    if ( ('*' in affine_expression.affstring()) or ('/' in affine_expression.affstring())
+            or ('+' in affine_expression.affstring()) or ('-' in affine_expression.affstring()) ):
+        affine_expression.string='( '+affine_expression.string+' ).Tx'
     else:
-        affine_expression.string += '.Tx'
+        affine_expression.string+='.Tx'
 
-def partial_transpose(affine_expression):
+def partial_transpose(affine_expression, dim=None):
     """Returns the partial transpose of a moment matrix
     """
     selfcopy = affine_expression.copy()
-    inplace_partial_transpose(selfcopy)
+    inplace_partial_transpose(selfcopy, dim)
     return selfcopy
 
 
