@@ -49,9 +49,9 @@ def _objective_to_affine_expression(objective, F_struct, row_offsets,
 def inplace_partial_transpose(affine_expression, dim=None):
     import cvxopt as cvx
     import picos as pic
-    if isinstance(affine_expression,pic.Variable):
+    if isinstance(affine_expression, pic.Variable):
             raise Exception('inplace_transpose should not be called on a Variable object')
-    bsize=affine_expression.size[0]
+    bsize = affine_expression.size[0]
     if bsize != affine_expression.size[1]:
         raise ValueError('partial_transpose can only be applied to square matrices')
     if dim == None:
@@ -64,8 +64,8 @@ def inplace_partial_transpose(affine_expression, dim=None):
 
     for k in affine_expression.factors:
         I0 = []
-        J=affine_expression.factors[k].J
-        V=affine_expression.factors[k].V
+        J = affine_expression.factors[k].J
+        V = affine_expression.factors[k].V
         for i in affine_expression.factors[k].I:
             column, row = divmod(i, bsize)
             row_block, lrow = divmod(row, dim[1])
@@ -73,11 +73,11 @@ def inplace_partial_transpose(affine_expression, dim=None):
             row = row_block*dim[1] + lcolumn
             column = column_block*dim[1] + lrow
             I0.append(column*bsize + row)
-        affine_expression.factors[k]=cvx.spmatrix(V,I0,J,affine_expression.factors[k].size)
+        affine_expression.factors[k] = cvx.spmatrix(V, I0, J, affine_expression.factors[k].size)
     if not (affine_expression.constant is None):
-        spconstant=cvx.sparse(affine_expression.constant)
-        J=spconstant.J
-        V=spconstant.V
+        spconstant = cvx.sparse(affine_expression.constant)
+        J = spconstant.J
+        V = spconstant.V
         I0 = []
         for i in spconstant.I:
             column, row = divmod(i, bsize)
@@ -86,13 +86,13 @@ def inplace_partial_transpose(affine_expression, dim=None):
             row = row_block*dim[1] + lcolumn
             column = column_block*dim[1] + lrow
             I0.append(column*bsize + row)
-        affine_expression.constant = cvx.spmatrix(V,I0,J,spconstant.size)
-    affine_expression._size=(affine_expression.size[1],affine_expression.size[0])
-    if ( ('*' in affine_expression.affstring()) or ('/' in affine_expression.affstring())
-            or ('+' in affine_expression.affstring()) or ('-' in affine_expression.affstring()) ):
-        affine_expression.string='( '+affine_expression.string+' ).Tx'
+        affine_expression.constant = cvx.spmatrix(V, I0, J, spconstant.size)
+    affine_expression._size = (affine_expression.size[1], affine_expression.size[0])
+    if (('*' in affine_expression.affstring()) or ('/' in affine_expression.affstring())
+            or ('+' in affine_expression.affstring()) or ('-' in affine_expression.affstring())):
+        affine_expression.string = '( '+affine_expression.string+' ).Tx'
     else:
-        affine_expression.string+='.Tx'
+        affine_expression.string += '.Tx'
 
 def partial_transpose(affine_expression, dim=None):
     """Returns the partial transpose of a moment matrix
@@ -249,19 +249,6 @@ def write_picos_to_sdpa(problem, filename, extended=False):
     for i in Ns:
         P_blockstruct.append(i)
 
-    def to_lower_triangular_spmatrix(n, u):
-        I = []
-        J = []
-        V = []
-        for k, index in enumerate(u.I):
-            j, i = divmod(index, n)
-            if j <= i:
-                I.append(i)
-                J.append(j)
-                V.append(u.V[k])
-        return spmatrix(V, I, J, (n, n))
-
-
     #write data
     #add extension
     if extended:
@@ -301,13 +288,14 @@ def write_picos_to_sdpa(problem, filename, extended=False):
             v = +sparse(h)
 
         ptr = 0
-        Ak = []
+        block = 0
         # lin. constraints
         if Nl:
             u = v[:Nl]
-            I = u.I
-            Ak.append(spmatrix(u.V, I, I, (Nl, Nl)))
+            for i, j, value in izip(u.I, u.I, u.V):
+                f.write('{0}\t{1}\t{2}\t{3}\t{4}\n'.format(k, block+1, j+1, i+1, -value))
             ptr += Nl
+            block += 1
 
         # SOC constraints
         for nq in Nq:
@@ -316,17 +304,20 @@ def write_picos_to_sdpa(problem, filename, extended=False):
             tmp = spmatrix(u1.V, [nq-1 for j in xrange(len(u1))], u1.I, (nq, nq))
             if not u0 == 0.0:
                 tmp += spmatrix(u0, xrange(nq), xrange(nq), (nq, nq))
-            Ak.append(tmp)
+            for i, j, value in izip(tmp.I, tmp.J, tmp.V):
+                f.write('{0}\t{1}\t{2}\t{3}\t{4}\n'.format(k, block+1, j+1, i+1, -value))
             ptr += nq
+            block += 1
 
         # SDP constraints
         for ns in Ns:
-            Ak.append(to_lower_triangular_spmatrix(ns, v[ptr:ptr+ns**2]))
+            u = v[ptr:ptr+ns**2]
+            for index_k, index in enumerate(u.I):
+                j, i = divmod(index, ns)
+                if j <= i:
+                    f.write('{0}\t{1}\t{2}\t{3}\t{4}\n'.format(k, block+1, j+1, i+1, -u.V[index_k]))
             ptr += ns**2
-
-        for b, B in enumerate(Ak):
-            for i, j, v in izip(B.I, B.J, B.V):
-                f.write('{0}\t{1}\t{2}\t{3}\t{4}\n'.format(k, b+1, j+1, i+1, -v))
+            block += 1
 
     #binaries an integers in extended format
     if extended:
