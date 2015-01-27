@@ -7,7 +7,7 @@ Created on Sun May 26 15:06:17 2013
 
 @author: Peter Wittek
 """
-from math import floor
+from math import floor, copysign
 import numpy as np
 from sympy import Number
 from sympy.physics.quantum.dagger import Dagger
@@ -22,6 +22,7 @@ from .nc_utils import apply_substitutions, build_monomial, \
     separate_scalar_factor, flatten, build_permutation_matrix, \
     simplify_polynomial, save_monomial_index, get_monomials, unique
 from .chordal_extension import generate_clique, find_clique_index
+from .faacets_utils import get_faacets_moment_matrix, collinsgisin_to_faacets
 
 class SdpRelaxation(object):
 
@@ -614,6 +615,25 @@ class SdpRelaxation(object):
                 self.F_struct[row_offset + width + 1, var + 1] = -1
         return block_index + 1
 
+
+    def get_faacet_relaxation(self, A_configuration, B_configuration, I):
+        coefficients = collinsgisin_to_faacets(I)
+        M, ncIndices = get_faacets_moment_matrix(A_configuration,
+                                                 B_configuration, coefficients)
+        self.n_vars = M.max() - 1
+        bs = len(M) # The block size
+        self.block_struct = [bs]
+        self.F_struct = lil_matrix((bs**2, self.n_vars + 1))
+        # Constructing the internal representation of the constraint matrices
+        # See Section 2.1 in the SDPA manual and also Yalmip's internal
+        # representation
+        for i in range(bs):
+            for j in range(i, bs):
+                if M[i,j] != 0:
+                    self.F_struct[i*bs+j, abs(M[i,j])-1] = copysign(1, M[i, j])
+        self.obj_facvar = [0 for _ in range(self.n_vars)]
+        for i in range(1, len(ncIndices)):
+            self.obj_facvar[abs(ncIndices[i])-2] += copysign(1, ncIndices[i])*coefficients[i]
 
     def get_relaxation(self, level, objective=None, inequalities=None,
                        equalities=None, substitutions=None, bounds=None,
