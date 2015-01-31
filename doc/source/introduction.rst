@@ -17,7 +17,7 @@ Wittek, P. (2014). `Ncpol2sdpa -- Sparse Semidefinite Programming Relaxations fo
 
 Copyright and License
 =====================
-Copyright © 2012-2014 P. Wittek
+Copyright © 2012-2015 P. Wittek
 
 Ncpol2sdpa is free software; you can redistribute it and/or modify it under the terms of the `GNU General Public License <http://www.gnu.org/licenses/gpl-3.0.html>`_ as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.
 
