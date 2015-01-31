@@ -1,6 +1,11 @@
 Revision History
 ****************
 
+**Since version 1.6**
+
+  - Interface for Faacets.
+  - PPT constraint can be imposed directly in the Moroder hierarchy by passing the extra parameter ``ppt=True`` to the constructor.
+
 **Version 1.6 (2014-12-22)**
 
   - Syntax for passing parameters changed. Only the level of the relaxation is compulsory for obtaining a relaxation.

@@ -57,11 +57,14 @@ class SdpRelaxation(object):
                        if further processing is done on the SDP matrix before
                        solving it.
     :type normalized: bool.
+    :param ppt: Optional parameter for imposing the partial positivity
+                constraint in the Moroder hierarchy.
+    :type normalized: bool.
     """
     hierarchy_types = ["npa", "npa_chordal", "nieto-silleras", "moroder"]
 
     def __init__(self, variables, nonrelaxed=None, verbose=0, hierarchy="npa",
-                 normalized=True):
+                 normalized=True, ppt=False):
         """Constructor for the class.
         """
 
@@ -84,6 +87,10 @@ class SdpRelaxation(object):
             self.hierarchy = hierarchy
         else:
             raise Exception('Not allowed hierarchy type:', hierarchy)
+        self.ppt = ppt
+        if hierarchy != "moroder" and ppt:
+            raise Exception('PPT condition only makes sense with the Moroder \
+                             hierarchy')
         if isinstance(variables, list):
             self.variables = variables
         else:
@@ -268,10 +275,16 @@ class SdpRelaxation(object):
                     if rowA == columnA:
                         start_columnB = rowB
                     for columnB in range(start_columnB, len(monomialsB)):
-                        monomial = Dagger(monomialsA[rowA]) * \
-                                   monomialsA[columnA] * \
-                                   Dagger(monomialsB[rowB]) * \
-                                   monomialsB[columnB]
+                        if (not self.ppt) or (columnB>=rowB):
+                            monomial = Dagger(monomialsA[rowA]) * \
+                                       monomialsA[columnA] * \
+                                       Dagger(monomialsB[rowB]) * \
+                                       monomialsB[columnB]
+                        else:
+                            monomial = Dagger(monomialsA[rowA]) * \
+                                       monomialsA[columnA] * \
+                                       Dagger(monomialsB[columnB]) * \
+                                       monomialsB[rowB]
                         # Apply the substitutions if any
                         n_vars = self.__push_monomial(monomial, n_vars,
                                                       row_offset, rowA,
