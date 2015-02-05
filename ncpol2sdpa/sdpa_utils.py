@@ -9,7 +9,7 @@ Created on Fri May 16 13:52:58 2014
 from bisect import bisect_left
 from subprocess import call
 import tempfile
-
+import os
 
 def read_sdpa_out(filename):
     """Helper function to parse the output file of SDPA
@@ -47,6 +47,9 @@ def solve_sdp(sdpRelaxation, solverexecutable="sdpa"):
     write_to_sdpa(sdpRelaxation, tmp_dats_filename)
     call([solverexecutable, tmp_dats_filename, tmp_out_filename])
     primal, dual = read_sdpa_out(tmp_out_filename)
+    if sdpRelaxation.verbose<2:
+        os.remove(tmp_dats_filename)
+        os.remove(tmp_out_filename)
     return primal, dual
 
 
