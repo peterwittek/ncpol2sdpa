@@ -419,7 +419,7 @@ identical to the one discussed in Section [mixedlevel].
          [ 0,    1,   -1 ]]
     A = generate_measurements(A_configuration, 'A')
     B = generate_measurements(B_configuration, 'B')
-    monomial_substitutions = projective_measurement_constraints(A, B)
+    substitutions = projective_measurement_constraints(A, B)
     objective = define_objective_with_I(I, A, B)
 
 When obtaining the relaxation for this kind of problem, it can prove
@@ -433,12 +433,35 @@ this constraint set a priori. Hence we write:
     sdpRelaxation = SdpRelaxation([flatten(A), flatten(B)], verbose=2,
                                    hierarchy="moroder", normalized=False)
     sdpRelaxation.get_relaxation(level, objective=objective,
-                                 substitutions=monomial_substitutions)
+                                 substitutions=substitutions)
+    
+We can further process the moment matrix, for instance, to impose partial positivity, or a matrix decomposition. To do these operations, we rely on PICOS:
+
+::
+
+    P, X, Y = convert_to_picos_extra_moment_matrix(sdpRelaxation)
+    Z = P.add_variable('Z', (sdpRelaxation.block_struct[0],
+                             sdpRelaxation.block_struct[0]))
+    P.add_constraint(partial_transpose(Y)>>0)
+    P.add_constraint(X - Y + Z == 0)
+    P.add_constraint(Z[0,0] == 1)
+
+Alternatively, with SeDuMi’s ``fromsdpa`` function (Sturm 1999), we can also impose the positivity of the partial trace of the moment matrix using MATLAB, or decompose the moment matrix in various forms. For this, we have to write the relaxation to a file:
+
+::
+
     write_to_sdpa(sdpRelaxation, "chsh-moroder.dat-s")  
 
-For instance, reading this file with SeDuMi’s ``fromsdpa``
-function (Sturm 1999), we can impose the positivity of the partial trace
-of the moment matrix, or decompose the moment matrix in various forms.
+If all we need is the partial positivity of the moment matrix, that is actually nothing but an extra symmetry. We can request this condition by passing an argument to the constructor, leading to a sparser SDP:
+
+::
+
+    sdpRelaxation = SdpRelaxation([flatten(A), flatten(B)], verbose=2,
+                                   hierarchy="moroder",ppt=True)
+    sdpRelaxation.get_relaxation(level, objective=objective,
+                                 substitutions=substitutions)
+
+
 
 Example 7: Sparse Relaxation with Chordal Extension
 ===================================================
