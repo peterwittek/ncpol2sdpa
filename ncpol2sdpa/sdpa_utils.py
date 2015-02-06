@@ -45,7 +45,11 @@ def solve_sdp(sdpRelaxation, solverexecutable="sdpa"):
     tmp_dats_filename = tmp_filename + ".dat-s"
     tmp_out_filename = tmp_filename + ".out"
     write_to_sdpa(sdpRelaxation, tmp_dats_filename)
-    call([solverexecutable, tmp_dats_filename, tmp_out_filename])
+    if sdpRelaxation.verbose<2:
+      with open(os.devnull, "w") as fnull:
+          call([solverexecutable, tmp_dats_filename, tmp_out_filename], stdout=fnull, stderr=fnull)
+    else:
+      call([solverexecutable, tmp_dats_filename, tmp_out_filename])
     primal, dual = read_sdpa_out(tmp_out_filename)
     if sdpRelaxation.verbose<2:
         os.remove(tmp_dats_filename)
