@@ -106,6 +106,6 @@ def find_clique_index(variables, polynomial, clique_set):
 try:
     from cvxopt import spmatrix, amd
     import chompack as cp
-    generate_clique = _generate_clique_alt
+    generate_clique = _generate_clique
 except ImportError:
     generate_clique = _generate_clique
