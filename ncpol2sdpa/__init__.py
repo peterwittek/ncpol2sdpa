@@ -22,7 +22,16 @@ __all__ = ['SdpRelaxation',
            'define_objective_with_I',
            'flatten',
            'get_neighbors',
-           'solve_sdp']
+           'solve_sdp',
+           'write_to_sdpa',
+           'find_rank_loop',
+           'read_sdpa_out',
+           'pauli_constraints',
+           'convert_to_mosek',
+           'convert_to_picos',
+           'write_picos_to_sdpa',
+           'convert_to_picos_extra_moment_matrix',
+           'partial_transpose']
 
 from .sdp_relaxation import SdpRelaxation
 from .nc_utils import generate_variables, get_ncmonomials, ncdegree, flatten
