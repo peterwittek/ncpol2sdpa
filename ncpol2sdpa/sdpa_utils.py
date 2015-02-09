@@ -10,8 +10,26 @@ from bisect import bisect_left
 from subprocess import call
 import tempfile
 import os
+import numpy as np
 
-def read_sdpa_out(filename):
+def parse_solution_matrix(iterator, block_struct):
+    solution_matrix = []
+    for block_size in block_struct:
+        sol_mat = np.empty((block_size, block_size))
+        i = 0
+        for row in iterator:
+            if row.find('}') < 0:
+                continue
+            if row.find('}') != row.rfind('}'):
+                break
+            numbers=row[row.rfind('{')+1:row.find('}')].strip().split(',')
+            for j, number in enumerate(numbers):
+                sol_mat[i, j] = float(number)
+            i += 1
+        solution_matrix.append(sol_mat)
+    return solution_matrix
+
+def read_sdpa_out(filename, block_struct):
     """Helper function to parse the output file of SDPA
     """
     file_ = open(filename, 'r')
@@ -20,17 +38,24 @@ def read_sdpa_out(filename):
             primal = float((line.split())[2])
         if line.find("objValDual") > -1:
             dual = float((line.split())[2])
-
+        if line.find("xMat =") > -1:
+            x_mat = parse_solution_matrix(file_, block_struct)
+        if line.find("yMat =") > -1:
+            y_mat = parse_solution_matrix(file_, block_struct)
     file_.close()
-    return primal, dual
+    return primal, dual, x_mat, y_mat
 
 
-def solve_sdp(sdpRelaxation, solverexecutable="sdpa"):
+def solve_sdp(sdpRelaxation, solutionmatrix=False,
+              solverexecutable="sdpa"):
     """Helper function to write out the SDP problem to a temporary
     file, call the solver, and parse the output.
 
     :param sdpRelaxation: The SDP relaxation to be solved.
     :type sdpRelaxation: :class:`ncpol2sdpa.SdpRelaxation`.
+    :param solutionmatrix: Optional parameter for retrieving the solution
+                           matrix.
+    :type normalized: bool.
     :param solverexecutable: Optional paramater to specify the name of the
                              executable if sdpa is not in the path or has a
                              different name.
@@ -42,6 +67,7 @@ def solve_sdp(sdpRelaxation, solverexecutable="sdpa"):
     tempfile_ = tempfile.NamedTemporaryFile()
     tmp_filename = tempfile_.name
     tempfile_.close()
+    tmp_filename = "chsh"
     tmp_dats_filename = tmp_filename + ".dat-s"
     tmp_out_filename = tmp_filename + ".out"
     write_to_sdpa(sdpRelaxation, tmp_dats_filename)
@@ -50,11 +76,14 @@ def solve_sdp(sdpRelaxation, solverexecutable="sdpa"):
           call([solverexecutable, tmp_dats_filename, tmp_out_filename], stdout=fnull, stderr=fnull)
     else:
       call([solverexecutable, tmp_dats_filename, tmp_out_filename])
-    primal, dual = read_sdpa_out(tmp_out_filename)
+    primal, dual, x_mat, y_mat = read_sdpa_out(tmp_out_filename, sdpRelaxation.block_struct)
     if sdpRelaxation.verbose<2:
         os.remove(tmp_dats_filename)
         os.remove(tmp_out_filename)
-    return primal, dual
+    if solutionmatrix:
+        return primal, dual, x_mat, y_mat
+    else:
+        return primal, dual
 
 
 def convert_row_to_sdpa_index(block_struct, row_offsets, row):
