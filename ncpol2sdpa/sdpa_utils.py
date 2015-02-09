@@ -11,6 +11,7 @@ from subprocess import call
 import tempfile
 import os
 import numpy as np
+from .nc_utils import pick_monomials_up_to_degree
 
 def parse_solution_matrix(iterator, block_struct):
     solution_matrix = []
@@ -55,7 +56,7 @@ def solve_sdp(sdpRelaxation, solutionmatrix=False,
     :type sdpRelaxation: :class:`ncpol2sdpa.SdpRelaxation`.
     :param solutionmatrix: Optional parameter for retrieving the solution
                            matrix.
-    :type normalized: bool.
+    :type solutionmatrix: bool.
     :param solverexecutable: Optional paramater to specify the name of the
                              executable if sdpa is not in the path or has a
                              different name.
@@ -85,6 +86,28 @@ def solve_sdp(sdpRelaxation, solutionmatrix=False,
     else:
         return primal, dual
 
+def find_rank_loop(sdpRelaxation, x_mat, base_level):
+    """Helper function to detect rank loop in the solution matrix.
+
+    :param sdpRelaxation: The SDP relaxation to be solved.
+    :type sdpRelaxation: :class:`ncpol2sdpa.SdpRelaxation`.
+    :param x_mat: The solution of the moment matrix.
+    :type x_mat: :class:`numpy.array`.
+    :param base_level: the lower level relaxation for which the rank loop
+                       should be tested against.
+    :type base_level: int.
+    :returns: tuple of int -- the rank of the base_level solution matrix and
+                              the rank of the complete solution matrix.
+    """
+
+    from numpy.linalg import matrix_rank
+    if sdpRelaxation.hierarchy != "npa":
+        raise Exception("The detection of rank loop is only implemented for \
+                         the NPA hierarchy")
+    base_monomials = \
+      pick_monomials_up_to_degree(sdpRelaxation.monomial_sets[0], base_level)
+    return matrix_rank(x_mat[:len(base_monomials),:len(base_monomials)]), \
+           matrix_rank(x_mat)
 
 def convert_row_to_sdpa_index(block_struct, row_offsets, row):
     """Helper function to map to sparse SDPA index values.
