@@ -3,6 +3,8 @@ Revision History
 
 **Since version 1.6**
 
+  - Solution matrices can be returned by ``solve_sdp`` by passing the optional
+    parameter ``solutionmatrix=True``. It does not work for diagonal blocks.
   - Interface for Faacets.
   - PPT constraint can be imposed directly in the Moroder hierarchy by passing the extra parameter ``ppt=True`` to the constructor.
 
