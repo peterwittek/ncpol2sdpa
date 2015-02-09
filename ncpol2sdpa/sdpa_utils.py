@@ -94,28 +94,36 @@ def solve_sdp(sdpRelaxation, solutionmatrix=False,
     else:
         return primal, dual
 
-def find_rank_loop(sdpRelaxation, x_mat, base_level):
+def find_rank_loop(sdpRelaxation, x_mat, base_level=0):
     """Helper function to detect rank loop in the solution matrix.
 
     :param sdpRelaxation: The SDP relaxation to be solved.
     :type sdpRelaxation: :class:`ncpol2sdpa.SdpRelaxation`.
     :param x_mat: The solution of the moment matrix.
     :type x_mat: :class:`numpy.array`.
-    :param base_level: the lower level relaxation for which the rank loop
-                       should be tested against.
+    :param base_level: Optional parameter for specifying the lower level
+                       relaxation for which the rank loop should be tested
+                       against.
     :type base_level: int.
-    :returns: tuple of int -- the rank of the base_level solution matrix and
-                              the rank of the complete solution matrix.
+    :returns: list of int -- the ranks of the solution matrix with in the
+                             order of increasing degree.
     """
-
+    ranks = []
     from numpy.linalg import matrix_rank
     if sdpRelaxation.hierarchy != "npa":
         raise Exception("The detection of rank loop is only implemented for \
                          the NPA hierarchy")
-    base_monomials = \
-      pick_monomials_up_to_degree(sdpRelaxation.monomial_sets[0], base_level)
-    return matrix_rank(x_mat[:len(base_monomials),:len(base_monomials)]), \
-           matrix_rank(x_mat)
+    if base_level == 0:
+        levels = range(1, sdpRelaxation.level)
+    else:
+        levels = [base_level]
+    for level in levels:
+        base_monomials = \
+          pick_monomials_up_to_degree(sdpRelaxation.monomial_sets[0], level)
+        ranks.append(matrix_rank(x_mat[:len(base_monomials),
+                                       :len(base_monomials)]))
+    ranks.append(matrix_rank(x_mat))
+    return ranks
 
 def convert_row_to_sdpa_index(block_struct, row_offsets, row):
     """Helper function to map to sparse SDPA index values.
