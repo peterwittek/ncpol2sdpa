@@ -3,6 +3,7 @@ Revision History
 
 **Since version 1.6**
 
+  - Added function ``find_rank_loop`` to aid the detection of a rank loop.
   - Solution matrices can be returned by ``solve_sdp`` by passing the optional
     parameter ``solutionmatrix=True``. It does not work for diagonal blocks.
   - Interface for Faacets.
