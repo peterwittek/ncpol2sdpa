@@ -13,25 +13,33 @@ import os
 import numpy as np
 from .nc_utils import pick_monomials_up_to_degree
 
-def parse_solution_matrix(iterator, block_struct):
+def parse_solution_matrix(iterator):
     solution_matrix = []
-    for block_size in block_struct:
-        sol_mat = np.empty((block_size, block_size))
+    while True:
+        sol_mat = None
         i = 0
         for row in iterator:
             if row.find('}') < 0:
                 continue
-            if row.find('}') != row.rfind('}'):
+            if row.startswith('}'):
                 break
-            numbers=row[row.rfind('{')+1:row.find('}')].strip().split(',')
+            numbers = row[row.rfind('{')+1:row.find('}')].strip().split(',')
+            if sol_mat is None:
+                sol_mat = np.empty((len(numbers), len(numbers)))
             for j, number in enumerate(numbers):
                 sol_mat[i, j] = float(number)
+            if row.find('}') != row.rfind('}'):
+                break
             i += 1
         solution_matrix.append(sol_mat)
+        if row.startswith('}'):
+            break
     return solution_matrix
 
-def read_sdpa_out(filename, block_struct):
-    """Helper function to parse the output file of SDPA
+def read_sdpa_out(filename):
+    """Helper function to parse the output file of SDPA.
+    :param filename: The name of the SDPA output file.
+    :type filename: str.
     """
     file_ = open(filename, 'r')
     for line in file_:
@@ -40,9 +48,9 @@ def read_sdpa_out(filename, block_struct):
         if line.find("objValDual") > -1:
             dual = float((line.split())[2])
         if line.find("xMat =") > -1:
-            x_mat = parse_solution_matrix(file_, block_struct)
+            x_mat = parse_solution_matrix(file_)
         if line.find("yMat =") > -1:
-            y_mat = parse_solution_matrix(file_, block_struct)
+            y_mat = parse_solution_matrix(file_)
     file_.close()
     return primal, dual, x_mat, y_mat
 
@@ -77,7 +85,7 @@ def solve_sdp(sdpRelaxation, solutionmatrix=False,
           call([solverexecutable, tmp_dats_filename, tmp_out_filename], stdout=fnull, stderr=fnull)
     else:
       call([solverexecutable, tmp_dats_filename, tmp_out_filename])
-    primal, dual, x_mat, y_mat = read_sdpa_out(tmp_out_filename, sdpRelaxation.block_struct)
+    primal, dual, x_mat, y_mat = read_sdpa_out(tmp_out_filename)
     if sdpRelaxation.verbose<2:
         os.remove(tmp_dats_filename)
         os.remove(tmp_out_filename)

@@ -4,9 +4,11 @@ Revision History
 **Since version 1.6**
 
   - Added function ``find_rank_loop`` to aid the detection of a rank loop.
+  - The function ``read_sdpa_out`` is now exposed to the user, primarily to help 
+    in detecting rank loops.
   - Solution matrices can be returned by ``solve_sdp`` by passing the optional
     parameter ``solutionmatrix=True``. It does not work for diagonal blocks.
-  - Interface for Faacets.
+  - Interface for `Faacets <https://github.com/denisrosset/faacets-core>`_.
   - PPT constraint can be imposed directly in the Moroder hierarchy by passing the extra parameter ``ppt=True`` to the constructor.
 
 **Version 1.6 (2014-12-22)**

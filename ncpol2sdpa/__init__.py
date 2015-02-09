@@ -26,7 +26,7 @@ __all__ = ['SdpRelaxation',
 
 from .sdp_relaxation import SdpRelaxation
 from .nc_utils import generate_variables, get_ncmonomials, ncdegree, flatten
-from .sdpa_utils import solve_sdp, write_to_sdpa, find_rank_loop
+from .sdpa_utils import solve_sdp, write_to_sdpa, find_rank_loop, read_sdpa_out
 from .physics_utils import bosonic_constraints, fermionic_constraints, \
     pauli_constraints, get_neighbors, correlator, generate_measurements, \
     projective_measurement_constraints, \
