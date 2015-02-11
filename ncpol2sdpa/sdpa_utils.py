@@ -76,7 +76,6 @@ def solve_sdp(sdpRelaxation, solutionmatrix=False,
     tempfile_ = tempfile.NamedTemporaryFile()
     tmp_filename = tempfile_.name
     tempfile_.close()
-    tmp_filename = "chsh"
     tmp_dats_filename = tmp_filename + ".dat-s"
     tmp_out_filename = tmp_filename + ".out"
     write_to_sdpa(sdpRelaxation, tmp_dats_filename)
