@@ -36,10 +36,13 @@ def parse_solution_matrix(iterator):
             break
     return solution_matrix
 
-def read_sdpa_out(filename):
+def read_sdpa_out(filename, solutionmatrix=False):
     """Helper function to parse the output file of SDPA.
     :param filename: The name of the SDPA output file.
     :type filename: str.
+    :param solutionmatrix: Optional parameter for retrieving the solution
+                           matrix.
+    :type solutionmatrix: bool.
     """
     file_ = open(filename, 'r')
     for line in file_:
@@ -47,12 +50,16 @@ def read_sdpa_out(filename):
             primal = float((line.split())[2])
         if line.find("objValDual") > -1:
             dual = float((line.split())[2])
-        if line.find("xMat =") > -1:
-            x_mat = parse_solution_matrix(file_)
-        if line.find("yMat =") > -1:
-            y_mat = parse_solution_matrix(file_)
+        if solutionmatrix:
+            if line.find("xMat =") > -1:
+                x_mat = parse_solution_matrix(file_)
+            if line.find("yMat =") > -1:
+                y_mat = parse_solution_matrix(file_)
     file_.close()
-    return primal, dual, x_mat, y_mat
+    if solutionmatrix:
+        return primal, dual, x_mat, y_mat
+    else:
+        return primal, dual
 
 
 def solve_sdp(sdpRelaxation, solutionmatrix=False,
@@ -84,7 +91,11 @@ def solve_sdp(sdpRelaxation, solutionmatrix=False,
           call([solverexecutable, tmp_dats_filename, tmp_out_filename], stdout=fnull, stderr=fnull)
     else:
       call([solverexecutable, tmp_dats_filename, tmp_out_filename])
-    primal, dual, x_mat, y_mat = read_sdpa_out(tmp_out_filename)
+    if solutionmatrix:
+        primal, dual, x_mat, y_mat = read_sdpa_out(tmp_out_filename,
+                                                   solutionmatrix)
+    else:
+        primal, dual = read_sdpa_out(tmp_out_filename)
     if sdpRelaxation.verbose<2:
         os.remove(tmp_dats_filename)
         os.remove(tmp_out_filename)
