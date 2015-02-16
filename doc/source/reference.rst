@@ -5,12 +5,14 @@ Function Reference
 SdpRelaxation Class
 ===================
 .. autoclass:: ncpol2sdpa.SdpRelaxation
-   :members: get_relaxation, set_objective
+   :members: get_relaxation, set_objective, process_constraints
 
 Functions to Work with SDPA, PICOS, and MOSEK
 =============================================
 .. autofunction:: ncpol2sdpa.solve_sdp
 .. autofunction:: ncpol2sdpa.write_to_sdpa
+.. autofunction:: ncpol2sdpa.read_sdpa_out
+.. autofunction:: ncpol2sdpa.find_rank_loop
 .. autofunction:: ncpol2sdpa.convert_to_mosek
 .. autofunction:: ncpol2sdpa.convert_to_picos
 
