@@ -17,18 +17,21 @@ def parse_solution_matrix(iterator):
     solution_matrix = []
     while True:
         sol_mat = None
+        in_matrix = False
         i = 0
         for row in iterator:
             if row.find('}') < 0:
                 continue
             if row.startswith('}'):
                 break
+            if row.find('{') != row.rfind('{'):
+                in_matrix = True
             numbers = row[row.rfind('{')+1:row.find('}')].strip().split(',')
             if sol_mat is None:
                 sol_mat = np.empty((len(numbers), len(numbers)))
             for j, number in enumerate(numbers):
                 sol_mat[i, j] = float(number)
-            if row.find('}') != row.rfind('}'):
+            if row.find('}') != row.rfind('}') or not in_matrix:
                 break
             i += 1
         solution_matrix.append(sol_mat)
