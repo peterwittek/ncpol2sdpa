@@ -145,6 +145,16 @@ function:
 
 This is close to the analytical optimum of :math:`-3/4`.
 
+If we solve the SDP with the arbitrary-precision solver ``sdpa_gmp``, we can find a rank loop at level two, indicating that convergence has been achieved. To see this, we read the solution file and analyse the ranks:
+
+::
+
+    primal, dual, x_sol, y_sol = read_sdpa_out("examplenc.out", 
+                                               solutionmatrix=True)
+    print find_rank_loop(sdpRelaxation, x_sol[0])
+
+The output for this is ``[2, 2]``, clearly showing a rank loop.
+
 Example 2: Using MOSEK or PICOS
 ==================================================
 
