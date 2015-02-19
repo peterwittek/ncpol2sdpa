@@ -440,7 +440,7 @@ class SdpRelaxation(object):
         else:
             n_inequalities = 0
         if removeequalities:
-            constraints = flatten([inequalities])
+            constraints = enumerate(flatten([inequalities]))
         else:
             constraints = enumerate(flatten([inequalities, equalities]))
         for k, constraint in constraints:
@@ -699,7 +699,8 @@ class SdpRelaxation(object):
         if self.verbose > 0:
             print(('Estimated number of SDP variables: %d' % self.n_vars))
             print('Generating moment matrix...')
-       # Generate moment matrices
+
+        # Generate moment matrices
         new_n_vars, block_index = self.add_non_relaxed()
         if self.hierarchy == "moroder":
             new_n_vars, block_index = \
