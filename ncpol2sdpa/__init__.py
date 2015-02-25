@@ -30,6 +30,7 @@ __all__ = ['SdpRelaxation',
            'convert_to_mosek',
            'convert_to_picos',
            'write_picos_to_sdpa',
+           'write_to_human_readable',
            'convert_to_picos_extra_moment_matrix',
            'partial_transpose']
 
