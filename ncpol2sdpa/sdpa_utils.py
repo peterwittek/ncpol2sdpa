@@ -205,9 +205,12 @@ def write_to_human_readable(sdpRelaxation, filename):
     objective = ""
     indices_in_objective = []
     for i, tmp in enumerate(sdpRelaxation.obj_facvar):
-        monomial = convert_monomial_to_string([key for key, v in
-                               sdpRelaxation.monomial_index.iteritems()
-                               if v == i+1][0])
+        candidates = [key for key, v in
+                      sdpRelaxation.monomial_index.iteritems() if v == i+1]
+        if len(candidates)>0:
+            monomial = convert_monomial_to_string(candidates[0])
+        else:
+            monomial = ""
         if tmp > 0:
             objective+="+"+str(tmp)+monomial
             indices_in_objective.append(i)
