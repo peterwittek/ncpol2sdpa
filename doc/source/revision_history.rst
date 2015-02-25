@@ -4,6 +4,7 @@ Revision History
 **Since version 1.6**
 
   - Added function ``find_rank_loop`` to aid the detection of a rank loop.
+  - New function ``write_to_human_readable`` writes the relaxation in a human-readable format.
   - The function ``read_sdpa_out`` is now exposed to the user, primarily to help 
     in detecting rank loops.
   - Solution matrices can be returned by ``solve_sdp`` by passing the optional

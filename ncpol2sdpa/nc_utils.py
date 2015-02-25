@@ -69,7 +69,7 @@ def apply_substitutions(monomial, monomial_substitutions):
             # The fast substitution routine still fails on some rare
             # conditions. In production environments, it is safer to use
             # the default substitution routine that comes with SymPy.
-            # monomial = monomial.subs(lhs, rhs)
+            #monomial = monomial.subs(lhs, rhs)
             monomial = fast_substitute(monomial, lhs, rhs)
         if original_monomial == monomial:
             changed = False
@@ -405,16 +405,19 @@ def pick_monomials_of_degree(monomials, degree):
     return selected_monomials
 
 
+def convert_monomial_to_string(monomial):
+    monomial_str = ('%s' % monomial)
+    monomial_str = monomial_str.replace('Dagger(', '')
+    monomial_str = monomial_str.replace(')', 'T')
+    monomial_str = monomial_str.replace('**', '^')
+    return monomial_str
+
 def save_monomial_index(filename, monomial_index, n_vars):
     """Save a monomial dictionary for debugging purposes.
     """
     monomial_translation = [''] * (n_vars + 1)
     for key, k in monomial_index.items():
-        monomial = ('%s' % key)
-        monomial = monomial.replace('Dagger(', '')
-        monomial = monomial.replace(')', 'T')
-        monomial = monomial.replace('**', '^')
-        monomial_translation[k] = monomial
+        monomial_translation[k] = convert_monomial_to_string(key)
     file_ = open(filename, 'w')
     for k in range(len(monomial_translation)):
         file_.write('%s %s\n' % (k, monomial_translation[k]))

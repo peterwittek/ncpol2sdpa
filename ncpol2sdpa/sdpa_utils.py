@@ -11,7 +11,7 @@ from subprocess import call
 import tempfile
 import os
 import numpy as np
-from .nc_utils import pick_monomials_up_to_degree
+from .nc_utils import pick_monomials_up_to_degree, convert_monomial_to_string
 
 def parse_solution_matrix(iterator):
     solution_matrix = []
@@ -191,3 +191,73 @@ def write_to_sdpa(sdpRelaxation, filename):
         for item in line:
             file_.write('{0}\t'.format(k)+item)
     file_.close()
+
+
+def write_to_human_readable(sdpRelaxation, filename):
+    """Write the SDP relaxation to a human-readable format.
+
+    :param sdpRelaxation: The SDP relaxation to write.
+    :type sdpRelaxation: :class:`ncpol2sdpa.SdpRelaxation`.
+    :param filename: The name of the file.
+    :type filename: str.
+    """
+
+    objective = ""
+    indices_in_objective = []
+    for i, tmp in enumerate(sdpRelaxation.obj_facvar):
+        monomial = convert_monomial_to_string([key for key, v in
+                               sdpRelaxation.monomial_index.iteritems()
+                               if v == i+1][0])
+        if tmp > 0:
+            objective+="+"+str(tmp)+monomial
+            indices_in_objective.append(i)
+        elif tmp < 0:
+            objective+=str(tmp)+monomial
+            indices_in_objective.append(i)
+
+    matrix_size = 0
+    cumulative_sum = 0
+    row_offsets = [0]
+    block_offset = [0]
+    for bs in sdpRelaxation.block_struct:
+        matrix_size += abs(bs)
+        cumulative_sum += bs ** 2
+        row_offsets.append(cumulative_sum)
+        block_offset.append(matrix_size)
+
+    matrix = []
+    for i in range(matrix_size):
+        matrix_line = ["0"] * matrix_size
+        matrix.append(matrix_line)
+
+    for row in range(len(sdpRelaxation.F_struct.rows)):
+        if len(sdpRelaxation.F_struct.rows[row]) > 0:
+            col_index = 0
+            for k in sdpRelaxation.F_struct.rows[row]:
+                value = sdpRelaxation.F_struct.data[row][col_index]
+                col_index += 1
+                block_index, i, j = convert_row_to_sdpa_index(
+                    sdpRelaxation.block_struct, row_offsets, row)
+                candidates = [key for key, v in
+                              sdpRelaxation.monomial_index.iteritems()
+                              if v == k]
+                if len(candidates)>0:
+                    monomial = convert_monomial_to_string(candidates[0])
+                else:
+                    monomial = ""
+                offset = block_offset[block_index]
+                if matrix[offset+i][offset+j] == "0":
+                    matrix[offset+i][offset+j] = ("%s%s" % (value, monomial))
+                else:
+                    if value>0:
+                        matrix[offset+i][offset+j] += ("+%s%s" % (value, monomial))
+                    else:
+                        matrix[offset+i][offset+j] += ("%s%s" % (value, monomial))
+
+
+    f = open(filename, 'w')
+    f.write("Objective:" + objective + "\n")
+    for matrix_line in matrix:
+        f.write(str(list(matrix_line)).replace('[','').replace(']','').replace('\'',''))
+        f.write('\n')
+    f.close()
