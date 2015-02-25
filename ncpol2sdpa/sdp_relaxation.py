@@ -201,8 +201,10 @@ class SdpRelaxation(object):
     def __process_monomial(self, monomial, n_vars):
         """Process a single monomial when building the moment matrix.
         """
-        if monomial.as_coeff_Mul()[0] < 0:
-            monomial = -monomial
+        coeff = monomial.as_coeff_Mul()[0]
+        monomial = monomial/coeff
+        #if monomial.as_coeff_Mul()[0] < 0:
+        #    monomial = -monomial
         k = 0
         # Have we seen this monomial before?
         try:
@@ -227,13 +229,17 @@ class SdpRelaxation(object):
                 # the moment matrix
                 k = n_vars + 1
                 self.monomial_index[monomial] = k
-        return k
+        return k, coeff
 
     def __push_monomial(self, monomial, n_vars, row_offset, rowA, columnA, N,
                         rowB, columnB, lenB):
         monomial = apply_substitutions(monomial,
                                        self.substitutions)
-        if monomial == 1 and self.normalized:
+        if not isinstance(monomial, int) and monomial.is_Add:
+            for element in monomial.as_ordered_terms():
+                n_vars = self.__push_monomial(element, n_vars, row_offset, rowA, columnA, N,
+                                              rowB, columnB, lenB)
+        elif rowA == 0 and columnA and rowB == 0 and columnB and self.normalized:
             if self.hierarchy == "nieto-silleras":
                 k = n_vars + 1
                 n_vars = k
@@ -242,15 +248,17 @@ class SdpRelaxation(object):
             else:
                 self.F_struct[row_offset + rowA * N*lenB +
                               rowB * N + columnA * lenB + columnB, 0] = 1
-
+        elif monomial == 1.0:
+            self.F_struct[row_offset + rowA * N*lenB +
+                          rowB * N + columnA * lenB + columnB, 0] = 1
         elif monomial != 0:
-            k = self.__process_monomial(monomial, n_vars)
+            k, coeff = self.__process_monomial(monomial, n_vars)
             if k > n_vars:
                 n_vars = k
             # We push the entry to the moment matrix
             self.F_struct[row_offset + rowA * N*lenB +
                           rowB * N +
-                          columnA * lenB + columnB, k] = 1
+                          columnA * lenB + columnB, k] = coeff
         return n_vars
 
     def __generate_moment_matrix(self, n_vars, block_index,

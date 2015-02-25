@@ -10,6 +10,7 @@ Revision History
     parameter ``solutionmatrix=True``. It does not work for diagonal blocks.
   - Interface for `Faacets <https://github.com/denisrosset/faacets-core>`_.
   - PPT constraint can be imposed directly in the Moroder hierarchy by passing the extra parameter ``ppt=True`` to the constructor.
+  - Wider range of substitutions supported, including a polynomial on the right-hands side of the substitution.
 
 **Version 1.6 (2014-12-22)**
 
