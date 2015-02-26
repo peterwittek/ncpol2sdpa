@@ -7,6 +7,7 @@ Revision History
   - New function ``write_to_human_readable`` writes the relaxation in a human-readable format.
   - The function ``read_sdpa_out`` is now exposed to the user, primarily to help 
     in detecting rank loops.
+  - New optional parameter ``psd=[matrix1, matrix2, ..., matrixn]`` can be passed to ``get_relaxation`` and ``process_constraints`` which contain symbolic matrices that should be positive semidefinite.
   - Solution matrices can be returned by ``solve_sdp`` by passing the optional
     parameter ``solutionmatrix=True``. It does not work for diagonal blocks.
   - Interface for `Faacets <https://github.com/denisrosset/faacets-core>`_.

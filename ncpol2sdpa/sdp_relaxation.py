@@ -10,6 +10,7 @@ Created on Sun May 26 15:06:17 2013
 from math import floor, copysign
 import numpy as np
 from sympy import Number
+from sympy.matrices import Matrix
 from sympy.physics.quantum.dagger import Dagger
 import sys
 try:
@@ -356,6 +357,22 @@ class SdpRelaxation(object):
             sys.stdout.write("\n")
         return block_index
 
+    def __process_psd(self, psd, block_index):
+        row_offsets = [0]
+        for block, block_size in enumerate(self.block_struct):
+            row_offsets.append(row_offsets[block] + block_size ** 2)
+        for matrix in psd:
+            for row in range(self.block_struct[block_index]):
+                for column in range(row, self.block_struct[block_index]):
+                    if isinstance(matrix, list):
+                        polynomial = matrix[row][column]
+                    elif isinstance(matrix, Matrix):
+                        polynomial = matrix[row, column]
+                    self.__push_facvar_sparse(polynomial, block_index+1,
+                                              row_offsets[block_index],
+                                              row, column)
+            block_index += 1
+        return block_index
 
     def __process_equalities(
             self, equalities, all_monomials):
@@ -426,7 +443,7 @@ class SdpRelaxation(object):
         self.n_vars = self.F_struct.shape[1] - 1
 
     def __calculate_block_structure(self, inequalities, equalities, bounds,
-                                    removeequalities):
+                                    psd, removeequalities):
         """Calculates the block_struct array for the output file.
         """
         self.block_struct = []
@@ -442,6 +459,14 @@ class SdpRelaxation(object):
                 self.block_struct.append(len(monomials))
         if self.hierarchy == "nieto-silleras":
             self.block_struct.append(2)
+        if psd is not None:
+            for matrix in psd:
+                if isinstance(matrix, list):
+                    self.block_struct.append(len(matrix))
+                elif isinstance(matrix, Matrix):
+                    self.block_struct.append(matrix.shape[0])
+                else:
+                    raise Exception("Unknown format for PSD constraint")
         degree_warning = False
         if inequalities is not None:
             n_inequalities = len(inequalities)
@@ -588,7 +613,8 @@ class SdpRelaxation(object):
             self.F_struct.data[row] = []
 
     def process_constraints(self, inequalities=None, equalities=None,
-                            bounds=None, block_index=0, removeequalities=False):
+                            bounds=None, psd=None, block_index=0,
+                            removeequalities=False):
         """Process the constraints and generate localizing matrices. Useful only
         if the moment matrix already exists. Call it if you want to replace your
         constraints. The number of the respective types of constraints and the
@@ -602,6 +628,9 @@ class SdpRelaxation(object):
         :param bounds: Optional parameter of bounds on variables which will not
                        be relaxed by localizing matrices.
         :type bounds: list of :class:`sympy.core.exp.Expr`.
+        :param psd: Optional parameter of list of matrices that should be
+                    positive semidefinite.
+        :type psd: list of lists or of :class:`sympy.matrices.Matrix`.
         :param removeequalities: Optional parameter to attempt removing the
                                  equalities by solving the linear equations.
         :type removeequalities: bool.
@@ -609,6 +638,8 @@ class SdpRelaxation(object):
         if block_index == 0:
             block_index = self.constraint_starting_block
             self.wipe_F_struct_from_constraints()
+        if psd is not None:
+            block_index = self.__process_psd(psd, block_index)
         constraints = flatten([inequalities])
         if not (removeequalities or equalities is None):
             # Equalities are converted to pairs of inequalities
@@ -658,7 +689,7 @@ class SdpRelaxation(object):
 
     def get_relaxation(self, level, objective=None, inequalities=None,
                        equalities=None, substitutions=None, bounds=None,
-                       removeequalities=False, extramonomials=None,
+                       psd=None, removeequalities=False, extramonomials=None,
                        nsextraobjvars=None):
         """Get the SDP relaxation of a noncommutative polynomial optimization
         problem.
@@ -698,7 +729,7 @@ class SdpRelaxation(object):
         self.__generate_monomial_sets(objective, inequalities, equalities,
                                       extramonomials)
         # Figure out basic structure of the SDP
-        self.__calculate_block_structure(inequalities, equalities, bounds,
+        self.__calculate_block_structure(inequalities, equalities, bounds, psd,
                                          removeequalities)
         self.__estimate_n_vars()
         self.F_struct = lil_matrix((sum([bs ** 2 for bs in self.block_struct]),
@@ -744,5 +775,5 @@ class SdpRelaxation(object):
 
         # Process constraints
         self.constraint_starting_block = block_index
-        self.process_constraints(inequalities, equalities, bounds, block_index,
-                                 removeequalities)
+        self.process_constraints(inequalities, equalities, bounds, psd,
+                                 block_index, removeequalities)
