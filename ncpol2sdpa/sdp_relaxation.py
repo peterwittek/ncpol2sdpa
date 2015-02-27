@@ -366,9 +366,13 @@ class SdpRelaxation(object):
             for row in range(self.block_struct[block_index]):
                 for column in range(row, self.block_struct[block_index]):
                     if isinstance(matrix, list):
-                        polynomial = matrix[row][column]
+                        polynomial = \
+                          simplify_polynomial(matrix[row][column],
+                                              self.substitutions)
                     elif isinstance(matrix, Matrix):
-                        polynomial = matrix[row, column]
+                        polynomial = \
+                          simplify_polynomial(matrix[row, column],
+                                             self.substitutions)
                     self.__push_facvar_sparse(polynomial, block_index+1,
                                               row_offsets[block_index],
                                               row, column)
