@@ -50,7 +50,6 @@ class SdpRelaxation(object):
 
                        * "npa": the standard NPA hierarchy (`doi:10.1137/090760155 <http://dx.doi.org/10.1137/090760155>`_). When the variables are commutative, this formulation is identical to the Lasserre hierarchy.
                        * "npa_chordal": chordal graph extension to improve sparsity (`doi:10.1137/050623802 <http://dx.doi.org/doi:10.1137/050623802>`_)
-                       * "nieto-silleras": `doi:10.1088/1367-2630/16/1/013035 <http://dx.doi.org/10.1088/1367-2630/16/1/013035>`_
                        * "moroder": `doi:10.1103/PhysRevLett.111.030501 <http://dx.doi.org/10.1103/PhysRevLett.111.030501>`_
     :type hierarchy: str.
     :param normalized: Optional parameter for changing the normalization of
@@ -62,7 +61,7 @@ class SdpRelaxation(object):
                 constraint in the Moroder hierarchy.
     :type normalized: bool.
     """
-    hierarchy_types = ["npa", "npa_chordal", "nieto-silleras", "moroder"]
+    hierarchy_types = ["npa", "npa_chordal", "moroder"]
 
     def __init__(self, variables, nonrelaxed=None, verbose=0, hierarchy="npa",
                  normalized=True, ppt=False):
@@ -241,14 +240,8 @@ class SdpRelaxation(object):
                 n_vars = self.__push_monomial(element, n_vars, row_offset, rowA, columnA, N,
                                               rowB, columnB, lenB)
         elif rowA == 0 and columnA == 0 and rowB == 0 and columnB == 0 and self.normalized:
-            if self.hierarchy == "nieto-silleras":
-                k = n_vars + 1
-                n_vars = k
-                self.F_struct[row_offset + rowA * N*lenB +
-                              rowB * N + columnA * lenB + columnB, k] = 1
-            else:
-                self.F_struct[row_offset + rowA * N*lenB +
-                              rowB * N + columnA * lenB + columnB, 0] = 1
+            self.F_struct[row_offset + rowA * N*lenB +
+                          rowB * N + columnA * lenB + columnB, 0] = 1
         elif monomial == 1.0 and (rowA != 0 or columnA != 0 or rowB != 0 or
         columnB != 0):
             self.F_struct[row_offset + rowA * N*lenB +
@@ -326,6 +319,9 @@ class SdpRelaxation(object):
             row_offsets.append(row_offsets[block] + block_size ** 2)
         for k, ineq in enumerate(inequalities):
             block_index += 1
+            if isinstance(ineq, str):
+                self.__parse_expression(ineq, row_offsets[block_index-1], block_index-1)
+                continue
             localization_order = self.localization_order[
                 block_index - initial_block_index - 1]
             if self.hierarchy == "npa_chordal":
@@ -448,7 +444,7 @@ class SdpRelaxation(object):
         self.n_vars = self.F_struct.shape[1] - 1
 
     def __calculate_block_structure(self, inequalities, equalities, bounds,
-                                    psd, removeequalities):
+                                    psd, extramomentmatrix, removeequalities):
         """Calculates the block_struct array for the output file.
         """
         self.block_struct = []
@@ -462,8 +458,14 @@ class SdpRelaxation(object):
         else:
             for monomials in self.monomial_sets:
                 self.block_struct.append(len(monomials))
-        if self.hierarchy == "nieto-silleras":
-            self.block_struct.append(2)
+        if extramomentmatrix is not None:
+            for _ in extramomentmatrix:
+                if  self.hierarchy == "moroder":
+                    self.block_struct.append(len(self.monomial_sets[0])*
+                                             len(self.monomial_sets[1]))
+                else:
+                    for monomials in self.monomial_sets:
+                        self.block_struct.append(len(monomials))
         if psd is not None:
             for matrix in psd:
                 if isinstance(matrix, list):
@@ -483,12 +485,13 @@ class SdpRelaxation(object):
             constraints = enumerate(flatten([inequalities, equalities]))
         for k, constraint in constraints:
             # Find the order of the localizing matrix
-            ineq_order = ncdegree(constraint)
+            if isinstance(constraint, str):
+                ineq_order = 2 * self.level
+            else:
+                ineq_order = ncdegree(constraint)
             if ineq_order > 2 * self.level:
                 degree_warning = True
             localization_order = int(floor((2 * self.level - ineq_order) / 2))
-            if self.hierarchy == "nieto-silleras":
-                localization_order = 0
             self.localization_order.append(localization_order)
             if self.hierarchy == "npa_chordal":
                 index = find_clique_index(self.variables, constraint,
@@ -500,8 +503,7 @@ class SdpRelaxation(object):
                 localizing_monomials = \
                     pick_monomials_up_to_degree(flatten(self.monomial_sets),
                                                 localization_order)
-            if self.hierarchy == "nieto-silleras" or \
-              len(localizing_monomials) == 0:
+            if len(localizing_monomials) == 0:
                 localizing_monomials = [1]
             self.block_struct.append(len(localizing_monomials))
             if k >= n_inequalities:
@@ -517,10 +519,12 @@ class SdpRelaxation(object):
             for _ in bounds:
                 self.localization_order.append(0)
                 self.block_struct.append(1)
+        #self.block_struct.append(-(self.block_struct[0]**2))
+        #self.block_struct.append(-2)
 
     def __generate_monomial_sets(self, objective, inequalities, equalities,
                                  extramonomials):
-        if self.hierarchy == "nieto-silleras" or self.hierarchy == "moroder":
+        if isinstance(self.variables[0], list):
             k = 0
             for variables in self.variables:
                 extramonomials_ = None
@@ -566,17 +570,16 @@ class SdpRelaxation(object):
             self.n_vars += int(n_monomials * (n_monomials + 1) / 2)
             self.n_vars -= 1
 
-    def set_objective(self, objective, nsextraobjvars=None):
+    def set_objective(self, objective, extraobjexpr=None):
         """Set or change the objective function of the polynomial optimization
         problem.
 
         :param objective: Describes the objective function.
         :type objective: :class:`sympy.core.expr.Expr`
-        :param nsextraobjvars: Optional parameter of the coefficients of
-                               unnormalized top left elements of the moment
-                               matrices of the Nieto-Silleras hierarchy that
-                               should be included in the objective function.
-        :type nsextraobjvars: list of float.
+        :param extraobjexpr: Optional parameter of a string expression of a
+                             linear combination of moment matrix elements to be
+                             included in the objective function
+        :type extraobjexpr: str.
         """
         if objective is not None:
             self.obj_facvar = (
@@ -586,18 +589,26 @@ class SdpRelaxation(object):
                         self.substitutions)))[1:]
         else:
             self.obj_facvar = self.__get_facvar(0)
-        if nsextraobjvars is not None:
-            if self.hierarchy == "nieto-silleras":
-                if len(nsextraobjvars) == len(self.var_offsets)-1:
-                    for i, coeff in enumerate(nsextraobjvars):
-                        self.obj_facvar[self.var_offsets[i]] = coeff
-                else:
-                    raise Exception("The length of nsextraobjvars does not " +
-                                    "match the number of blocks in the Nieto-"+
-                                    "Silleras relaxation")
-            else:
-                raise Exception("nsextraobjvars is only meaningful with the " +
-                                "Nieto-Silleras relaxation")
+        if extraobjexpr is not None:
+            for sub_expr in extraobjexpr.split(']'):
+                ind = sub_expr.find('[')
+                if ind>-1:
+                    idx = sub_expr[ind+1:].split(",")
+                    i, j = int(idx[0]), int(idx[1])
+                    mm_ind = int(sub_expr[ind-1:ind])
+                    if sub_expr.find('*')>-1:
+                        value = float(sub_expr[:sub_expr.find('*')])
+                    elif sub_expr.startswith('-'):
+                        value = -1.0
+                    else:
+                        value = 1.0
+                    base_row_offset = sum([bs**2 for bs in
+                                           self.block_struct[:mm_ind]])
+                    width = self.block_struct[mm_ind]
+                    for column in self.F_struct[base_row_offset + i*width + j].rows[0]:
+                        self.obj_facvar[column-1] = \
+                          value*self.F_struct[base_row_offset + i*width + j, column]
+
 
     def add_non_relaxed(self):
         new_n_vars, block_index = 0, 0
@@ -659,20 +670,6 @@ class SdpRelaxation(object):
             A = self.__process_equalities(equalities, flatten(self.monomial_sets))
             self.__remove_equalities(equalities, A)
 
-    def normalize_nieto_silleras(self, block_index):
-        width = self.block_struct[block_index]
-        row_offset = 0
-        for block in range(block_index):
-            row_offset += self.block_struct[block]**2
-        if self.normalized:
-            self.F_struct[row_offset, 0] = -1
-            self.F_struct[row_offset + width + 1, 0] = 1
-            for var in self.var_offsets[:-1]:
-                self.F_struct[row_offset, var + 1] = 1
-                self.F_struct[row_offset + width + 1, var + 1] = -1
-        return block_index + 1
-
-
     def get_faacet_relaxation(self, A_configuration, B_configuration, I):
         coefficients = collinsgisin_to_faacets(I)
         M, ncIndices = get_faacets_moment_matrix(A_configuration,
@@ -692,10 +689,106 @@ class SdpRelaxation(object):
         for i in range(1, len(ncIndices)):
             self.obj_facvar[abs(ncIndices[i])-2] += copysign(1, ncIndices[i])*coefficients[i]
 
+    def __duplicate_momentmatrix(self, original_n_vars, n_vars, block_index):
+        self.var_offsets.append(n_vars)
+        row_offset = 0
+        for block_size in self.block_struct[0:block_index]:
+            row_offset += block_size ** 2
+        width = self.block_struct[0]
+        for row in range(width**2):
+            self.F_struct[row_offset + row,
+                          n_vars+1:n_vars + original_n_vars+2] =\
+              self.F_struct[row,:original_n_vars+1]
+        return n_vars + original_n_vars + 1, block_index + 1
+
+    def __add_new_momentmatrix(self, n_vars, block_index):
+        self.var_offsets.append(n_vars)
+        row_offset = 0
+        for block_size in self.block_struct[0:block_index]:
+            row_offset += block_size ** 2
+        width = self.block_struct[0]
+        for i in range(width):
+            for j in range(i, width):
+                n_vars += 1
+                self.F_struct[row_offset + i * width + j, n_vars] = 1
+        return n_vars, block_index + 1
+
+    def __impose_ppt(self, block_index):
+        row_offset = 0
+        for block_size in self.block_struct[0:block_index-1]:
+            row_offset += block_size ** 2
+        lenA = len(self.monomial_sets[0])
+        lenB = len(self.monomial_sets[1])
+        N = lenA*lenB
+        for rowA in range(lenA):
+            for columnA in range(rowA, lenA):
+                for rowB in range(lenB):
+                    start_columnB = 0
+                    if rowA == columnA:
+                        start_columnB = rowB
+                    for columnB in range(start_columnB, rowB):
+                        original_row = self.F_struct[row_offset + rowA*N*lenB +
+                                           rowB * N +
+                                           columnA * lenB + columnB]
+                        self.F_struct[row_offset + rowA*N*lenB +
+                                           rowB * N +
+                                           columnA * lenB + columnB] = \
+                                           self.F_struct[row_offset + rowA*N*lenB +                                           columnB * N +
+                                           columnA * lenB + rowB]
+                        self.F_struct[row_offset + rowA*N*lenB +                                           columnB * N + columnA * lenB + rowB] = original_row
+
+    def __add_extra_momentmatrices(self, extramomentmatrix, n_vars,
+                                   block_index):
+        original_n_vars = n_vars
+        if extramomentmatrix is not None:
+            for parameters in extramomentmatrix:
+                copy = False
+                ppt = False
+                for parameter in parameters:
+                    if parameter == "copy":
+                        copy = True
+                    if parameter == "ppt":
+                        ppt = True
+                if copy:
+                    n_vars, block_index = \
+                      self.__duplicate_momentmatrix(original_n_vars, n_vars,
+                                                    block_index)
+                else:
+                    n_vars, block_index = \
+                      self.__add_new_momentmatrix(n_vars, block_index)
+                if ppt:
+                    self.__impose_ppt(block_index)
+        return n_vars, block_index
+
+    def __parse_expression(self, expr, row_offset, block_index):
+        if expr.find("]") > -1:
+            sub_exprs = expr.split(']')
+            for sub_expr in sub_exprs:
+                ind = sub_expr.find('[')
+                if ind>-1:
+                    idx = sub_expr[ind+1:].split(",")
+                    i, j = int(idx[0]), int(idx[1])
+                    mm_ind = int(sub_expr[ind-1:ind])
+                    if sub_expr.find('*')>-1:
+                        value = float(sub_expr[:sub_expr.find('*')])
+                    elif sub_expr.startswith('-'):
+                        value = -1.0
+                    else:
+                        value = 1.0
+                    base_row_offset = sum([bs**2 for bs in
+                                           self.block_struct[:mm_ind]])
+                    width = self.block_struct[mm_ind]
+                    self.F_struct[row_offset] += value*self.F_struct[base_row_offset+
+                                                               i*width + j]
+                else:
+                    value = float(sub_expr)
+                    self.F_struct[row_offset, 0] += value
+
+
     def get_relaxation(self, level, objective=None, inequalities=None,
                        equalities=None, substitutions=None, bounds=None,
                        psd=None, removeequalities=False, extramonomials=None,
-                       nsextraobjvars=None):
+                       extramomentmatrix=None, extraobjexpr=None):
         """Get the SDP relaxation of a noncommutative polynomial optimization
         problem.
 
@@ -713,17 +806,19 @@ class SdpRelaxation(object):
         :param bounds: Optional parameter of bounds on variables which will not
                        be relaxed by localizing matrices.
         :type bounds: list of :class:`sympy.core.exp.Expr`.
+        :param psd: Optional parameter of list of matrices that should be
+                    positive semidefinite.
+        :type psd: list of lists or of :class:`sympy.matrices.Matrix`.
         :param removeequalities: Optional parameter to attempt removing the
                                  equalities by solving the linear equations.
         :type removeequalities: bool.
         :param extramonomials: Optional paramter of monomials to be included, on
                                top of the requested level of relaxation.
         :type extramonomials: list of :class:`sympy.core.exp.Expr`.
-        :param nsextraobjvars: Optional parameter of the coefficients of
-                               unnormalized top left elements of the moment
-                               matrices of the Nieto-Silleras hierarchy that
-                               should be included in the objective function.
-        :type nsextraobjvars: list of float.
+        :param extraobjexpr: Optional parameter of a string expression of a
+                             linear combination of moment matrix elements to be
+                             included in the objective function
+        :type extraobjexpr: str.
         """
         self.level = level
         if substitutions is None:
@@ -735,8 +830,18 @@ class SdpRelaxation(object):
                                       extramonomials)
         # Figure out basic structure of the SDP
         self.__calculate_block_structure(inequalities, equalities, bounds, psd,
-                                         removeequalities)
+                                         extramomentmatrix, removeequalities)
         self.__estimate_n_vars()
+        if extramomentmatrix is not None:
+            for parameters in extramomentmatrix:
+                copy = False
+                for parameter in parameters:
+                    if parameter == "copy":
+                        copy = True
+                if copy:
+                    self.n_vars += self.n_vars + 1
+                else:
+                    self.n_vars += (self.block_struct[0]**2)/2
         self.F_struct = lil_matrix((sum([bs ** 2 for bs in self.block_struct]),
                                     self.n_vars + 1))
 
@@ -759,24 +864,23 @@ class SdpRelaxation(object):
                         block_index,
                         monomials, [monomials[0]])
                 self.var_offsets.append(new_n_vars)
-
+        if extramomentmatrix is not None:
+            new_n_vars, block_index = \
+            self.__add_extra_momentmatrices(extramomentmatrix, new_n_vars,
+                                            block_index)
         # The initial estimate for the size of F_struct was overly generous.
         self.n_vars = new_n_vars
         # We don't correct the size of F_struct, because that would trigger
         # memory copies, and extra columns in lil_matrix are free anyway.
         # self.F_struct = self.F_struct[:, 0:self.n_vars + 1]
 
-        # Normalizing the Nieto-Silleras hierarchy before processing the
-        # constraints
-        if self.hierarchy == "nieto-silleras":
-            block_index = self.normalize_nieto_silleras(block_index)
         if self.verbose > 0:
             print(('Reduced number of SDP variables: %d' % self.n_vars))
         if self.verbose > 1:
             save_monomial_index("monomials.txt", self.monomial_index,
                                 self.n_vars)
         # Objective function
-        self.set_objective(objective, nsextraobjvars)
+        self.set_objective(objective, extraobjexpr)
 
         # Process constraints
         self.constraint_starting_block = block_index

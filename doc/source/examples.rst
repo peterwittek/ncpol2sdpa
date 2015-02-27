@@ -378,28 +378,35 @@ must match:
 ::
 
     probabilities = joint_probabilities()
-    equalities = []
+    bounds = []
     k=0
     for i in range(len(A_configuration)):
-        equalities.append(P_A[i][0] - probabilities[k])
+        bounds.append(P_A[i][0] - probabilities[k])
         k += 1
     for i in range(len(B_configuration)):
-        equalities.append(P_B[i][0] - probabilities[k])
+        bounds.append(P_B[i][0] - probabilities[k])
         k += 1
     for i in range(len(A_configuration)):
         for j in range(len(B_configuration)):
-            equalities.append(P_A[i][0]*P_B[j][0] - probabilities[k])
+            bounds.append(P_A[i][0]*P_B[j][0] - probabilities[k])
             k += 1
+    bounds.extend([-bound for bound in bounds])
 
-From here, the solution follows the usual pathway, indicating that we
-are requesting the Nieto-Silleras hierarchy:
+We also have to define normalization of the subalgebras, in this case, only one:
 
 ::
 
-    sdpRelaxation = SdpRelaxation([flatten([P_A, P_B])], verbose=2,
-                                   hierarchy="nieto-silleras")
+    bounds.append("-0[0,0]+1.0")
+    bounds.append("0[0,0]-1.0")
+    
+From here, the solution follows the usual pathway:
+
+::
+
+    sdpRelaxation = SdpRelaxation([flatten([P_A, P_B])], 
+                                  normalized=False, verbose=2)
     sdpRelaxation.get_relaxation(level, objective=objective, 
-                                 equalities=equalities,
+                                 bounds=bounds,
                                  substitutions=monomial_substitutions)
 
     print(solve_sdp(sdpRelaxation))
