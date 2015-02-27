@@ -240,7 +240,7 @@ class SdpRelaxation(object):
             for element in monomial.as_ordered_terms():
                 n_vars = self.__push_monomial(element, n_vars, row_offset, rowA, columnA, N,
                                               rowB, columnB, lenB)
-        elif rowA == 0 and columnA and rowB == 0 and columnB and self.normalized:
+        elif rowA == 0 and columnA == 0 and rowB == 0 and columnB == 0 and self.normalized:
             if self.hierarchy == "nieto-silleras":
                 k = n_vars + 1
                 n_vars = k
@@ -249,7 +249,8 @@ class SdpRelaxation(object):
             else:
                 self.F_struct[row_offset + rowA * N*lenB +
                               rowB * N + columnA * lenB + columnB, 0] = 1
-        elif monomial == 1.0:
+        elif monomial == 1.0 and (rowA != 0 or columnA != 0 or rowB != 0 or
+        columnB != 0):
             self.F_struct[row_offset + rowA * N*lenB +
                           rowB * N + columnA * lenB + columnB, 0] = 1
         elif monomial != 0:
