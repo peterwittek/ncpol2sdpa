@@ -62,6 +62,8 @@ def simplify_polynomial(polynomial, monomial_substitutions):
 
 def apply_substitutions(monomial, monomial_substitutions):
     """Helper function to remove monomials from the basis."""
+    if isinstance(monomial, int) or isinstance(monomial, float):
+        return monomial
     original_monomial = monomial
     changed = True
     while changed:
@@ -183,6 +185,10 @@ def fast_substitute(monomial, old_sub, new_sub):
         return monomial
     if isinstance(monomial, int):
         return monomial
+    if monomial.is_Add:
+        return sum([fast_substitute(element, old_sub, new_sub) for element in
+                   monomial.as_ordered_terms()])
+
     comm_factors, ncomm_factors = split_commutative_parts(monomial)
     old_comm_factors, old_ncomm_factors = split_commutative_parts(old_sub)
     # This is a temporary hack
