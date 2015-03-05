@@ -14,6 +14,7 @@ Functions to Work with SDPA, PICOS, and MOSEK
 .. autofunction:: ncpol2sdpa.write_to_human_readable
 .. autofunction:: ncpol2sdpa.read_sdpa_out
 .. autofunction:: ncpol2sdpa.find_rank_loop
+.. autofunction:: ncpol2sdpa.sos_decomposition
 .. autofunction:: ncpol2sdpa.convert_to_mosek
 .. autofunction:: ncpol2sdpa.convert_to_picos
 

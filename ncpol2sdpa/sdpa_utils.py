@@ -138,6 +138,31 @@ def find_rank_loop(sdpRelaxation, x_mat, base_level=0):
     ranks.append(matrix_rank(x_mat))
     return ranks
 
+def sos_decomposition(sdpRelaxation, y_mat, threshold=0.0):
+    """Given a solution of the dual problem, it returns the SOS
+    decomposition. Currently limited to unconstrained problems.
+
+    :param sdpRelaxation: The SDP relaxation to be solved.
+    :type sdpRelaxation: :class:`ncpol2sdpa.SdpRelaxation`.
+    :param y_mat: The dual solution of the problem.
+    :type y_mat: :class:`numpy.array`.
+    :param threshold: Optional parameter for specifying the threshold value
+                      below which the eigenvalues and entries of the
+                      eigenvectors are disregarded.
+    :type threshold: float.
+    """
+    sos = 0
+    vals, vecs = np.linalg.eigh(y_mat[0])
+    for j, val in enumerate(vals):
+        if abs(val)>threshold:
+            term = 0
+            for i, entry in enumerate(vecs[:, j]):
+                if abs(entry) > threshold:
+                    term += np.sqrt(val)*entry*sdpRelaxation.monomial_sets[0][i]
+            sos += term**2
+    return sos
+
+
 def convert_row_to_sdpa_index(block_struct, row_offsets, row):
     """Helper function to map to sparse SDPA index values.
     """

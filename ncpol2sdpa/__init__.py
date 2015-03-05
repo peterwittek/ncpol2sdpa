@@ -32,12 +32,13 @@ __all__ = ['SdpRelaxation',
            'write_picos_to_sdpa',
            'write_to_human_readable',
            'convert_to_picos_extra_moment_matrix',
-           'partial_transpose']
+           'partial_transpose',
+           'sos_decomposition']
 
 from .sdp_relaxation import SdpRelaxation
 from .nc_utils import generate_variables, get_ncmonomials, ncdegree, flatten
 from .sdpa_utils import solve_sdp, write_to_sdpa, find_rank_loop, \
-     read_sdpa_out, write_to_human_readable
+     read_sdpa_out, write_to_human_readable, sos_decomposition
 from .physics_utils import bosonic_constraints, fermionic_constraints, \
     pauli_constraints, get_neighbors, correlator, generate_measurements, \
     projective_measurement_constraints, \
