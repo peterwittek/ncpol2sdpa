@@ -322,6 +322,8 @@ def get_ncmonomials(variables, degree):
 
     :returns: list of monomials.
     """
+    if degree == -1:
+        return []
     if not variables:
         return [S.One]
     else:
