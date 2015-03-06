@@ -201,10 +201,7 @@ class SdpRelaxation(object):
     def __process_monomial(self, monomial, n_vars):
         """Process a single monomial when building the moment matrix.
         """
-        coeff = monomial.as_coeff_Mul()[0]
-        monomial = monomial/coeff
-        #if monomial.as_coeff_Mul()[0] < 0:
-        #    monomial = -monomial
+        coeff, monomial = monomial.as_coeff_Mul()
         k = 0
         # Have we seen this monomial before?
         try:
@@ -235,17 +232,19 @@ class SdpRelaxation(object):
                         rowB, columnB, lenB):
         monomial = apply_substitutions(monomial,
                                        self.substitutions)
-        if not isinstance(monomial, int) and monomial.is_Add:
+        if isinstance(monomial, Number):
+            monomial = float(monomial)
+        if not isinstance(monomial, int) and not isinstance(monomial, float) and monomial.is_Add:
             for element in monomial.as_ordered_terms():
                 n_vars = self.__push_monomial(element, n_vars, row_offset, rowA, columnA, N,
                                               rowB, columnB, lenB)
         elif rowA == 0 and columnA == 0 and rowB == 0 and columnB == 0 and self.normalized:
             self.F_struct[row_offset + rowA * N*lenB +
                           rowB * N + columnA * lenB + columnB, 0] = 1
-        elif monomial == 1.0 and (rowA != 0 or columnA != 0 or rowB != 0 or
-        columnB != 0):
+        elif isinstance(monomial, int) or isinstance(monomial, float) and \
+          (rowA != 0 or columnA != 0 or rowB != 0 or columnB != 0):
             self.F_struct[row_offset + rowA * N*lenB +
-                          rowB * N + columnA * lenB + columnB, 0] = 1
+                          rowB * N + columnA * lenB + columnB, 0] = monomial
         elif monomial != 0:
             k, coeff = self.__process_monomial(monomial, n_vars)
             if k > n_vars:

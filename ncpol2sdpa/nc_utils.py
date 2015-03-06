@@ -7,7 +7,7 @@ Created on Thu May  2 16:03:05 2013
 
 @author: Peter Wittek
 """
-from sympy.core import S, Symbol, Pow, Number
+from sympy.core import S, Symbol, Pow, Number, expand
 from sympy.physics.quantum.operator import HermitianOperator, Operator
 from sympy.physics.quantum.dagger import Dagger
 from sympy.physics.quantum.qexpr import split_commutative_parts
@@ -83,7 +83,7 @@ def separate_scalar_factor(monomial):
     """Separate the constant factor from a monomial.
     """
     scalar_factor = 1
-    if isinstance(monomial, int):
+    if isinstance(monomial, int) or isinstance(monomial, float):
         return S.One, monomial
     if monomial == 0:
         return S.One, 0
@@ -287,7 +287,11 @@ def fast_substitute(monomial, old_sub, new_sub):
                 new_monomial *= factor
         else:
             return monomial
-    return new_monomial
+    if not isinstance(new_sub, int) and not isinstance(new_sub, float) and \
+      new_sub.is_Add:
+        return expand(new_monomial)
+    else:
+        return new_monomial
 
 
 def generate_variables(n_vars, hermitian=False, commutative=False, name='x'):
