@@ -296,11 +296,12 @@ class SdpRelaxation(object):
                                                       row_offset, rowA,
                                                       columnA, N, rowB,
                                                       columnB, len(monomialsB))
-                        if self.verbose > 0:
-                            percentage = "{0:.0f}%".format(
-                              float(processed_entries-1)/self.n_vars * 100)
-                            sys.stdout.write("\r\x1b[KCurrent number of SDP variables: %d (done: %s)" % (n_vars, percentage) )
-                            sys.stdout.flush()
+            if self.verbose > 0:
+                percentage = "{0:.0f}%".format(
+                  float(processed_entries-1)/self.n_vars * 100)
+                sys.stdout.write("\r\x1b[KCurrent number of SDP variables: %d"\
+                                 " (done: %s)" % (n_vars, percentage) )
+                sys.stdout.flush()
         if self.verbose > 0:
             sys.stdout.write("\r")
         return n_vars, block_index + 1, processed_entries
