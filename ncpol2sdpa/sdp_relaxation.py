@@ -258,7 +258,7 @@ class SdpRelaxation(object):
                           columnA * lenB + columnB, k] = coeff
         return n_vars
 
-    def __generate_moment_matrix(self, n_vars, block_index,
+    def __generate_moment_matrix(self, n_vars, block_index, processed_entries,
                                  monomialsA, monomialsB):
         """Generate the moment matrix of monomials.
 
@@ -280,6 +280,7 @@ class SdpRelaxation(object):
                     if rowA == columnA:
                         start_columnB = rowB
                     for columnB in range(start_columnB, len(monomialsB)):
+                        processed_entries += 1
                         if (not self.ppt) or (columnB>=rowB):
                             monomial = Dagger(monomialsA[rowA]) * \
                                        monomialsA[columnA] * \
@@ -296,11 +297,13 @@ class SdpRelaxation(object):
                                                       columnA, N, rowB,
                                                       columnB, len(monomialsB))
                         if self.verbose > 0:
-                            sys.stdout.write("\r\x1b[KCurrent number of SDP variables: %d" % n_vars)
+                            percentage = "{0:.0f}%".format(
+                              float(processed_entries-1)/self.n_vars * 100)
+                            sys.stdout.write("\r\x1b[KCurrent number of SDP variables: %d (done: %s)" % (n_vars, percentage) )
                             sys.stdout.flush()
         if self.verbose > 0:
             sys.stdout.write("\r")
-        return n_vars, block_index + 1
+        return n_vars, block_index + 1, processed_entries
 
 
     def __process_inequalities(
@@ -866,17 +869,20 @@ class SdpRelaxation(object):
 
         # Generate moment matrices
         new_n_vars, block_index = self.add_non_relaxed()
+        processed_entries = 0
         if self.hierarchy == "moroder":
-            new_n_vars, block_index = \
+            new_n_vars, block_index, _ = \
                 self.__generate_moment_matrix(new_n_vars, block_index,
+                                              processed_entries,
                                               self.monomial_sets[0],
                                               self.monomial_sets[1])
         else:
             for monomials in self.monomial_sets:
-                new_n_vars, block_index = \
+                new_n_vars, block_index, processed_entries = \
                     self.__generate_moment_matrix(
                         new_n_vars,
                         block_index,
+                        processed_entries,
                         monomials, [S.One])
                 self.var_offsets.append(new_n_vars)
         if extramomentmatrix is not None:
