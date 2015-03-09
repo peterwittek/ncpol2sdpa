@@ -9,7 +9,7 @@ Created on Sun May 26 15:06:17 2013
 """
 from math import floor, copysign
 import numpy as np
-from sympy import Number
+from sympy import S, Number
 from sympy.matrices import Matrix
 from sympy.physics.quantum.dagger import Dagger
 import sys
@@ -228,11 +228,11 @@ class SdpRelaxation(object):
                 self.monomial_index[monomial] = k
         return k, coeff
 
-
     def __push_monomial(self, monomial, n_vars, row_offset, rowA, columnA, N,
                         rowB, columnB, lenB):
         monomial = apply_substitutions(monomial,
-                                   self.substitutions)
+                                       self.substitutions)
+
         if isinstance(monomial, Number):
             monomial = float(monomial)
         if not isinstance(monomial, int) and not isinstance(monomial, float) and monomial.is_Add:
@@ -524,6 +524,15 @@ class SdpRelaxation(object):
 
     def __generate_monomial_sets(self, objective, inequalities, equalities,
                                  extramonomials):
+        if self.level == -1:
+            if extramonomials == None:
+                raise Exception("Cannot build relaxation at level -1 without \
+                                monomials specified.")
+            if isinstance(extramonomials[0], list):
+                self.monomial_sets = extramonomials
+            else:
+                self.monomial_sets.append(extramonomials)
+            return
         if isinstance(self.variables[0], list):
             k = 0
             for variables in self.variables:
@@ -792,7 +801,9 @@ class SdpRelaxation(object):
         """Get the SDP relaxation of a noncommutative polynomial optimization
         problem.
 
-        :param level: The level of the relaxation
+        :param level: The level of the relaxation. The value -1 will skip
+                      automatic monomial generation and use only the monomials
+                      supplied by the option `extramonomials`.
         :type level: int.
         :param obj: Optional parameter to describe the objective function.
         :type obj: :class:`sympy.core.exp.Expr`.
@@ -820,6 +831,8 @@ class SdpRelaxation(object):
                              included in the objective function
         :type extraobjexpr: str.
         """
+        if self.level < -1:
+            raise Exception("Invalid level of relaxation")
         self.level = level
         if substitutions is None:
             self.substitutions = {}
@@ -858,6 +871,7 @@ class SdpRelaxation(object):
                                               self.monomial_sets[1])
         else:
             for monomials in self.monomial_sets:
+
                 new_n_vars, block_index = \
                     self.__generate_moment_matrix(
                         new_n_vars,
