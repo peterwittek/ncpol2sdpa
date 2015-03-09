@@ -394,8 +394,8 @@ class SdpRelaxation(object):
             # Find the order of the localizing matrix
             eq_order = ncdegree(equality)
             if eq_order > 2 * self.level:
-                print(("An equality constraint has degree %d. Choose a higher \
-                      level of relaxation." % eq_order))
+                print(("An equality constraint has degree %d. Choose a "\
+                       "higher level of relaxation." % eq_order))
                 raise Exception
             localization_order = int(floor((2 * self.level - eq_order) / 2))
             if localization_order > max_localization_order:
@@ -596,11 +596,13 @@ class SdpRelaxation(object):
         :type extraobjexpr: str.
         """
         if objective is not None:
-            self.obj_facvar = (
-                self.__get_facvar(
-                    simplify_polynomial(
-                        objective,
-                        self.substitutions)))[1:]
+            facvar = self.__get_facvar(simplify_polynomial(objective,
+                                                           self.substitutions))
+            self.obj_facvar = facvar[1:]
+
+            if self.verbose>0 and facvar[0]!=0:
+                print("Warning: The objective function has a non-zero "\
+                      "constant term. It is not included in the SDP objective.")
         else:
             self.obj_facvar = self.__get_facvar(0)
         if extraobjexpr is not None:
