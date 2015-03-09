@@ -239,7 +239,9 @@ class SdpRelaxation(object):
             for element in monomial.as_ordered_terms():
                 n_vars = self.__push_monomial(element, n_vars, row_offset, rowA, columnA, N,
                                               rowB, columnB, lenB)
-        elif rowA == 0 and columnA == 0 and rowB == 0 and columnB == 0 and self.normalized:
+        elif rowA == 0 and columnA == 0 and rowB == 0 and columnB == 0 and \
+          self.normalized and (isinstance(monomial, int) or \
+          isinstance(monomial, float)):
             self.F_struct[row_offset + rowA * N*lenB +
                           rowB * N + columnA * lenB + columnB, 0] = 1
         elif isinstance(monomial, int) or isinstance(monomial, float) and \
@@ -871,12 +873,11 @@ class SdpRelaxation(object):
                                               self.monomial_sets[1])
         else:
             for monomials in self.monomial_sets:
-
                 new_n_vars, block_index = \
                     self.__generate_moment_matrix(
                         new_n_vars,
                         block_index,
-                        monomials, [monomials[0]])
+                        monomials, [S.One])
                 self.var_offsets.append(new_n_vars)
         if extramomentmatrix is not None:
             new_n_vars, block_index = \
