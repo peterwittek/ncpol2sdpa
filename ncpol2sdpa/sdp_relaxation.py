@@ -228,10 +228,11 @@ class SdpRelaxation(object):
                 self.monomial_index[monomial] = k
         return k, coeff
 
+
     def __push_monomial(self, monomial, n_vars, row_offset, rowA, columnA, N,
                         rowB, columnB, lenB):
         monomial = apply_substitutions(monomial,
-                                       self.substitutions)
+                                   self.substitutions)
         if isinstance(monomial, Number):
             monomial = float(monomial)
         if not isinstance(monomial, int) and not isinstance(monomial, float) and monomial.is_Add:
@@ -529,10 +530,10 @@ class SdpRelaxation(object):
                 extramonomials_ = None
                 if extramonomials is not None:
                     extramonomials_ = extramonomials[k]
-                self.monomial_sets.append(get_monomials(variables,
-                                                        extramonomials_,
-                                                        self.substitutions,
-                                                        self.level))
+                self.monomial_sets.append(
+                  get_monomials(variables, extramonomials_, self.substitutions,
+                                self.level,
+                                removesubstitutions=self.is_hermitian_variables))
                 k += 1
         elif self.hierarchy == "npa_chordal":
             self.clique_set = generate_clique(self.variables, objective,
@@ -541,15 +542,15 @@ class SdpRelaxation(object):
                 print(self.clique_set)
             for clique in self.clique_set:
                 variables = [self.variables[i] for i in np.nonzero(clique)[0]]
-                self.monomial_sets.append(get_monomials(variables,
-                                                        extramonomials,
-                                                        self.substitutions,
-                                                        self.level))
+                self.monomial_sets.append(
+                  get_monomials(variables, extramonomials, self.substitutions,
+                                self.level,
+                                removesubstitutions=self.is_hermitian_variables))
         else:
-            self.monomial_sets.append(get_monomials(self.variables,
-                                                    extramonomials,
-                                                    self.substitutions,
-                                                    self.level))
+            self.monomial_sets.append(
+              get_monomials(self.variables, extramonomials, self.substitutions,
+                            self.level,
+                            removesubstitutions=self.is_hermitian_variables))
 
     def __estimate_n_vars(self):
         self.n_vars = 0
