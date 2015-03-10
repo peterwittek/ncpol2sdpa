@@ -43,75 +43,46 @@ def get_neighbors(index, lattice_length, width=0, periodic=False):
 
 
 def bosonic_constraints(a):
-    """Return a set of constraints that define bosonic ladder operators.
+    """Return  a set of constraints that define fermionic ladder operators.
 
     :param a: The non-Hermitian variables.
     :type a: list of :class:`sympy.physics.quantum.operator.Operator`.
-    :returns: tuple of dict of substitutions and list of equalities.
+    :returns: a dict of substitutions.
     """
     n_vars = len(a)
-    monomial_substitutions = {}
-    equalities = []
+    substitutions = {}
     for i in range(n_vars):
+        substitutions[a[i] * Dagger(a[i])] = 1.0 + Dagger(a[i]) * a[i]
         for j in range(i + 1, n_vars):
-            # [a_i,a_jT] = 0 for i\neq j
-            monomial_substitutions[Dagger(a[j]) * a[i]] = a[i] * Dagger(a[j])
-            # [a_i, a_j] = 0
-            monomial_substitutions[a[j] * a[i]] = a[i] * a[j]
-            # [a_iT, a_jT] = 0
-            monomial_substitutions[Dagger(a[j]) * Dagger(a[i])] = \
-                Dagger(a[i]) * Dagger(a[j])
+            #substitutions[a[i]*Dagger(a[j])] = -Dagger(a[i])*a[j]
+            substitutions[a[i]*Dagger(a[j])] = Dagger(a[j])*a[i]
+            substitutions[Dagger(a[i])*a[j]] = a[j]*Dagger(a[i])
+            substitutions[a[i]*a[j]] = a[j]*a[i]
+            substitutions[Dagger(a[i]) * Dagger(a[j])] = Dagger(a[j]) * Dagger(a[i])
 
-    # [a_i,a_iT]=1
-    for i in range(n_vars):
-        equalities.append(a[i] * Dagger(a[i]) - Dagger(a[i]) * a[i] - 1.0)
-
-    return monomial_substitutions, equalities
-
+    return substitutions
 
 def fermionic_constraints(a):
     """Return  a set of constraints that define fermionic ladder operators.
 
     :param a: The non-Hermitian variables.
     :type a: list of :class:`sympy.physics.quantum.operator.Operator`.
-    :returns: tuple of dict of substitutions and list of equalities and
-              inequalities.
+    :returns: a dict of substitutions.
     """
     n_vars = len(a)
-    monomial_substitutions = {}
-    equalities = []
-    inequalities = []
+    substitutions = {}
     for i in range(n_vars):
+        substitutions[a[i] ** 2] = 0
+        substitutions[Dagger(a[i]) ** 2] = 0
+        substitutions[a[i] * Dagger(a[i])] = 1.0 - Dagger(a[i]) * a[i]
         for j in range(i + 1, n_vars):
-            # {a_i,a_jT} = 0 for i\neq j
-            # monomial_substitutions[Dagger(a[j]) * a[i]] = - a[i] *
-            # Dagger(a[j])
-            equalities.append(Dagger(a[j]) * a[i] + a[i] * Dagger(a[j]))
-            # monomial_substitutions[a[j] * Dagger(a[i])] = - Dagger(a[i]) *
-            # a[j]
-            equalities.append(a[j] * Dagger(a[i]) + Dagger(a[i]) * a[j])
-            # {a_i, a_j} = 0
-            # monomial_substitutions[a[j] * a[i]] = - a[i] * a[j]
-            equalities.append(a[j] * a[i] + a[i] * a[j])
-            # {a_iT, a_jT} = 0
-            # monomial_substitutions[Dagger(a[j]) * Dagger(a[i])] = -
-            # Dagger(a[i]) * Dagger(a[j])
-            equalities.append(Dagger(a[j]) * Dagger(a[i]) +
-                              Dagger(a[i]) * Dagger(a[j]))
+            #substitutions[a[i]*Dagger(a[j])] = -Dagger(a[i])*a[j]
+            substitutions[a[i]*Dagger(a[j])] = -Dagger(a[j])*a[i]
+            substitutions[Dagger(a[i])*a[j]] = -a[j]*Dagger(a[i])
+            substitutions[a[i]*a[j]] = -a[j]*a[i]
+            substitutions[Dagger(a[i]) * Dagger(a[j])] = - Dagger(a[j]) * Dagger(a[i])
 
-    # {a_i,a_iT} = 1
-    for i in range(n_vars):
-        # monomial_substitutions[a[i] ** 2] = 0
-        equalities.append(a[i] ** 2)
-        # monomial_substitutions[Dagger(a[i]) ** 2] = 0
-        equalities.append(Dagger(a[i]) ** 2)
-        equalities.append(a[i] * Dagger(a[i]) + Dagger(a[i]) * a[i] - 1.0)
-
-    for i in range(n_vars):
-        inequalities.append(Dagger(a[i]) * a[i])
-        inequalities.append(1 - Dagger(a[i]) * a[i])
-    return monomial_substitutions, equalities, inequalities
-
+    return substitutions
 
 def pauli_constraints(X, Y, Z):
     """Return  a set of constraints that define Pauli spin operators.

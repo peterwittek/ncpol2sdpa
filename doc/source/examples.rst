@@ -279,7 +279,7 @@ interpret.
     for i in range(N):
         hamiltonian += hbar*omega*(Dagger(a[i])*a[i]+0.5)
 
-    monomial_substitutions, equalities = bosonic_constraints(a)
+    substitutions = bosonic_constraints(a)
     inequalities = []
 
     time0 = time.time()
@@ -288,21 +288,10 @@ interpret.
     verbose = 1
     sdpRelaxation = SdpRelaxation(a)
     sdpRelaxation.get_relaxation(level, objective=hamiltonian,
-                                 equalities=equalities,
-                                 substitutions=substitutions,
-                                 removeequalities=True)
+                                 substitutions=substitutions)
     write_to_sdpa(sdpRelaxation, 'harmonic_oscillator.dat-s')                      
 
-Solving the SDP for :math:`N=4`, for instance, gives the following
-result:
-
-::
-
-    objValPrimal = +1.9999998358414430e+00
-    objValDual   = +1.9999993671869802e+00
-
-This is very close to the analytic result of 2. The result is similarly
-precise for arbitrary numbers of oscillators.
+The result is very close to zero, as the constant term is ignored in the objective function. The result is similarly precise for arbitrary numbers of oscillators.
 
 It is remarkable that we get the correct value at the first level of
 relaxation, but this property is typical for bosonic systems (Navascués
