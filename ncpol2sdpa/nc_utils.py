@@ -334,7 +334,11 @@ def get_ncmonomials(variables, degree):
         _variables = variables[:]
         _variables.insert(0, 1)
         ncmonomials = [S.One]
-        for _ in range(degree):
+        ncmonomials.extend(var for var in variables)
+        for var in variables:
+            if not var.is_hermitian:
+                ncmonomials.append(Dagger(var))
+        for _ in range(1, degree):
             temp = []
             for var in _variables:
                 for new_var in ncmonomials:
