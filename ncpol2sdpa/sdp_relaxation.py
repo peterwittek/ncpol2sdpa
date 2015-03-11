@@ -143,27 +143,20 @@ class SdpRelaxation(object):
     def __push_monomial(self, monomial, n_vars, row_offset, rowA, columnA, N,
                         rowB, columnB, lenB):
         monomial = apply_substitutions(monomial, self.substitutions)
-        if isinstance(monomial, Number):
-            monomial = float(monomial)
-        if not isinstance(monomial, int) and not isinstance(monomial, float) and monomial.is_Add:
+        if isinstance(monomial, Number) or isinstance(monomial, int) or isinstance(monomial, float):
+            if rowA == 0 and columnA == 0 and rowB == 0 and columnB == 0 and \
+              monomial == 1.0 and not self.normalized:
+                n_vars += 1
+                self.F_struct[row_offset + rowA * N*lenB +
+                              rowB * N + columnA * lenB + columnB, n_vars] = 1
+            else:
+                self.F_struct[row_offset + rowA * N*lenB +
+                              rowB * N + columnA * lenB + columnB, 0] = monomial
+        elif monomial.is_Add:
             for element in monomial.as_ordered_terms():
-                n_vars = self.__push_monomial(element, n_vars, row_offset, rowA, columnA, N,
+                n_vars = self.__push_monomial(element, n_vars, row_offset,
+                                              rowA, columnA, N,
                                               rowB, columnB, lenB)
-        elif rowA == 0 and columnA == 0 and rowB == 0 and columnB == 0 and \
-          self.normalized and (isinstance(monomial, int) or \
-          isinstance(monomial, float)):
-            self.F_struct[row_offset + rowA * N*lenB +
-                          rowB * N + columnA * lenB + columnB, 0] = monomial
-        elif rowA == 0 and columnA == 0 and rowB == 0 and columnB == 0 and \
-          not self.normalized and (isinstance(monomial, int) or \
-          isinstance(monomial, float)):
-            n_vars += 1
-            self.F_struct[row_offset + rowA * N*lenB +
-                          rowB * N + columnA * lenB + columnB, n_vars] = monomial
-        elif isinstance(monomial, int) or isinstance(monomial, float) and \
-          (rowA != 0 or columnA != 0 or rowB != 0 or columnB != 0):
-            self.F_struct[row_offset + rowA * N*lenB +
-                          rowB * N + columnA * lenB + columnB, 0] = monomial
         elif monomial != 0:
             k, coeff = self.__process_monomial(monomial, n_vars)
             if k > n_vars:
@@ -341,7 +334,7 @@ class SdpRelaxation(object):
         for k, ineq in enumerate(inequalities):
             block_index += 1
             if isinstance(ineq, str):
-                self.__parse_expression(ineq, row_offsets[block_index-1], block_index-1)
+                self.__parse_expression(ineq, row_offsets[block_index-1])
                 continue
             localization_order = self.localization_order[
                 block_index - initial_block_index - 1]
