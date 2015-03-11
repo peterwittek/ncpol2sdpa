@@ -1,2 +1,2 @@
-  - Implement group theoretic symmetries to improve sparsity.
+  - Implement logging interface.
   - Start using unit testing.  
