@@ -96,35 +96,34 @@ def pauli_constraints(X, Y, Z):
 
     :returns: tuple of substitutions and equalities.
     """
-    monomial_substitutions = {}
-    equalities = []
+    substitutions = {}
     n_vars = len(X)
     for i in range(n_vars):
         # They square to the identity
-        monomial_substitutions[X[i] * X[i]] = 1
-        monomial_substitutions[Y[i] * Y[i]] = 1
-        monomial_substitutions[Z[i] * Z[i]] = 1
+        substitutions[X[i] * X[i]] = 1
+        substitutions[Y[i] * Y[i]] = 1
+        substitutions[Z[i] * Z[i]] = 1
 
         # Anticommutation relations
-        equalities.append(Y[i] * X[i] + X[i] * Y[i])
-        equalities.append(Z[i] * X[i] + X[i] * Z[i])
-        equalities.append(Z[i] * Y[i] + Y[i] * Z[i])
+        substitutions[Y[i] * X[i]] = - X[i] * Y[i]
+        substitutions[Z[i] * X[i]] = - X[i] * Z[i]
+        substitutions[Z[i] * Y[i]] = - Y[i] * Z[i]
         # Commutation relations.
         #equalities.append(X[i]*Y[i] - 1j*Z[i])
         #equalities.append(X[i]*Z[i] + 1j*Y[i])
         #equalities.append(Y[i]*Z[i] - 1j*X[i])
         # They commute between the sites
         for j in range(i + 1, n_vars):
-            monomial_substitutions[X[j] * X[i]] = X[i] * X[j]
-            monomial_substitutions[Y[j] * Y[i]] = Y[i] * Y[j]
-            monomial_substitutions[Y[j] * X[i]] = X[i] * Y[j]
-            monomial_substitutions[Y[i] * X[j]] = X[j] * Y[i]
-            monomial_substitutions[Z[j] * Z[i]] = Z[i] * Z[j]
-            monomial_substitutions[Z[j] * X[i]] = X[i] * Z[j]
-            monomial_substitutions[Z[i] * X[j]] = X[j] * Z[i]
-            monomial_substitutions[Z[j] * Y[i]] = Y[i] * Z[j]
-            monomial_substitutions[Z[i] * Y[j]] = Y[j] * Z[i]
-    return monomial_substitutions, equalities
+            substitutions[X[j] * X[i]] = X[i] * X[j]
+            substitutions[Y[j] * Y[i]] = Y[i] * Y[j]
+            substitutions[Y[j] * X[i]] = X[i] * Y[j]
+            substitutions[Y[i] * X[j]] = X[j] * Y[i]
+            substitutions[Z[j] * Z[i]] = Z[i] * Z[j]
+            substitutions[Z[j] * X[i]] = X[i] * Z[j]
+            substitutions[Z[i] * X[j]] = X[j] * Z[i]
+            substitutions[Z[j] * Y[i]] = Y[i] * Z[j]
+            substitutions[Z[i] * Y[j]] = Y[j] * Z[i]
+    return substitutions
 
 
 def generate_measurements(party, label):
