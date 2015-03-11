@@ -3,18 +3,20 @@ Revision History
 
 **Since version 1.6**
 
-  - New: the function ``find_rank_loop`` to aid the detection of a rank loop.
+  - New: the function ``find_rank_loop`` aids the detection of a rank loop.
   - New: the function ``write_to_human_readable`` writes the relaxation in a human-readable format.
   - New: the function ``read_sdpa_out`` is now exposed to the user, primarily to help 
     in detecting rank loops.
+  - New: the function ``save_monomial_index`` allows saving the monomial index of a relaxation.
+  - New: support for obtaining the SOS decomposition from a dual solution of unconstrained problems through the function ``sos_decomposition``.
   - New: optional parameter ``psd=[matrix1, matrix2, ..., matrixn]`` can be passed to ``get_relaxation`` and ``process_constraints`` which contain symbolic matrices that should be positive semidefinite.
   - New: solution matrices can be returned by ``solve_sdp`` by passing the optional
     parameter ``solutionmatrix=True``. It does not work for diagonal blocks.
   - New: interface for `Faacets <https://github.com/denisrosset/faacets-core>`_.
   - New: PPT constraint can be imposed directly in the Moroder hierarchy by passing the extra parameter ``ppt=True`` to the constructor.
-  - New: support for obtaining the SOS decomposition from a dual solution of unconstrained problems through the function ``sos_decomposition``.
   - Changed: Nieto-Silleras hierarchy is no longer supported through an option. Now constraints have to be manually defined.
   - Fixed: wider range of substitutions supported, including a polynomial on the right-hands side of the substitution.
+  - Fixed: constraints for fermionic and bosonic systems and Pauli operators.
 
 **Version 1.6 (2014-12-22)**
 
