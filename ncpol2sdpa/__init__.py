@@ -13,6 +13,7 @@ __all__ = ['SdpRelaxation',
            'generate_variables',
            'get_ncmonomials',
            'ncdegree',
+           'save_monomial_index',
            'bosonic_constraints',
            'fermionic_constraints',
            'projective_measurement_constraints',
@@ -36,7 +37,8 @@ __all__ = ['SdpRelaxation',
            'sos_decomposition']
 
 from .sdp_relaxation import SdpRelaxation
-from .nc_utils import generate_variables, get_ncmonomials, ncdegree, flatten
+from .nc_utils import generate_variables, get_ncmonomials, ncdegree, flatten, \
+                      save_monomial_index
 from .sdpa_utils import solve_sdp, write_to_sdpa, find_rank_loop, \
      read_sdpa_out, write_to_human_readable, sos_decomposition
 from .physics_utils import bosonic_constraints, fermionic_constraints, \

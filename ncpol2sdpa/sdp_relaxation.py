@@ -926,9 +926,6 @@ class SdpRelaxation(object):
 
         if self.verbose > 0:
             print(('Reduced number of SDP variables: %d' % self.n_vars))
-        if self.verbose > 1:
-            save_monomial_index("monomials.txt", self.monomial_index,
-                                self.n_vars)
         # Objective function
         self.set_objective(objective, extraobjexpr)
 
