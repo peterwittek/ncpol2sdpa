@@ -48,8 +48,11 @@ class SdpRelaxation(object):
     :param hierarchy:  Optional parameter for defining the type of hierarchy
                        (default: "npa"):
 
-                       * "npa": the standard NPA hierarchy (`doi:10.1137/090760155 <http://dx.doi.org/10.1137/090760155>`_). When the variables are commutative, this formulation is identical to the Lasserre hierarchy.
-                       * "npa_chordal": chordal graph extension to improve sparsity (`doi:10.1137/050623802 <http://dx.doi.org/doi:10.1137/050623802>`_)
+                       * "npa": the standard NPA hierarchy (`doi:10.1137/090760155 <http://dx.doi.org/10.1137/090760155>`_).
+                       When the variables are commutative, this formulation is
+                       identical to the Lasserre hierarchy.
+                       * "npa_chordal": chordal graph extension to improve
+                       sparsity (`doi:10.1137/050623802 <http://dx.doi.org/doi:10.1137/050623802>`_)
                        * "moroder": `doi:10.1103/PhysRevLett.111.030501 <http://dx.doi.org/10.1103/PhysRevLett.111.030501>`_
     :type hierarchy: str.
     :param normalized: Optional parameter for changing the normalization of
@@ -102,6 +105,127 @@ class SdpRelaxation(object):
                 self.is_hermitian_variables = False
                 break
         self.nonrelaxed = nonrelaxed
+
+    ########################################################################
+    # ROUTINES RELATED TO GENERATING THE MOMENT MATRICES                   #
+    ########################################################################
+
+    def __process_monomial(self, monomial, n_vars):
+        """Process a single monomial when building the moment matrix.
+        """
+        coeff, monomial = monomial.as_coeff_Mul()
+        k = 0
+        # Have we seen this monomial before?
+        try:
+            # If yes, then we improve sparsity by reusing the
+            # previous variable to denote this entry in the matrix
+            k = self.monomial_index[monomial]
+        except KeyError:
+            # An extra round of substitutions is granted on the conjugate of
+            # the monomial if all the variables are Hermitian
+            need_new_variable = True
+            if self.is_hermitian_variables and ncdegree(monomial) > 2:
+                daggered_monomial = apply_substitutions(Dagger(monomial),
+                                                        self.substitutions)
+                try:
+                    k = self.monomial_index[daggered_monomial]
+                    need_new_variable = False
+                except KeyError:
+                    need_new_variable = True
+            if need_new_variable:
+                # Otherwise we define a new entry in the associated
+                # array recording the monomials, and add an entry in
+                # the moment matrix
+                k = n_vars + 1
+                self.monomial_index[monomial] = k
+        return k, coeff
+
+    def __push_monomial(self, monomial, n_vars, row_offset, rowA, columnA, N,
+                        rowB, columnB, lenB):
+        monomial = apply_substitutions(monomial, self.substitutions)
+        if isinstance(monomial, Number):
+            monomial = float(monomial)
+        if not isinstance(monomial, int) and not isinstance(monomial, float) and monomial.is_Add:
+            for element in monomial.as_ordered_terms():
+                n_vars = self.__push_monomial(element, n_vars, row_offset, rowA, columnA, N,
+                                              rowB, columnB, lenB)
+        elif rowA == 0 and columnA == 0 and rowB == 0 and columnB == 0 and \
+          self.normalized and (isinstance(monomial, int) or \
+          isinstance(monomial, float)):
+            self.F_struct[row_offset + rowA * N*lenB +
+                          rowB * N + columnA * lenB + columnB, 0] = 1
+        elif rowA == 0 and columnA == 0 and rowB == 0 and columnB == 0 and \
+          not self.normalized and (isinstance(monomial, int) or \
+          isinstance(monomial, float)):
+            n_vars += 1
+            self.F_struct[row_offset + rowA * N*lenB +
+                          rowB * N + columnA * lenB + columnB, n_vars] = 1
+        elif isinstance(monomial, int) or isinstance(monomial, float) and \
+          (rowA != 0 or columnA != 0 or rowB != 0 or columnB != 0):
+            self.F_struct[row_offset + rowA * N*lenB +
+                          rowB * N + columnA * lenB + columnB, 0] = monomial
+        elif monomial != 0:
+            k, coeff = self.__process_monomial(monomial, n_vars)
+            if k > n_vars:
+                n_vars = k
+            # We push the entry to the moment matrix
+            self.F_struct[row_offset + rowA * N*lenB +
+                          rowB * N +
+                          columnA * lenB + columnB, k] = coeff
+        return n_vars
+
+    def __generate_moment_matrix(self, n_vars, block_index, processed_entries,
+                                 monomialsA, monomialsB):
+        """Generate the moment matrix of monomials.
+
+        Arguments:
+        n_vars -- current number of variables
+        block_index -- current block index in the SDP matrix
+        monomials -- |W_d| set of words of length up to the relaxation level
+        """
+        row_offset = 0
+        if block_index > 0:
+            for block_size in self.block_struct[0:block_index]:
+                row_offset += block_size ** 2
+        N = len(monomialsA)*len(monomialsB)
+        # We process the M_d(u,w) entries in the moment matrix
+        for rowA in range(len(monomialsA)):
+            for columnA in range(rowA, len(monomialsA)):
+                for rowB in range(len(monomialsB)):
+                    start_columnB = 0
+                    if rowA == columnA:
+                        start_columnB = rowB
+                    for columnB in range(start_columnB, len(monomialsB)):
+                        processed_entries += 1
+                        if (not self.ppt) or (columnB >= rowB):
+                            monomial = Dagger(monomialsA[rowA]) * \
+                                       monomialsA[columnA] * \
+                                       Dagger(monomialsB[rowB]) * \
+                                       monomialsB[columnB]
+                        else:
+                            monomial = Dagger(monomialsA[rowA]) * \
+                                       monomialsA[columnA] * \
+                                       Dagger(monomialsB[columnB]) * \
+                                       monomialsB[rowB]
+                        # Apply the substitutions if any
+                        n_vars = self.__push_monomial(monomial, n_vars,
+                                                      row_offset, rowA,
+                                                      columnA, N, rowB,
+                                                      columnB, len(monomialsB))
+            if self.verbose > 0:
+                percentage = "{0:.0f}%".format(
+                  float(processed_entries-1)/self.n_vars * 100)
+                sys.stdout.write("\r\x1b[KCurrent number of SDP variables: %d"\
+                                 " (done: %s)" % (n_vars, percentage) )
+                sys.stdout.flush()
+        if self.verbose > 0:
+            sys.stdout.write("\r")
+        return n_vars, block_index + 1, processed_entries
+
+    ########################################################################
+    # ROUTINES RELATED TO GENERATING THE LOCALIZING MATRICES AND PROCESSING#
+    # CONSTRAINTS                                                          #
+    ########################################################################
 
     def __get_index_of_monomial(self, element, enablesubstitution=True):
         """Returns the index of a monomial.
@@ -198,119 +322,6 @@ class SdpRelaxation(object):
             facvar[k] += coeff
         return facvar
 
-    def __process_monomial(self, monomial, n_vars):
-        """Process a single monomial when building the moment matrix.
-        """
-        coeff, monomial = monomial.as_coeff_Mul()
-        k = 0
-        # Have we seen this monomial before?
-        try:
-            # If yes, then we improve sparsity by reusing the
-            # previous variable to denote this entry in the matrix
-            k = self.monomial_index[monomial]
-        except KeyError:
-            # An extra round of substitutions is granted on the conjugate of
-            # the monomial if all the variables are Hermitian
-            need_new_variable = True
-            if self.is_hermitian_variables and ncdegree(monomial) > 2:
-                daggered_monomial = apply_substitutions(Dagger(monomial),
-                                                        self.substitutions)
-                try:
-                    k = self.monomial_index[daggered_monomial]
-                    need_new_variable = False
-                except KeyError:
-                    need_new_variable = True
-            if need_new_variable:
-                # Otherwise we define a new entry in the associated
-                # array recording the monomials, and add an entry in
-                # the moment matrix
-                k = n_vars + 1
-                self.monomial_index[monomial] = k
-        return k, coeff
-
-    def __push_monomial(self, monomial, n_vars, row_offset, rowA, columnA, N,
-                        rowB, columnB, lenB):
-        monomial = apply_substitutions(monomial, self.substitutions)
-        if isinstance(monomial, Number):
-            monomial = float(monomial)
-        if not isinstance(monomial, int) and not isinstance(monomial, float) and monomial.is_Add:
-            for element in monomial.as_ordered_terms():
-                n_vars = self.__push_monomial(element, n_vars, row_offset, rowA, columnA, N,
-                                              rowB, columnB, lenB)
-        elif rowA == 0 and columnA == 0 and rowB == 0 and columnB == 0 and \
-          self.normalized and (isinstance(monomial, int) or \
-          isinstance(monomial, float)):
-            self.F_struct[row_offset + rowA * N*lenB +
-                          rowB * N + columnA * lenB + columnB, 0] = 1
-        elif rowA == 0 and columnA == 0 and rowB == 0 and columnB == 0 and \
-          not self.normalized and (isinstance(monomial, int) or \
-          isinstance(monomial, float)):
-            n_vars += 1
-            self.F_struct[row_offset + rowA * N*lenB +
-                          rowB * N + columnA * lenB + columnB, n_vars] = 1
-        elif isinstance(monomial, int) or isinstance(monomial, float) and \
-          (rowA != 0 or columnA != 0 or rowB != 0 or columnB != 0):
-            self.F_struct[row_offset + rowA * N*lenB +
-                          rowB * N + columnA * lenB + columnB, 0] = monomial
-        elif monomial != 0:
-            k, coeff = self.__process_monomial(monomial, n_vars)
-            if k > n_vars:
-                n_vars = k
-            # We push the entry to the moment matrix
-            self.F_struct[row_offset + rowA * N*lenB +
-                          rowB * N +
-                          columnA * lenB + columnB, k] = coeff
-        return n_vars
-
-    def __generate_moment_matrix(self, n_vars, block_index, processed_entries,
-                                 monomialsA, monomialsB):
-        """Generate the moment matrix of monomials.
-
-        Arguments:
-        n_vars -- current number of variables
-        block_index -- current block index in the SDP matrix
-        monomials -- |W_d| set of words of length up to the relaxation level
-        """
-        row_offset = 0
-        if block_index > 0:
-            for block_size in self.block_struct[0:block_index]:
-                row_offset += block_size ** 2
-        N = len(monomialsA)*len(monomialsB)
-        # We process the M_d(u,w) entries in the moment matrix
-        for rowA in range(len(monomialsA)):
-            for columnA in range(rowA, len(monomialsA)):
-                for rowB in range(len(monomialsB)):
-                    start_columnB = 0
-                    if rowA == columnA:
-                        start_columnB = rowB
-                    for columnB in range(start_columnB, len(monomialsB)):
-                        processed_entries += 1
-                        if (not self.ppt) or (columnB>=rowB):
-                            monomial = Dagger(monomialsA[rowA]) * \
-                                       monomialsA[columnA] * \
-                                       Dagger(monomialsB[rowB]) * \
-                                       monomialsB[columnB]
-                        else:
-                            monomial = Dagger(monomialsA[rowA]) * \
-                                       monomialsA[columnA] * \
-                                       Dagger(monomialsB[columnB]) * \
-                                       monomialsB[rowB]
-                        # Apply the substitutions if any
-                        n_vars = self.__push_monomial(monomial, n_vars,
-                                                      row_offset, rowA,
-                                                      columnA, N, rowB,
-                                                      columnB, len(monomialsB))
-            if self.verbose > 0:
-                percentage = "{0:.0f}%".format(
-                  float(processed_entries-1)/self.n_vars * 100)
-                sys.stdout.write("\r\x1b[KCurrent number of SDP variables: %d"\
-                                 " (done: %s)" % (n_vars, percentage) )
-                sys.stdout.flush()
-        if self.verbose > 0:
-            sys.stdout.write("\r")
-        return n_vars, block_index + 1, processed_entries
-
-
     def __process_inequalities(
             self, inequalities, block_index):
         """Generate localizing matrices
@@ -378,7 +389,7 @@ class SdpRelaxation(object):
                     elif isinstance(matrix, Matrix):
                         polynomial = \
                           simplify_polynomial(matrix[row, column],
-                                             self.substitutions)
+                                              self.substitutions)
                     self.__push_facvar_sparse(polynomial, block_index+1,
                                               row_offsets[block_index],
                                               row, column)
@@ -399,8 +410,8 @@ class SdpRelaxation(object):
             # Find the order of the localizing matrix
             eq_order = ncdegree(equality)
             if eq_order > 2 * self.level:
-                print(("An equality constraint has degree %d. Choose a "\
-                       "higher level of relaxation." % eq_order))
+                print("An equality constraint has degree %d. Choose a "\
+                      "higher level of relaxation." % eq_order)
                 raise Exception
             localization_order = int(floor((2 * self.level - eq_order) / 2))
             if localization_order > max_localization_order:
@@ -452,6 +463,107 @@ class SdpRelaxation(object):
                                 self.F_struct[:, 1:].dot(H)])
         self.F_struct = self.F_struct.tolil()
         self.n_vars = self.F_struct.shape[1] - 1
+
+    def __duplicate_momentmatrix(self, original_n_vars, n_vars, block_index):
+        self.var_offsets.append(n_vars)
+        row_offset = 0
+        for block_size in self.block_struct[0:block_index]:
+            row_offset += block_size ** 2
+        width = self.block_struct[0]
+        for row in range(width**2):
+            self.F_struct[row_offset + row,
+                          n_vars+1:n_vars + original_n_vars+2] =\
+              self.F_struct[row, :original_n_vars+1]
+        return n_vars + original_n_vars + 1, block_index + 1
+
+    def __add_new_momentmatrix(self, n_vars, block_index):
+        self.var_offsets.append(n_vars)
+        row_offset = 0
+        for block_size in self.block_struct[0:block_index]:
+            row_offset += block_size ** 2
+        width = self.block_struct[0]
+        for i in range(width):
+            for j in range(i, width):
+                n_vars += 1
+                self.F_struct[row_offset + i * width + j, n_vars] = 1
+        return n_vars, block_index + 1
+
+    def __impose_ppt(self, block_index):
+        row_offset = 0
+        for block_size in self.block_struct[0:block_index-1]:
+            row_offset += block_size ** 2
+        lenA = len(self.monomial_sets[0])
+        lenB = len(self.monomial_sets[1])
+        N = lenA*lenB
+        for rowA in range(lenA):
+            for columnA in range(rowA, lenA):
+                for rowB in range(lenB):
+                    start_columnB = 0
+                    if rowA == columnA:
+                        start_columnB = rowB
+                    for columnB in range(start_columnB, rowB):
+                        original_row = self.F_struct[row_offset + rowA*N*lenB +
+                                                     rowB * N + columnA * lenB
+                                                     + columnB]
+                        self.F_struct[row_offset + rowA*N*lenB +
+                                      rowB * N +
+                                      columnA * lenB + columnB] = \
+                                        self.F_struct[row_offset + rowA*N*lenB
+                                                      + columnB * N
+                                                      + columnA * lenB + rowB]
+                        self.F_struct[row_offset + rowA*N*lenB + columnB * N +
+                                      columnA * lenB + rowB] = original_row
+
+    def __add_extra_momentmatrices(self, extramomentmatrix, n_vars,
+                                   block_index):
+        original_n_vars = n_vars
+        if extramomentmatrix is not None:
+            for parameters in extramomentmatrix:
+                copy = False
+                ppt = False
+                for parameter in parameters:
+                    if parameter == "copy":
+                        copy = True
+                    if parameter == "ppt":
+                        ppt = True
+                if copy:
+                    n_vars, block_index = \
+                      self.__duplicate_momentmatrix(original_n_vars, n_vars,
+                                                    block_index)
+                else:
+                    n_vars, block_index = \
+                      self.__add_new_momentmatrix(n_vars, block_index)
+                if ppt:
+                    self.__impose_ppt(block_index)
+        return n_vars, block_index
+
+    def __parse_expression(self, expr, row_offset):
+        if expr.find("]") > -1:
+            sub_exprs = expr.split(']')
+            for sub_expr in sub_exprs:
+                ind = sub_expr.find('[')
+                if ind > -1:
+                    idx = sub_expr[ind+1:].split(",")
+                    i, j = int(idx[0]), int(idx[1])
+                    mm_ind = int(sub_expr[ind-1:ind])
+                    if sub_expr.find('*') > -1:
+                        value = float(sub_expr[:sub_expr.find('*')])
+                    elif sub_expr.startswith('-'):
+                        value = -1.0
+                    else:
+                        value = 1.0
+                    base_row_offset = sum([bs**2 for bs in
+                                           self.block_struct[:mm_ind]])
+                    width = self.block_struct[mm_ind]
+                    self.F_struct[row_offset] += \
+                      value*self.F_struct[base_row_offset + i*width + j]
+                else:
+                    value = float(sub_expr)
+                    self.F_struct[row_offset, 0] += value
+
+    ########################################################################
+    # ROUTINES RELATED TO INITIALIZING DATA STRUCTURES                     #
+    ########################################################################
 
     def __calculate_block_structure(self, inequalities, equalities, bounds,
                                     psd, extramomentmatrix, removeequalities):
@@ -589,49 +701,7 @@ class SdpRelaxation(object):
             self.n_vars += int(n_monomials * (n_monomials + 1) / 2)
             self.n_vars -= 1
 
-    def set_objective(self, objective, extraobjexpr=None):
-        """Set or change the objective function of the polynomial optimization
-        problem.
-
-        :param objective: Describes the objective function.
-        :type objective: :class:`sympy.core.expr.Expr`
-        :param extraobjexpr: Optional parameter of a string expression of a
-                             linear combination of moment matrix elements to be
-                             included in the objective function
-        :type extraobjexpr: str.
-        """
-        if objective is not None:
-            facvar = self.__get_facvar(simplify_polynomial(objective,
-                                                           self.substitutions))
-            self.obj_facvar = facvar[1:]
-
-            if self.verbose>0 and facvar[0]!=0:
-                print("Warning: The objective function has a non-zero "\
-                      "constant term. It is not included in the SDP objective.")
-        else:
-            self.obj_facvar = self.__get_facvar(0)
-        if extraobjexpr is not None:
-            for sub_expr in extraobjexpr.split(']'):
-                ind = sub_expr.find('[')
-                if ind>-1:
-                    idx = sub_expr[ind+1:].split(",")
-                    i, j = int(idx[0]), int(idx[1])
-                    mm_ind = int(sub_expr[ind-1:ind])
-                    if sub_expr.find('*')>-1:
-                        value = float(sub_expr[:sub_expr.find('*')])
-                    elif sub_expr.startswith('-'):
-                        value = -1.0
-                    else:
-                        value = 1.0
-                    base_row_offset = sum([bs**2 for bs in
-                                           self.block_struct[:mm_ind]])
-                    width = self.block_struct[mm_ind]
-                    for column in self.F_struct[base_row_offset + i*width + j].rows[0]:
-                        self.obj_facvar[column-1] = \
-                          value*self.F_struct[base_row_offset + i*width + j, column]
-
-
-    def add_non_relaxed(self):
+    def __add_non_relaxed(self):
         new_n_vars, block_index = 0, 0
         if self.nonrelaxed is not None:
             block_index = 1
@@ -641,13 +711,19 @@ class SdpRelaxation(object):
                 self.F_struct[new_n_vars - 1, new_n_vars] = 1
         return new_n_vars, block_index
 
-    def wipe_F_struct_from_constraints(self):
+    def __wipe_F_struct_from_constraints(self):
         row_offset = 0
         for block in range(self.constraint_starting_block):
             row_offset += self.block_struct[block]**2
         for row in range(row_offset, len(self.F_struct.rows)):
             self.F_struct.rows[row] = []
             self.F_struct.data[row] = []
+
+
+    ########################################################################
+    # PUBLIC ROUTINES EXPOSED TO THE USER                                  #
+    ########################################################################
+
 
     def process_constraints(self, inequalities=None, equalities=None,
                             bounds=None, psd=None, block_index=0,
@@ -674,7 +750,7 @@ class SdpRelaxation(object):
         """
         if block_index == 0:
             block_index = self.constraint_starting_block
-            self.wipe_F_struct_from_constraints()
+            self.__wipe_F_struct_from_constraints()
         if psd is not None:
             block_index = self.__process_psd(psd, block_index)
         constraints = flatten([inequalities])
@@ -704,93 +780,41 @@ class SdpRelaxation(object):
         # representation
         for i in range(bs):
             for j in range(i, bs):
-                if M[i,j] != 0:
-                    self.F_struct[i*bs+j, abs(M[i,j])-1] = copysign(1, M[i, j])
+                if M[i, j] != 0:
+                    self.F_struct[i*bs+j, abs(M[i, j])-1] = copysign(1, M[i, j])
         self.obj_facvar = [0 for _ in range(self.n_vars)]
         for i in range(1, len(ncIndices)):
             self.obj_facvar[abs(ncIndices[i])-2] += copysign(1, ncIndices[i])*coefficients[i]
 
-    def __duplicate_momentmatrix(self, original_n_vars, n_vars, block_index):
-        self.var_offsets.append(n_vars)
-        row_offset = 0
-        for block_size in self.block_struct[0:block_index]:
-            row_offset += block_size ** 2
-        width = self.block_struct[0]
-        for row in range(width**2):
-            self.F_struct[row_offset + row,
-                          n_vars+1:n_vars + original_n_vars+2] =\
-              self.F_struct[row,:original_n_vars+1]
-        return n_vars + original_n_vars + 1, block_index + 1
+    def set_objective(self, objective, extraobjexpr=None):
+        """Set or change the objective function of the polynomial optimization
+        problem.
 
-    def __add_new_momentmatrix(self, n_vars, block_index):
-        self.var_offsets.append(n_vars)
-        row_offset = 0
-        for block_size in self.block_struct[0:block_index]:
-            row_offset += block_size ** 2
-        width = self.block_struct[0]
-        for i in range(width):
-            for j in range(i, width):
-                n_vars += 1
-                self.F_struct[row_offset + i * width + j, n_vars] = 1
-        return n_vars, block_index + 1
+        :param objective: Describes the objective function.
+        :type objective: :class:`sympy.core.expr.Expr`
+        :param extraobjexpr: Optional parameter of a string expression of a
+                             linear combination of moment matrix elements to be
+                             included in the objective function
+        :type extraobjexpr: str.
+        """
+        if objective is not None:
+            facvar = self.__get_facvar(simplify_polynomial(objective,
+                                                           self.substitutions))
+            self.obj_facvar = facvar[1:]
 
-    def __impose_ppt(self, block_index):
-        row_offset = 0
-        for block_size in self.block_struct[0:block_index-1]:
-            row_offset += block_size ** 2
-        lenA = len(self.monomial_sets[0])
-        lenB = len(self.monomial_sets[1])
-        N = lenA*lenB
-        for rowA in range(lenA):
-            for columnA in range(rowA, lenA):
-                for rowB in range(lenB):
-                    start_columnB = 0
-                    if rowA == columnA:
-                        start_columnB = rowB
-                    for columnB in range(start_columnB, rowB):
-                        original_row = self.F_struct[row_offset + rowA*N*lenB +
-                                           rowB * N +
-                                           columnA * lenB + columnB]
-                        self.F_struct[row_offset + rowA*N*lenB +
-                                           rowB * N +
-                                           columnA * lenB + columnB] = \
-                                           self.F_struct[row_offset + rowA*N*lenB +                                           columnB * N +
-                                           columnA * lenB + rowB]
-                        self.F_struct[row_offset + rowA*N*lenB +                                           columnB * N + columnA * lenB + rowB] = original_row
-
-    def __add_extra_momentmatrices(self, extramomentmatrix, n_vars,
-                                   block_index):
-        original_n_vars = n_vars
-        if extramomentmatrix is not None:
-            for parameters in extramomentmatrix:
-                copy = False
-                ppt = False
-                for parameter in parameters:
-                    if parameter == "copy":
-                        copy = True
-                    if parameter == "ppt":
-                        ppt = True
-                if copy:
-                    n_vars, block_index = \
-                      self.__duplicate_momentmatrix(original_n_vars, n_vars,
-                                                    block_index)
-                else:
-                    n_vars, block_index = \
-                      self.__add_new_momentmatrix(n_vars, block_index)
-                if ppt:
-                    self.__impose_ppt(block_index)
-        return n_vars, block_index
-
-    def __parse_expression(self, expr, row_offset, block_index):
-        if expr.find("]") > -1:
-            sub_exprs = expr.split(']')
-            for sub_expr in sub_exprs:
+            if self.verbose > 0 and facvar[0] != 0:
+                print("Warning: The objective function has a non-zero "\
+                      "constant term. It is not included in the SDP objective.")
+        else:
+            self.obj_facvar = self.__get_facvar(0)
+        if extraobjexpr is not None:
+            for sub_expr in extraobjexpr.split(']'):
                 ind = sub_expr.find('[')
-                if ind>-1:
+                if ind > -1:
                     idx = sub_expr[ind+1:].split(",")
                     i, j = int(idx[0]), int(idx[1])
                     mm_ind = int(sub_expr[ind-1:ind])
-                    if sub_expr.find('*')>-1:
+                    if sub_expr.find('*') > -1:
                         value = float(sub_expr[:sub_expr.find('*')])
                     elif sub_expr.startswith('-'):
                         value = -1.0
@@ -799,11 +823,9 @@ class SdpRelaxation(object):
                     base_row_offset = sum([bs**2 for bs in
                                            self.block_struct[:mm_ind]])
                     width = self.block_struct[mm_ind]
-                    self.F_struct[row_offset] += value*self.F_struct[base_row_offset+
-                                                               i*width + j]
-                else:
-                    value = float(sub_expr)
-                    self.F_struct[row_offset, 0] += value
+                    for column in self.F_struct[base_row_offset + i*width + j].rows[0]:
+                        self.obj_facvar[column-1] = \
+                          value*self.F_struct[base_row_offset + i*width + j, column]
 
 
     def get_relaxation(self, level, objective=None, inequalities=None,
@@ -875,7 +897,7 @@ class SdpRelaxation(object):
             print('Generating moment matrix...')
 
         # Generate moment matrices
-        new_n_vars, block_index = self.add_non_relaxed()
+        new_n_vars, block_index = self.__add_non_relaxed()
         processed_entries = 0
         if self.hierarchy == "moroder":
             new_n_vars, block_index, _ = \
