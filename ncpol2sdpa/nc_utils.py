@@ -44,7 +44,10 @@ def simplify_polynomial(polynomial, monomial_substitutions):
     """
     if isinstance(polynomial, int) or isinstance(polynomial, float):
         return polynomial
-    polynomial = (1.0 * polynomial).expand()
+    polynomial = (1.0 * polynomial).expand(basic=False, log=False,
+                                           power_base=False, power_exp=False,
+                                           deep=False, mul=True,
+                                           multinomial=True)
     if isinstance(polynomial, Number):
         return polynomial
     if polynomial.is_Mul:
