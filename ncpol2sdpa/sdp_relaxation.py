@@ -7,6 +7,7 @@ Created on Sun May 26 15:06:17 2013
 
 @author: Peter Wittek
 """
+from __future__ import division, print_function
 from math import floor, copysign
 import numpy as np
 from sympy import S, Number
