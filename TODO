@@ -1,2 +1,4 @@
+  - Circular symmetry of trace is not fully exploited for Hermitian variables.
+  - Better integration of Faacets.
   - Implement logging interface.
   - Start using unit testing.  

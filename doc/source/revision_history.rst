@@ -1,7 +1,7 @@
 Revision History
 ****************
 
-**Since version 1.6**
+**Version 1.7 (2015-03-23)**
 
   - New: the function ``find_rank_loop`` aids the detection of a rank loop.
   - New: the function ``write_to_human_readable`` writes the relaxation in a human-readable format.
@@ -12,7 +12,7 @@ Revision History
   - New: optional parameter ``psd=[matrix1, matrix2, ..., matrixn]`` can be passed to ``get_relaxation`` and ``process_constraints`` which contain symbolic matrices that should be positive semidefinite.
   - New: solution matrices can be returned by ``solve_sdp`` by passing the optional
     parameter ``solutionmatrix=True``. It does not work for diagonal blocks.
-  - New: interface for `Faacets <https://github.com/denisrosset/faacets-core>`_.
+  - New: basic interface for `Faacets <https://github.com/denisrosset/faacets-core>`_ via the function ``get_faacet_relaxation``.
   - New: PPT constraint can be imposed directly in the Moroder hierarchy by passing the extra parameter ``ppt=True`` to the constructor.
   - Changed: Nieto-Silleras hierarchy is no longer supported through an option. Now constraints have to be manually defined.
   - Fixed: wider range of substitutions supported, including a polynomial on the right-hands side of the substitution.

@@ -5,7 +5,7 @@ Function Reference
 SdpRelaxation Class
 ===================
 .. autoclass:: ncpol2sdpa.SdpRelaxation
-   :members: get_relaxation, set_objective, process_constraints
+   :members: get_relaxation, get_faacets_relaxation, set_objective, process_constraints
 
 Functions to Work with SDPA
 ===========================
