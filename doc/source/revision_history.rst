@@ -11,7 +11,7 @@ Revision History
   - New: optional parameter ``psd=[matrix1, matrix2, ..., matrixn]`` can be passed to ``get_relaxation`` and ``process_constraints`` which contain symbolic matrices that should be positive semidefinite.
   - New: solution matrices can be returned by ``solve_sdp`` by passing the optional
     parameter ``solutionmatrix=True``. It does not work for diagonal blocks.
-  - New: basic interface for `Faacets <https://github.com/denisrosset/faacets-core>`_ via the function ``get_faacet_relaxation``.
+  - New: basic interface for `Faacets <https://github.com/denisrosset/faacets-core>`_ via the function ``get_faacets_relaxation``.
   - New: PPT constraint can be imposed directly in the Moroder hierarchy by passing the extra parameter ``ppt=True`` to the constructor.
   - New: Passing the optional parameter ``extramomentmatrices=...`` to ``get_relaxation`` allows defining new moment matrices either freely or based on the first one. Basic relations of the elements between the moment matrices can be imposed as strings passed through ``inequalites=...``.
   - Changed: Nieto-Silleras hierarchy is no longer supported through an option. Now constraints have to be manually defined.

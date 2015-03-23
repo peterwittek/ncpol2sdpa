@@ -49,11 +49,8 @@ class SdpRelaxation(object):
     :param hierarchy:  Optional parameter for defining the type of hierarchy
                        (default: "npa"):
 
-                       * "npa": the standard NPA hierarchy (`doi:10.1137/090760155 <http://dx.doi.org/10.1137/090760155>`_).
-                       When the variables are commutative, this formulation is
-                       identical to the Lasserre hierarchy.
-                       * "npa_chordal": chordal graph extension to improve
-                       sparsity (`doi:10.1137/050623802 <http://dx.doi.org/doi:10.1137/050623802>`_)
+                       * "npa": the standard NPA hierarchy (`doi:10.1137/090760155 <http://dx.doi.org/10.1137/090760155>`_). When the variables are commutative, this formulation is identical to the Lasserre hierarchy.
+                       * "npa_chordal": chordal graph extension to improve sparsity (`doi:10.1137/050623802 <http://dx.doi.org/doi:10.1137/050623802>`_)
                        * "moroder": `doi:10.1103/PhysRevLett.111.030501 <http://dx.doi.org/10.1103/PhysRevLett.111.030501>`_
     :type hierarchy: str.
     :param normalized: Optional parameter for changing the normalization of
