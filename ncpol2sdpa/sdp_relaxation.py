@@ -761,7 +761,7 @@ class SdpRelaxation(object):
             A = self.__process_equalities(equalities, flatten(self.monomial_sets))
             self.__remove_equalities(equalities, A)
 
-    def get_faacet_relaxation(self, A_configuration, B_configuration, I):
+    def get_faacets_relaxation(self, A_configuration, B_configuration, I):
         coefficients = collinsgisin_to_faacets(I)
         M, ncIndices = get_faacets_moment_matrix(A_configuration,
                                                  B_configuration, coefficients)
