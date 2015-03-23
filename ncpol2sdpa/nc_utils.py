@@ -184,9 +184,8 @@ def fast_substitute(monomial, old_sub, new_sub):
     :param old_sub: The part to be replaced.
     :param new_sub: The replacement.
     """
-    if isinstance(monomial, Number):
-        return monomial
-    if isinstance(monomial, int):
+    if isinstance(monomial, Number) or isinstance(monomial, int) or \
+      isinstance(monomial, float):
         return monomial
     if monomial.is_Add:
         return sum([fast_substitute(element, old_sub, new_sub) for element in
@@ -195,7 +194,7 @@ def fast_substitute(monomial, old_sub, new_sub):
     comm_factors, ncomm_factors = split_commutative_parts(monomial)
     old_comm_factors, old_ncomm_factors = split_commutative_parts(old_sub)
     # This is a temporary hack
-    if not isinstance(new_sub, int):
+    if not isinstance(new_sub, int) and not isinstance(new_sub, float):
         new_comm_factors, _ = split_commutative_parts(new_sub)
     comm_monomial = 1
     is_constant_term = False
