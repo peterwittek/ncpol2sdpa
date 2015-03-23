@@ -22,7 +22,7 @@ except ImportError:
 from .nc_utils import apply_substitutions, build_monomial, \
     pick_monomials_up_to_degree, ncdegree, \
     separate_scalar_factor, flatten, build_permutation_matrix, \
-    simplify_polynomial, save_monomial_index, get_monomials, unique
+    simplify_polynomial, get_monomials, unique
 from .chordal_extension import generate_clique, find_clique_index
 from .faacets_utils import get_faacets_moment_matrix, collinsgisin_to_faacets
 
@@ -508,11 +508,11 @@ class SdpRelaxation(object):
                         self.F_struct[row_offset + rowA*N*lenB + columnB * N +
                                       columnA * lenB + rowB] = original_row
 
-    def __add_extra_momentmatrices(self, extramomentmatrix, n_vars,
+    def __add_extra_momentmatrices(self, extramomentmatrices, n_vars,
                                    block_index):
         original_n_vars = n_vars
-        if extramomentmatrix is not None:
-            for parameters in extramomentmatrix:
+        if extramomentmatrices is not None:
+            for parameters in extramomentmatrices:
                 copy = False
                 ppt = False
                 for parameter in parameters:
@@ -825,7 +825,7 @@ class SdpRelaxation(object):
     def get_relaxation(self, level, objective=None, inequalities=None,
                        equalities=None, substitutions=None, bounds=None,
                        psd=None, removeequalities=False, extramonomials=None,
-                       extramomentmatrix=None, extraobjexpr=None):
+                       extramomentmatrices=None, extraobjexpr=None):
         """Get the SDP relaxation of a noncommutative polynomial optimization
         problem.
 
@@ -854,9 +854,19 @@ class SdpRelaxation(object):
         :param extramonomials: Optional paramter of monomials to be included, on
                                top of the requested level of relaxation.
         :type extramonomials: list of :class:`sympy.core.exp.Expr`.
+        :param extramomentmatrices: Optional paramter of duplicating or adding
+                               moment matrices.  A new moment matrix can be
+                               unconstrained (""), a copy  of the first one
+                               ("copy"), and satisfying a partial positivity
+                               constraint ("ppt"). Each new moment matrix is
+                               requested as a list of string of these options.
+                               For instance, adding a single new moment matrix
+                               as a copy of the first would be
+                               ``extramomentmatrices=[["copy"]]``.
+        :type extramomentmatrices: list of list of str.
         :param extraobjexpr: Optional parameter of a string expression of a
                              linear combination of moment matrix elements to be
-                             included in the objective function
+                             included in the objective function.
         :type extraobjexpr: str.
         """
         if self.level < -1:
@@ -871,10 +881,10 @@ class SdpRelaxation(object):
                                       extramonomials)
         # Figure out basic structure of the SDP
         self.__calculate_block_structure(inequalities, equalities, bounds, psd,
-                                         extramomentmatrix, removeequalities)
+                                         extramomentmatrices, removeequalities)
         self.__estimate_n_vars()
-        if extramomentmatrix is not None:
-            for parameters in extramomentmatrix:
+        if extramomentmatrices is not None:
+            for parameters in extramomentmatrices:
                 copy = False
                 for parameter in parameters:
                     if parameter == "copy":
@@ -908,9 +918,9 @@ class SdpRelaxation(object):
                         processed_entries,
                         monomials, [S.One])
                 self.var_offsets.append(new_n_vars)
-        if extramomentmatrix is not None:
+        if extramomentmatrices is not None:
             new_n_vars, block_index = \
-            self.__add_extra_momentmatrices(extramomentmatrix, new_n_vars,
+            self.__add_extra_momentmatrices(extramomentmatrices, new_n_vars,
                                             block_index)
         # The initial estimate for the size of F_struct was overly generous.
         self.n_vars = new_n_vars

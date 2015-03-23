@@ -89,27 +89,72 @@ def get_index_dtype(arrays=(), maxval=None, check_contents=False):
 
     return dtype
 
+def _slicetoarange(j, shape):
+    """ Given a slice object, use numpy arange to change it to a 1D
+    array.
+    """
+    start, stop, step = j.indices(shape)
+    return np.arange(start, stop, step)
+
+
+def _check_ellipsis(index):
+    """Process indices with Ellipsis. Returns modified index."""
+    if index is Ellipsis:
+        return (slice(None), slice(None))
+    elif isinstance(index, tuple):
+        # Find first ellipsis
+        for j, v in enumerate(index):
+            if v is Ellipsis:
+                first_ellipsis = j
+                break
+        else:
+            first_ellipsis = None
+
+        # Expand the first one
+        if first_ellipsis is not None:
+            # Shortcuts
+            if len(index) == 1:
+                return (slice(None), slice(None))
+            elif len(index) == 2:
+                if first_ellipsis == 0:
+                    if index[1] is Ellipsis:
+                        return (slice(None), slice(None))
+                    else:
+                        return (slice(None), index[1])
+                else:
+                    return (index[0], slice(None))
+
+            # General case
+            tail = ()
+            for v in index[first_ellipsis+1:]:
+                if v is not Ellipsis:
+                    tail = tail + (v,)
+            nd = first_ellipsis + len(tail)
+            nslice = max(0, 2 - nd)
+            return index[:first_ellipsis] + (slice(None),)*nslice + tail
+
+    return index
+
+def _boolean_index_to_array(i):
+    if i.ndim > 1:
+        raise IndexError('invalid index shape')
+    return i.nonzero()[0]
+
 class IndexMixin(object):
     """
     This class simply exists to hold the methods necessary for fancy indexing.
     """
-    def _slicetoarange(self, j, shape):
-        """ Given a slice object, use numpy arange to change it to a 1D
-        array.
-        """
-        start, stop, step = j.indices(shape)
-        return np.arange(start, stop, step)
 
     def _unpack_index(self, index):
         """ Parse index. Always return a tuple of the form (row, col).
         Where row/col is a integer, slice, or array of integers.
         """
         if (isinstance(index, (spmatrix, np.ndarray)) and
-           (index.ndim == 2) and index.dtype.kind == 'b'):
+            index.ndim == 2 and index.dtype.kind == 'b'):
             return index.nonzero()
 
         # Parse any ellipses.
-        index = self._check_ellipsis(index)
+        index = _check_ellipsis(index)
 
         # Next, parse the tuple or object
         if isinstance(index, tuple):
@@ -126,44 +171,6 @@ class IndexMixin(object):
         row, col = self._check_boolean(row, col)
         return row, col
 
-    def _check_ellipsis(self, index):
-        """Process indices with Ellipsis. Returns modified index."""
-        if index is Ellipsis:
-            return (slice(None), slice(None))
-        elif isinstance(index, tuple):
-            # Find first ellipsis
-            for j, v in enumerate(index):
-                if v is Ellipsis:
-                    first_ellipsis = j
-                    break
-            else:
-                first_ellipsis = None
-
-            # Expand the first one
-            if first_ellipsis is not None:
-                # Shortcuts
-                if len(index) == 1:
-                    return (slice(None), slice(None))
-                elif len(index) == 2:
-                    if first_ellipsis == 0:
-                        if index[1] is Ellipsis:
-                            return (slice(None), slice(None))
-                        else:
-                            return (slice(None), index[1])
-                    else:
-                        return (index[0], slice(None))
-
-                # General case
-                tail = ()
-                for v in index[first_ellipsis+1:]:
-                    if v is not Ellipsis:
-                        tail = tail + (v,)
-                nd = first_ellipsis + len(tail)
-                nslice = max(0, 2 - nd)
-                return index[:first_ellipsis] + (slice(None),)*nslice + tail
-
-        return index
-
     def _check_boolean(self, row, col):
         # Supporting sparse boolean indexing with both row and col does
         # not work because spmatrix.ndim is always 2.
@@ -177,20 +184,15 @@ class IndexMixin(object):
             col = self._boolean_index_to_array(col)
         return row, col
 
-    def _boolean_index_to_array(self, i):
-        if i.ndim > 1:
-            raise IndexError('invalid index shape')
-        return i.nonzero()[0]
-
     def _index_to_arrays(self, i, j):
         i, j = self._check_boolean(i, j)
         i_slice = isinstance(i, slice)
         if i_slice:
-            i = self._slicetoarange(i, self.shape[0])[:, None]
+            i = _slicetoarange(i, self.shape[0])[:, None]
         else:
             i = np.atleast_1d(i)
         if isinstance(j, slice):
-            j = self._slicetoarange(j, self.shape[1])[None, :]
+            j = _slicetoarange(j, self.shape[1])[None, :]
             if i.ndim == 1:
                 i = i[:, None]
             elif not i_slice:
@@ -523,7 +525,7 @@ class lil_matrix(spmatrix, IndexMixin):
                 self.shape = (M, N)
                 pre_rows = []
                 pre_data = []
-                for i in range(M):
+                for _ in range(M):
                     pre_rows.append([])
                     pre_data.append([])
                 self.rows = pre_rows
@@ -696,7 +698,7 @@ class lil_matrix(spmatrix, IndexMixin):
         new = lil_matrix(shape, dtype=self.dtype)
         j_max = self.shape[1]
         for i, row in enumerate(self.rows):
-            for col, j in enumerate(row):
+            for j in row:
                 new_r, new_c = np.unravel_index(i*j_max + j, shape)
                 new[new_r, new_c] = self[i, j]
         return new

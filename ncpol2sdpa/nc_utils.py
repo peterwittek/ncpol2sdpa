@@ -90,7 +90,7 @@ def separate_scalar_factor(monomial):
         return S.One, monomial
     if monomial == 0:
         return S.One, 0
-    comm_factors, non_commfactors = split_commutative_parts(monomial)
+    comm_factors, _ = split_commutative_parts(monomial)
     if len(comm_factors) > 0:
         if isinstance(comm_factors[0], Number):
             scalar_factor = comm_factors[0]
@@ -117,7 +117,7 @@ def get_support(variables, polynomial):
     polynomial = polynomial.expand()
     for monomial in polynomial.as_coefficients_dict():
         tmp_support = [0] * len(variables)
-        monomial, scalar = separate_scalar_factor(monomial)
+        monomial, _ = separate_scalar_factor(monomial)
         symbolic_support = flatten(split_commutative_parts(monomial))
         for s in symbolic_support:
             if isinstance(s, Pow):
@@ -190,13 +190,13 @@ def fast_substitute(monomial, old_sub, new_sub):
         return monomial
     if monomial.is_Add:
         return sum([fast_substitute(element, old_sub, new_sub) for element in
-                   monomial.as_ordered_terms()])
+                    monomial.as_ordered_terms()])
 
     comm_factors, ncomm_factors = split_commutative_parts(monomial)
     old_comm_factors, old_ncomm_factors = split_commutative_parts(old_sub)
     # This is a temporary hack
     if not isinstance(new_sub, int):
-        new_comm_factors, new_ncomm_factors = split_commutative_parts(new_sub)
+        new_comm_factors, _ = split_commutative_parts(new_sub)
     comm_monomial = 1
     is_constant_term = False
     if len(comm_factors) == 1 and isinstance(comm_factors[0], Number):

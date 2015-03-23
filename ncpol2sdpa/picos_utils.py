@@ -6,6 +6,7 @@ Created on Wed Dec 10 18:33:34 2014
 
 @author: Peter Wittek
 """
+from __future__ import print_function
 from math import sqrt
 from .sdpa_utils import convert_row_to_sdpa_index
 
@@ -50,17 +51,19 @@ def inplace_partial_transpose(affine_expression, dim=None):
     import cvxopt as cvx
     import picos as pic
     if isinstance(affine_expression, pic.Variable):
-            raise Exception('inplace_transpose should not be called on a Variable object')
+        raise Exception("inplace_transpose should not be called on a Variable object")
     bsize = affine_expression.size[0]
     if bsize != affine_expression.size[1]:
-        raise ValueError('partial_transpose can only be applied to square matrices')
+        raise ValueError("partial_transpose can only be applied to square matrices")
     if dim == None:
         subsize = int((bsize)**0.5)
         if subsize != (bsize)**0.5 or bsize != affine_expression.size[1]:
-            raise ValueError('partial_transpose can only be applied to n**2 x n**2 matrices without specifying the dimensions of the subsystems')
+            raise ValueError("partial_transpose can only be applied to n**2 x"+
+                              " n**2 matrices without specifying the "+
+                              "dimensions of the subsystems")
         dim = [subsize, subsize]
     if dim[0]*dim[1] != bsize:
-        raise ValueError('invalid dimensions')
+        raise ValueError("invalid dimensions")
 
     for k in affine_expression.factors:
         I0 = []
@@ -74,7 +77,7 @@ def inplace_partial_transpose(affine_expression, dim=None):
             column = column_block*dim[1] + lrow
             I0.append(column*bsize + row)
         affine_expression.factors[k] = cvx.spmatrix(V, I0, J, affine_expression.factors[k].size)
-    if not (affine_expression.constant is None):
+    if affine_expression.constant is not None:
         spconstant = cvx.sparse(affine_expression.constant)
         J = spconstant.J
         V = spconstant.V

@@ -89,17 +89,18 @@ def solve_sdp(sdpRelaxation, solutionmatrix=False,
     tmp_dats_filename = tmp_filename + ".dat-s"
     tmp_out_filename = tmp_filename + ".out"
     write_to_sdpa(sdpRelaxation, tmp_dats_filename)
-    if sdpRelaxation.verbose<2:
-      with open(os.devnull, "w") as fnull:
-          call([solverexecutable, tmp_dats_filename, tmp_out_filename], stdout=fnull, stderr=fnull)
+    if sdpRelaxation.verbose < 2:
+        with open(os.devnull, "w") as fnull:
+            call([solverexecutable, tmp_dats_filename, tmp_out_filename],
+                 stdout=fnull, stderr=fnull)
     else:
-      call([solverexecutable, tmp_dats_filename, tmp_out_filename])
+        call([solverexecutable, tmp_dats_filename, tmp_out_filename])
     if solutionmatrix:
         primal, dual, x_mat, y_mat = read_sdpa_out(tmp_out_filename,
                                                    solutionmatrix)
     else:
         primal, dual = read_sdpa_out(tmp_out_filename)
-    if sdpRelaxation.verbose<2:
+    if sdpRelaxation.verbose < 2:
         os.remove(tmp_dats_filename)
         os.remove(tmp_out_filename)
     if solutionmatrix:
@@ -154,7 +155,7 @@ def sos_decomposition(sdpRelaxation, y_mat, threshold=0.0):
     sos = 0
     vals, vecs = np.linalg.eigh(y_mat[0])
     for j, val in enumerate(vals):
-        if abs(val)>threshold:
+        if abs(val) > threshold:
             term = 0
             for i, entry in enumerate(vecs[:, j]):
                 if abs(entry) > threshold:
@@ -232,15 +233,15 @@ def write_to_human_readable(sdpRelaxation, filename):
     for i, tmp in enumerate(sdpRelaxation.obj_facvar):
         candidates = [key for key, v in
                       sdpRelaxation.monomial_index.iteritems() if v == i+1]
-        if len(candidates)>0:
+        if len(candidates) > 0:
             monomial = convert_monomial_to_string(candidates[0])
         else:
             monomial = ""
         if tmp > 0:
-            objective+="+"+str(tmp)+monomial
+            objective += "+"+str(tmp)+monomial
             indices_in_objective.append(i)
         elif tmp < 0:
-            objective+=str(tmp)+monomial
+            objective += str(tmp)+monomial
             indices_in_objective.append(i)
 
     matrix_size = 0
@@ -269,7 +270,7 @@ def write_to_human_readable(sdpRelaxation, filename):
                 candidates = [key for key, v in
                               sdpRelaxation.monomial_index.iteritems()
                               if v == k]
-                if len(candidates)>0:
+                if len(candidates) > 0:
                     monomial = convert_monomial_to_string(candidates[0])
                 else:
                     monomial = ""
@@ -277,7 +278,7 @@ def write_to_human_readable(sdpRelaxation, filename):
                 if matrix[offset+i][offset+j] == "0":
                     matrix[offset+i][offset+j] = ("%s%s" % (value, monomial))
                 else:
-                    if value>0:
+                    if value > 0:
                         matrix[offset+i][offset+j] += ("+%s%s" % (value, monomial))
                     else:
                         matrix[offset+i][offset+j] += ("%s%s" % (value, monomial))
@@ -286,6 +287,7 @@ def write_to_human_readable(sdpRelaxation, filename):
     f = open(filename, 'w')
     f.write("Objective:" + objective + "\n")
     for matrix_line in matrix:
-        f.write(str(list(matrix_line)).replace('[','').replace(']','').replace('\'',''))
+        f.write(str(list(matrix_line)).replace('[', '').replace(']', '')
+                .replace('\'', ''))
         f.write('\n')
     f.close()
