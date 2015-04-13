@@ -11,9 +11,10 @@ from sympy.core import S, Symbol, Pow, Number, expand
 from sympy.physics.quantum.operator import HermitianOperator, Operator
 from sympy.physics.quantum.dagger import Dagger
 from sympy.physics.quantum.qexpr import split_commutative_parts
-import sys
-if sys.version.find("PyPy") == -1:
+try:
     from scipy.sparse import lil_matrix
+except ImportError:
+    from .sparse_utils import lil_matrix
 
 
 def flatten(lol):
