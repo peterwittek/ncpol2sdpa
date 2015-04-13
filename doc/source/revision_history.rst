@@ -1,6 +1,9 @@
 Revision History
 ****************
 
+**Since 1.7** 
+  - Fixed: Determining degree of polynomial also works when coefficient is complex.
+
 **Version 1.7 (2015-03-23)**
 
   - New: the function ``find_rank_loop`` aids the detection of a rank loop.

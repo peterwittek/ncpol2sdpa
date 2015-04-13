@@ -7,7 +7,7 @@ Created on Thu May  2 16:03:05 2013
 
 @author: Peter Wittek
 """
-from sympy.core import S, Symbol, Pow, Number, expand
+from sympy.core import S, Symbol, Pow, Number, expand, I
 from sympy.physics.quantum.operator import HermitianOperator, Operator
 from sympy.physics.quantum.dagger import Dagger
 from sympy.physics.quantum.qexpr import split_commutative_parts
@@ -383,7 +383,7 @@ def ncdegree(polynomial):
         for variable in monomial.as_coeff_mul()[1]:
             if isinstance(variable, Pow):
                 subdegree += variable.exp
-            elif not isinstance(variable, Number):
+            elif not isinstance(variable, Number) and variable != I:
                 subdegree += 1
         if subdegree > degree:
             degree = subdegree
