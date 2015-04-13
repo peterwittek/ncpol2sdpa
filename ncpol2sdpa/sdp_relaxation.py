@@ -22,7 +22,7 @@ except ImportError:
 from .nc_utils import apply_substitutions, build_monomial, \
     pick_monomials_up_to_degree, ncdegree, \
     separate_scalar_factor, flatten, build_permutation_matrix, \
-    simplify_polynomial, get_monomials, unique
+    simplify_polynomial, get_monomials, unique, iscomplex
 from .chordal_extension import generate_clique, find_clique_index
 from .faacets_utils import get_faacets_moment_matrix, collinsgisin_to_faacets
 
@@ -84,6 +84,7 @@ class SdpRelaxation(object):
         self.level = 0
         self.clique_set = []
         self.monomial_sets = []
+        self.complex_matrix = False
         if hierarchy in self.hierarchy_types:
             self.hierarchy = hierarchy
         else:
@@ -605,6 +606,8 @@ class SdpRelaxation(object):
                 ineq_order = 2 * self.level
             else:
                 ineq_order = ncdegree(constraint)
+                if iscomplex(constraint):
+                    self.complex_matrix = True
             if ineq_order > 2 * self.level:
                 degree_warning = True
             localization_order = int(floor((2 * self.level - ineq_order) / 2))
@@ -879,6 +882,9 @@ class SdpRelaxation(object):
             self.substitutions = {}
         else:
             self.substitutions = substitutions
+            for lhs, rhs in substitutions.items():
+                if iscomplex(lhs) or iscomplex(rhs):
+                    self.complex_matrix = True
         # Generate monomials and remove substituted ones
         self.__generate_monomial_sets(objective, inequalities, equalities,
                                       extramonomials)
@@ -896,8 +902,12 @@ class SdpRelaxation(object):
                     self.n_vars += self.n_vars + 1
                 else:
                     self.n_vars += (self.block_struct[0]**2)/2
+        if self.complex_matrix:
+            dtype = np.complex128
+        else:
+            dtype = np.float64
         self.F_struct = lil_matrix((sum([bs ** 2 for bs in self.block_struct]),
-                                    self.n_vars + 1))
+                                    self.n_vars + 1), dtype=dtype)
 
         if self.verbose > 0:
             print(('Estimated number of SDP variables: %d' % self.n_vars))
