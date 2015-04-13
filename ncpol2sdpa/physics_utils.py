@@ -192,7 +192,7 @@ def define_objective_with_I(I, A, B):
               solved by SDPA as minimization problem to find the maximum quantum
               violation.
     """
-    objective = 0
+    objective = I[0][0]
     i, j = 0, 1  # Row and column index in I
     for m_Bj in B:  # Define first row
         for Bj in m_Bj:
