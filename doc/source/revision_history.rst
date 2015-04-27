@@ -2,6 +2,7 @@ Revision History
 ****************
 
 **Since 1.7** 
+  - New: Complex moment matrix is embedded to real matrices in the SDPA export and the ``solve_sdp`` function.
   - Fixed: Determining degree of polynomial also works when coefficient is complex.
 
 **Version 1.7 (2015-03-23)**
