@@ -34,7 +34,7 @@ def convert_to_picos_extra_moment_matrix(sdpRelaxation):
                     x.append(sdpRelaxation.F_struct.data[row_offset+i][j])
                     Ix.append(i)
                     Jx.append(column-1)
-                    i0 = (i/block_size)+(i%block_size)*block_size
+                    i0 = (i//block_size)+(i%block_size)*block_size
                     if i != i0:
                         x.append(sdpRelaxation.F_struct.data[row_offset+i][j])
                         Ix.append(i0)
@@ -97,7 +97,7 @@ def convert_to_picos(sdpRelaxation):
                     x.append(sdpRelaxation.F_struct.data[row_offset+i][j])
                     Ix.append(i)
                     Jx.append(column-1)
-                    i0 = (i/block_size)+(i%block_size)*block_size
+                    i0 = (i//block_size)+(i%block_size)*block_size
                     if i != i0:
                         x.append(sdpRelaxation.F_struct.data[row_offset+i][j])
                         Ix.append(i0)
