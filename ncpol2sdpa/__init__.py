@@ -30,10 +30,8 @@ __all__ = ['SdpRelaxation',
            'pauli_constraints',
            'convert_to_mosek',
            'convert_to_picos',
-           'write_picos_to_sdpa',
-           'write_to_human_readable',
            'convert_to_picos_extra_moment_matrix',
-           'partial_transpose',
+           'write_to_human_readable',
            'sos_decomposition']
 
 from .sdp_relaxation import SdpRelaxation
@@ -46,5 +44,5 @@ from .physics_utils import bosonic_constraints, fermionic_constraints, \
     projective_measurement_constraints, \
     maximum_violation, define_objective_with_I
 from .mosek_utils import convert_to_mosek
-from .picos_utils import convert_to_picos, write_picos_to_sdpa, \
-    convert_to_picos_extra_moment_matrix, partial_transpose
+from .picos_utils import convert_to_picos, \
+    convert_to_picos_extra_moment_matrix

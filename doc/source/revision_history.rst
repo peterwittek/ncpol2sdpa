@@ -3,6 +3,7 @@ Revision History
 
 **Since 1.7** 
   - New: Complex moment matrix is embedded to real matrices in the SDPA export and the ``solve_sdp`` function.
+  - Changed: Legacy Picos code removed. Requirement is now Picos >=1.0.2.
   - Fixed: Determining degree of polynomial also works when coefficient is complex.
 
 **Version 1.7 (2015-03-23)**
