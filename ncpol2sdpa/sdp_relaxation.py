@@ -65,7 +65,7 @@ class SdpRelaxation(object):
     hierarchy_types = ["npa", "npa_chordal", "moroder"]
 
     def __init__(self, variables, nonrelaxed=None, verbose=0, hierarchy="npa",
-                 normalized=True, ppt=False):
+                 normalized=True, ppt=False, matrix_variables=None):
         """Constructor for the class.
         """
 
@@ -85,6 +85,10 @@ class SdpRelaxation(object):
         self.clique_set = []
         self.monomial_sets = []
         self.complex_matrix = False
+        if matrix_variables != None:
+            self.complex_matrix = True
+            self.normalized = False
+        self.matrix_variables = matrix_variables
         if hierarchy in self.hierarchy_types:
             self.hierarchy = hierarchy
         else:
@@ -115,6 +119,7 @@ class SdpRelaxation(object):
         coeff, monomial = monomial.as_coeff_Mul()
         k = 0
         # Have we seen this monomial before?
+        conjugate = False
         try:
             # If yes, then we improve sparsity by reusing the
             # previous variable to denote this entry in the matrix
@@ -123,11 +128,13 @@ class SdpRelaxation(object):
             # An extra round of substitutions is granted on the conjugate of
             # the monomial if all the variables are Hermitian
             need_new_variable = True
-            if self.is_hermitian_variables and ncdegree(monomial) > 2:
+            if self.is_hermitian_variables and \
+              (self.matrix_variables != None or ncdegree(monomial) > 2):
                 daggered_monomial = apply_substitutions(Dagger(monomial),
                                                         self.substitutions)
                 try:
                     k = self.monomial_index[daggered_monomial]
+                    conjugate = True
                     need_new_variable = False
                 except KeyError:
                     need_new_variable = True
@@ -137,7 +144,42 @@ class SdpRelaxation(object):
                 # the moment matrix
                 k = n_vars + 1
                 self.monomial_index[monomial] = k
+        if self.matrix_variables != None and conjugate:
+            k = -k
         return k, coeff
+
+    def __add_matrix_variable(self, row_offset, rowA, columnA, N, rowB,
+                              columnB, lenB, k, conjugate, coeff):
+        if conjugate:
+            imag = -1j
+        else:
+            imag = 1j
+
+        for sub_row in range(self.matrix_variables):
+            for sub_column in range(self.matrix_variables):
+                if conjugate:
+                    r, c = sub_column, sub_row
+                else:
+                    r,c = sub_row, sub_column
+                block_row_index = rowA*self.matrix_variables + r
+                block_column_index = columnA*self.matrix_variables + c
+                if block_row_index > block_column_index:
+                    k += 1
+                    continue
+                if block_row_index == block_column_index:
+                    imag_zero = 0
+                else:
+                    imag_zero = 1
+                value = coeff*(1+imag*imag_zero)
+                self.F_struct[row_offset +
+                              block_row_index*self.matrix_variables*N*lenB +
+                              rowB*self.matrix_variables*N +
+                              block_column_index*lenB +
+                              self.matrix_variables*columnB, k] = value
+                k += 1
+        k -= 1
+        return k
+
 
     def __push_monomial(self, monomial, n_vars, row_offset, rowA, columnA, N,
                         rowB, columnB, lenB):
@@ -145,9 +187,15 @@ class SdpRelaxation(object):
         if isinstance(monomial, Number) or isinstance(monomial, int) or isinstance(monomial, float):
             if rowA == 0 and columnA == 0 and rowB == 0 and columnB == 0 and \
               monomial == 1.0 and not self.normalized:
-                n_vars += 1
-                self.F_struct[row_offset + rowA * N*lenB +
-                              rowB * N + columnA * lenB + columnB, n_vars] = 1
+                if self.matrix_variables == None:
+                    n_vars += 1
+                    self.F_struct[row_offset + rowA * N*lenB +
+                                  rowB * N + columnA * lenB + columnB, n_vars] = 1
+                else:
+                    n_vars = self.__add_matrix_variable(row_offset, rowA,
+                                                        columnA, N, rowB,
+                                                        columnB, lenB,
+                                                        n_vars + 1, False, 1)
             else:
                 self.F_struct[row_offset + rowA * N*lenB +
                               rowB * N + columnA * lenB + columnB, 0] = monomial
@@ -158,12 +206,22 @@ class SdpRelaxation(object):
                                               rowB, columnB, lenB)
         elif monomial != 0:
             k, coeff = self.__process_monomial(monomial, n_vars)
+            # We push the entry to the moment matrix
+            if self.matrix_variables == None:
+                self.F_struct[row_offset + rowA * N*lenB +
+                              rowB * N +
+                              columnA * lenB + columnB, k] = coeff
+            else:
+                conjugate = False
+                if k<0:
+                    conjugate = True
+                    k = -k
+                k = self.__add_matrix_variable(row_offset, rowA,
+                                                        columnA, N, rowB,
+                                                        columnB, lenB,
+                                                        k, conjugate, coeff)
             if k > n_vars:
                 n_vars = k
-            # We push the entry to the moment matrix
-            self.F_struct[row_offset + rowA * N*lenB +
-                          rowB * N +
-                          columnA * lenB + columnB, k] = coeff
         return n_vars
 
     def __generate_moment_matrix(self, n_vars, block_index, processed_entries,
@@ -638,8 +696,10 @@ class SdpRelaxation(object):
             for _ in bounds:
                 self.localization_order.append(0)
                 self.block_struct.append(1)
-        #self.block_struct.append(-(self.block_struct[0]**2))
-        #self.block_struct.append(-2)
+        if self.matrix_variables != None:
+            self.block_struct =[self.matrix_variables*bs
+                                for bs in self.block_struct]
+
 
     def __generate_monomial_sets(self, objective, inequalities, equalities,
                                  extramonomials):
@@ -690,13 +750,16 @@ class SdpRelaxation(object):
 
                 # The minus one compensates for the constant term in the
                 # top left corner of the moment matrix
-                self.n_vars += int(n_monomials * (n_monomials + 1) / 2)
-                if self.hierarchy == "npa":
-                    self.n_vars -= 1
+                if self.matrix_variables == None:
+                    self.n_vars += int(n_monomials * (n_monomials + 1) / 2)
+                    if self.hierarchy == "npa" and self.normalized:
+                        self.n_vars -= 1
+                else:
+                    self.n_vars += int(n_monomials * (n_monomials + 1) / 2) *\
+                                   self.matrix_variables**2
         else:
             n_monomials = len(self.monomial_sets[0])*len(self.monomial_sets[1])
             self.n_vars += int(n_monomials * (n_monomials + 1) / 2)
-            self.n_vars -= 1
 
     def __add_non_relaxed(self):
         new_n_vars, block_index = 0, 0
@@ -906,7 +969,7 @@ class SdpRelaxation(object):
             dtype = np.complex128
         else:
             dtype = np.float64
-        self.F_struct = lil_matrix((sum([bs ** 2 for bs in self.block_struct]),
+        self.F_struct = lil_matrix((sum([bs**2 for bs in self.block_struct]),
                                     self.n_vars + 1), dtype=dtype)
 
         if self.verbose > 0:
