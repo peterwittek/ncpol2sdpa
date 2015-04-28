@@ -7,6 +7,7 @@ Created on Wed Dec 10 18:33:34 2014
 @author: Peter Wittek
 """
 from __future__ import print_function
+import numpy as np
 
 def convert_to_picos_extra_moment_matrix(sdpRelaxation):
     """Convert an SDP relaxation to a PICOS problem, returning the moment
@@ -22,8 +23,12 @@ def convert_to_picos_extra_moment_matrix(sdpRelaxation):
     import cvxopt as cvx
     P = pic.Problem()
     block_size = sdpRelaxation.block_struct[0]
-    X = P.add_variable('X', (block_size, block_size))
-    Y = P.add_variable('Y', (block_size, block_size))
+    if sdpRelaxation.F_struct.dtype == np.float64:
+        X = P.add_variable('X', (block_size, block_size))
+        Y = P.add_variable('Y', (block_size, block_size))
+    else:
+        X = P.add_variable('X', (block_size, block_size), vtype='complex')
+        Y = P.add_variable('Y', (block_size, block_size), vtype='complex')
     row_offset = 0
     for block_size in sdpRelaxation.block_struct:
         x, Ix, Jx = [], [], []
@@ -86,7 +91,10 @@ def convert_to_picos(sdpRelaxation):
     import cvxopt as cvx
     P = pic.Problem()
     block_size = sdpRelaxation.block_struct[0]
-    X = P.add_variable('X', (block_size, block_size))
+    if sdpRelaxation.F_struct.dtype == np.float64:
+        X = P.add_variable('X', (block_size, block_size), vtype="symmetric")
+    else:
+        X = P.add_variable('X', (block_size, block_size), vtype="hermitian")
     row_offset = 0
     for block_size in sdpRelaxation.block_struct:
         x, Ix, Jx = [], [], []
