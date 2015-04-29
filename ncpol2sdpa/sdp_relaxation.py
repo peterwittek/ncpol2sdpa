@@ -145,7 +145,6 @@ class SdpRelaxation(object):
                 k = n_vars + 1
                 self.monomial_index[monomial] = k
         if self.matrix_var_dim != None and conjugate:
-            self.monomial_index[monomial] = k
             k = -k
         return k, coeff
 
@@ -892,7 +891,6 @@ class SdpRelaxation(object):
         if objective is not None:
             if self.matrix_var_dim != None:
                 facvar = self.__get_trace_facvar(objective)
-                print(facvar)
             else:
                 facvar = self.__get_facvar(simplify_polynomial(objective,
                                                                self.substitutions))
