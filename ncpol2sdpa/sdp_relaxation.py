@@ -11,7 +11,7 @@ from __future__ import division, print_function
 from math import floor, copysign
 import numpy as np
 from sympy import S, Number
-from sympy.matrices import Matrix
+from sympy.matrices import Matrix, zeros
 from sympy.physics.quantum.dagger import Dagger
 import sys
 try:
@@ -65,7 +65,7 @@ class SdpRelaxation(object):
     hierarchy_types = ["npa", "npa_chordal", "moroder"]
 
     def __init__(self, variables, nonrelaxed=None, verbose=0, hierarchy="npa",
-                 normalized=True, ppt=False, matrix_variables=None):
+                 normalized=True, ppt=False, matrix_var_dim=None):
         """Constructor for the class.
         """
 
@@ -85,10 +85,10 @@ class SdpRelaxation(object):
         self.clique_set = []
         self.monomial_sets = []
         self.complex_matrix = False
-        if matrix_variables != None:
+        if matrix_var_dim != None:
             self.complex_matrix = True
             self.normalized = False
-        self.matrix_variables = matrix_variables
+        self.matrix_var_dim = matrix_var_dim
         if hierarchy in self.hierarchy_types:
             self.hierarchy = hierarchy
         else:
@@ -129,7 +129,7 @@ class SdpRelaxation(object):
             # the monomial if all the variables are Hermitian
             need_new_variable = True
             if self.is_hermitian_variables and \
-              (self.matrix_variables != None or ncdegree(monomial) > 2):
+              (self.matrix_var_dim != None or ncdegree(monomial) > 2):
                 daggered_monomial = apply_substitutions(Dagger(monomial),
                                                         self.substitutions)
                 try:
@@ -144,7 +144,8 @@ class SdpRelaxation(object):
                 # the moment matrix
                 k = n_vars + 1
                 self.monomial_index[monomial] = k
-        if self.matrix_variables != None and conjugate:
+        if self.matrix_var_dim != None and conjugate:
+            self.monomial_index[monomial] = k
             k = -k
         return k, coeff
 
@@ -154,15 +155,14 @@ class SdpRelaxation(object):
             imag = -1j
         else:
             imag = 1j
-
-        for sub_row in range(self.matrix_variables):
-            for sub_column in range(self.matrix_variables):
+        for sub_row in range(self.matrix_var_dim):
+            for sub_column in range(self.matrix_var_dim):
                 if conjugate:
                     r, c = sub_column, sub_row
                 else:
                     r,c = sub_row, sub_column
-                block_row_index = rowA*self.matrix_variables + r
-                block_column_index = columnA*self.matrix_variables + c
+                block_row_index = rowA*self.matrix_var_dim + r
+                block_column_index = columnA*self.matrix_var_dim + c
                 if block_row_index > block_column_index:
                     k += 1
                     continue
@@ -172,10 +172,10 @@ class SdpRelaxation(object):
                     imag_zero = 1
                 value = coeff*(1+imag*imag_zero)
                 self.F_struct[row_offset +
-                              block_row_index*self.matrix_variables*N*lenB +
-                              rowB*self.matrix_variables*N +
+                              block_row_index*self.matrix_var_dim*N*lenB +
+                              rowB*self.matrix_var_dim*N +
                               block_column_index*lenB +
-                              self.matrix_variables*columnB, k] = value
+                              self.matrix_var_dim*columnB, k] = value
                 k += 1
         k -= 1
         return k
@@ -187,7 +187,7 @@ class SdpRelaxation(object):
         if isinstance(monomial, Number) or isinstance(monomial, int) or isinstance(monomial, float):
             if rowA == 0 and columnA == 0 and rowB == 0 and columnB == 0 and \
               monomial == 1.0 and not self.normalized:
-                if self.matrix_variables == None:
+                if self.matrix_var_dim == None:
                     n_vars += 1
                     self.F_struct[row_offset + rowA * N*lenB +
                                   rowB * N + columnA * lenB + columnB, n_vars] = 1
@@ -207,7 +207,7 @@ class SdpRelaxation(object):
         elif monomial != 0:
             k, coeff = self.__process_monomial(monomial, n_vars)
             # We push the entry to the moment matrix
-            if self.matrix_variables == None:
+            if self.matrix_var_dim == None:
                 self.F_struct[row_offset + rowA * N*lenB +
                               rowB * N +
                               columnA * lenB + columnB, k] = coeff
@@ -371,6 +371,38 @@ class SdpRelaxation(object):
                 element)
             facvar[k] += coeff
         return facvar
+
+    def __get_trace_facvar(self, polynomial):
+        """Return dense vector representation of a polynomial. This function is
+        nearly identical to __push_facvar_sparse, but instead of pushing
+        sparse entries to the constraint matrices, it returns a dense
+        vector.
+        """
+        facvar = [0] * (self.n_vars + 1)
+        F = {}
+        for i in range(self.matrix_var_dim):
+            for j in range(self.matrix_var_dim):
+                for key, value in polynomial[i, j].as_coefficients_dict().items():
+                    skey = apply_substitutions(key, self.substitutions)
+                    try:
+                        Fk = F[skey]
+                    except KeyError:
+                        Fk = zeros(self.matrix_var_dim, self.matrix_var_dim)
+                    Fk[i, j] += value
+                    F[skey] = Fk
+        #This is the tracing part
+        for key, Fk in F.items():
+            if key == S.One:
+                k = 1
+            else:
+                k = self.monomial_index[key]
+            for i in range(self.matrix_var_dim):
+                for j in range(self.matrix_var_dim):
+                    sym_matrix = zeros(self.matrix_var_dim, self.matrix_var_dim)
+                    sym_matrix[i, j] = 1
+                    facvar[k+i*self.matrix_var_dim+j] = (sym_matrix*Fk).trace()
+        return facvar
+
 
     def __process_inequalities(
             self, inequalities, block_index):
@@ -696,8 +728,8 @@ class SdpRelaxation(object):
             for _ in bounds:
                 self.localization_order.append(0)
                 self.block_struct.append(1)
-        if self.matrix_variables != None:
-            self.block_struct =[self.matrix_variables*bs
+        if self.matrix_var_dim != None:
+            self.block_struct =[self.matrix_var_dim*bs
                                 for bs in self.block_struct]
 
 
@@ -750,13 +782,13 @@ class SdpRelaxation(object):
 
                 # The minus one compensates for the constant term in the
                 # top left corner of the moment matrix
-                if self.matrix_variables == None:
+                if self.matrix_var_dim == None:
                     self.n_vars += int(n_monomials * (n_monomials + 1) / 2)
                     if self.hierarchy == "npa" and self.normalized:
                         self.n_vars -= 1
                 else:
                     self.n_vars += int(n_monomials * (n_monomials + 1) / 2) *\
-                                   self.matrix_variables**2
+                                   self.matrix_var_dim**2
         else:
             n_monomials = len(self.monomial_sets[0])*len(self.monomial_sets[1])
             self.n_vars += int(n_monomials * (n_monomials + 1) / 2)
@@ -858,10 +890,14 @@ class SdpRelaxation(object):
         :type extraobjexpr: str.
         """
         if objective is not None:
-            facvar = self.__get_facvar(simplify_polynomial(objective,
-                                                           self.substitutions))
-            self.obj_facvar = facvar[1:]
+            if self.matrix_var_dim != None:
+                facvar = self.__get_trace_facvar(objective)
+                print(facvar)
+            else:
+                facvar = self.__get_facvar(simplify_polynomial(objective,
+                                                               self.substitutions))
 
+            self.obj_facvar = facvar[1:]
             if self.verbose > 0 and facvar[0] != 0:
                 print("Warning: The objective function has a non-zero "\
                       "constant term. It is not included in the SDP objective.")
