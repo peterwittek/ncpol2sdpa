@@ -3,3 +3,4 @@
   - Implement logging interface.
   - Start using unit testing.  
   - Support complex moment matrices in Picos and Mosek exports too.
+  - Support for steering hierarchy.

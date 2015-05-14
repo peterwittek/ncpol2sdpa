@@ -984,6 +984,15 @@ class SdpRelaxation(object):
                              linear combination of moment matrix elements to be
                              included in the objective function.
         :type extraobjexpr: str.
+        :param localizing_monomials: Optional parameter to specify sets of
+                                     localizing monomials for each constraint.
+                                     The internal order of constraints is
+                                     inequalities first, followed by the
+                                     equalities. If the parameter is specified,
+                                     but for a certain constraint the automatic
+                                     localization is requested, leave None in
+                                     its place in this parameter.
+        :type localizing_monomials: list of list of `sympy.core.exp.Expr`.
         """
         if self.level < -1:
             raise Exception("Invalid level of relaxation")

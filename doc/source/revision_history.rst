@@ -3,6 +3,7 @@ Revision History
 
 **Since 1.7** 
   - New: Complex moment matrix is embedded to real matrices in the SDPA export and the ``solve_sdp`` function.
+  - New: Localizing monomials can be fine-tuned by supplying them to ``get_relaxation`` through the optional parameter ``localizing_monomials``.
   - Changed: Legacy Picos code removed. Requirement is now Picos >=1.0.2.
   - Fixed: Determining degree of polynomial also works when coefficient is complex.
 
