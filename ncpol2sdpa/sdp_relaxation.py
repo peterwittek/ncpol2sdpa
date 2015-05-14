@@ -403,8 +403,8 @@ class SdpRelaxation(object):
         return facvar
 
 
-    def __process_inequalities(
-            self, inequalities, block_index):
+    def __process_inequalities(self, inequalities, block_index,
+                               localizing_monomial_sets):
         """Generate localizing matrices
 
         Arguments:
@@ -426,7 +426,11 @@ class SdpRelaxation(object):
                 continue
             localization_order = self.localization_order[
                 block_index - initial_block_index - 1]
-            if self.hierarchy == "npa_chordal":
+            if localizing_monomial_sets is not None and \
+              k<len(localizing_monomial_sets) and\
+              localizing_monomial_sets[k] is not None:
+                  monomials = localizing_monomial_sets[k]
+            elif self.hierarchy == "npa_chordal":
                 index = find_clique_index(self.variables, ineq, self.clique_set)
                 monomials = \
                  pick_monomials_up_to_degree(self.monomial_sets[index],
@@ -650,7 +654,8 @@ class SdpRelaxation(object):
     ########################################################################
 
     def __calculate_block_structure(self, inequalities, equalities, bounds,
-                                    psd, extramomentmatrix, removeequalities):
+                                    psd, extramomentmatrix, removeequalities,
+                                    localizing_monomial_sets):
         """Calculates the block_struct array for the output file.
         """
         self.block_struct = []
@@ -689,6 +694,7 @@ class SdpRelaxation(object):
             constraints = enumerate(flatten([inequalities]))
         else:
             constraints = enumerate(flatten([inequalities, equalities]))
+
         for k, constraint in constraints:
             # Find the order of the localizing matrix
             if isinstance(constraint, str):
@@ -701,7 +707,10 @@ class SdpRelaxation(object):
                 degree_warning = True
             localization_order = int(floor((2 * self.level - ineq_order) / 2))
             self.localization_order.append(localization_order)
-            if self.hierarchy == "npa_chordal":
+            if localizing_monomial_sets is not None and \
+              localizing_monomial_sets[k] is not None:
+                  localizing_monomials = localizing_monomial_sets[k]
+            elif self.hierarchy == "npa_chordal":
                 index = find_clique_index(self.variables, constraint,
                                           self.clique_set)
                 localizing_monomials = \
@@ -818,7 +827,8 @@ class SdpRelaxation(object):
 
     def process_constraints(self, inequalities=None, equalities=None,
                             bounds=None, psd=None, block_index=0,
-                            removeequalities=False):
+                            removeequalities=False,
+                            localizing_monomial_sets=None):
         """Process the constraints and generate localizing matrices. Useful only
         if the moment matrix already exists. Call it if you want to replace your
         constraints. The number of the respective types of constraints and the
@@ -853,7 +863,8 @@ class SdpRelaxation(object):
         if bounds is not None:
             for bound in bounds:
                 constraints.append(bound)
-        self.__process_inequalities(constraints, block_index)
+        self.__process_inequalities(constraints, block_index,
+                                    localizing_monomial_sets)
         if removeequalities and equalities is not None:
             A = self.__process_equalities(equalities, flatten(self.monomial_sets))
             self.__remove_equalities(equalities, A)
@@ -897,8 +908,9 @@ class SdpRelaxation(object):
 
             self.obj_facvar = facvar[1:]
             if self.verbose > 0 and facvar[0] != 0:
-                print("Warning: The objective function has a non-zero "\
-                      "constant term. It is not included in the SDP objective.")
+                print("Warning: The objective function has a non-zero %s"\
+                      "constant term. It is not included in the SDP objective."
+                      % facvar[0])
         else:
             self.obj_facvar = self.__get_facvar(0)
         if extraobjexpr is not None:
@@ -928,7 +940,8 @@ class SdpRelaxation(object):
     def get_relaxation(self, level, objective=None, inequalities=None,
                        equalities=None, substitutions=None, bounds=None,
                        psd=None, removeequalities=False, extramonomials=None,
-                       extramomentmatrices=None, extraobjexpr=None):
+                       extramomentmatrices=None, extraobjexpr=None,
+                       localizing_monomials=None):
         """Get the SDP relaxation of a noncommutative polynomial optimization
         problem.
 
@@ -987,7 +1000,8 @@ class SdpRelaxation(object):
                                       extramonomials)
         # Figure out basic structure of the SDP
         self.__calculate_block_structure(inequalities, equalities, bounds, psd,
-                                         extramomentmatrices, removeequalities)
+                                         extramomentmatrices, removeequalities,
+                                         localizing_monomials)
         self.__estimate_n_vars()
         if extramomentmatrices is not None:
             for parameters in extramomentmatrices:
@@ -1046,4 +1060,5 @@ class SdpRelaxation(object):
         # Process constraints
         self.constraint_starting_block = block_index
         self.process_constraints(inequalities, equalities, bounds, psd,
-                                 block_index, removeequalities)
+                                 block_index, removeequalities,
+                                 localizing_monomials)
