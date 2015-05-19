@@ -400,6 +400,7 @@ class SdpRelaxation(object):
                     sym_matrix = zeros(self.matrix_var_dim, self.matrix_var_dim)
                     sym_matrix[i, j] = 1
                     facvar[k+i*self.matrix_var_dim+j] = (sym_matrix*Fk).trace()
+        facvar = [float(f) for f in facvar]
         return facvar
 
 
