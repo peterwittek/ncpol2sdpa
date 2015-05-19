@@ -27,17 +27,12 @@ def flatten(lol):
     """
     new_list = []
     for element in lol:
-        if element is None or (isinstance(element, list) and len(element) == 0):
+        if element is None:
             continue
-        elif isinstance(element, Symbol) or isinstance(element, Operator) or\
-          isinstance(element, int) or isinstance(element, float) or\
-          isinstance(element, Number):
+        elif type(element) is not list:
             new_list.append(element)
-        elif isinstance(element[0], list):
-            element = flatten(element)
-            new_list.extend(element)
-        else:
-            new_list.extend(element)
+        elif len(element)>0:
+            new_list.extend(flatten(element))
     return new_list
 
 
