@@ -11,7 +11,7 @@ from subprocess import call
 import tempfile
 import os
 import numpy as np
-from .nc_utils import pick_monomials_up_to_degree, convert_monomial_to_string
+from .nc_utils import convert_monomial_to_string
 
 def parse_solution_matrix(iterator):
     solution_matrix = []
@@ -65,8 +65,7 @@ def read_sdpa_out(filename, solutionmatrix=False):
         return primal, dual
 
 
-def solve_sdp(sdpRelaxation, solutionmatrix=False,
-              solverexecutable="sdpa"):
+def solve_with_sdpa(sdpRelaxation, solverparameters=None):
     """Helper function to write out the SDP problem to a temporary
     file, call the solver, and parse the output.
 
@@ -82,6 +81,9 @@ def solve_sdp(sdpRelaxation, solutionmatrix=False,
     :returns: tuple of float -- the primal and dual solution of the SDP,
               respectively.
     """
+    solverexecutable = "sdpa"
+    if solverparameters is not None and solverparameters.has_key("executable"):
+        solverexecutable = solverparameters["executable"]
     primal, dual = 0, 0
     tempfile_ = tempfile.NamedTemporaryFile()
     tmp_filename = tempfile_.name
@@ -95,74 +97,11 @@ def solve_sdp(sdpRelaxation, solutionmatrix=False,
                  stdout=fnull, stderr=fnull)
     else:
         call([solverexecutable, tmp_dats_filename, tmp_out_filename])
-    if solutionmatrix:
-        primal, dual, x_mat, y_mat = read_sdpa_out(tmp_out_filename,
-                                                   solutionmatrix)
-    else:
-        primal, dual = read_sdpa_out(tmp_out_filename)
+    primal, dual, x_mat, y_mat = read_sdpa_out(tmp_out_filename, True)
     if sdpRelaxation.verbose < 2:
         os.remove(tmp_dats_filename)
         os.remove(tmp_out_filename)
-    if solutionmatrix:
-        return primal, dual, x_mat, y_mat
-    else:
-        return primal, dual
-
-def find_rank_loop(sdpRelaxation, x_mat, base_level=0):
-    """Helper function to detect rank loop in the solution matrix.
-
-    :param sdpRelaxation: The SDP relaxation to be solved.
-    :type sdpRelaxation: :class:`ncpol2sdpa.SdpRelaxation`.
-    :param x_mat: The solution of the moment matrix.
-    :type x_mat: :class:`numpy.array`.
-    :param base_level: Optional parameter for specifying the lower level
-                       relaxation for which the rank loop should be tested
-                       against.
-    :type base_level: int.
-    :returns: list of int -- the ranks of the solution matrix with in the
-                             order of increasing degree.
-    """
-    ranks = []
-    from numpy.linalg import matrix_rank
-    if sdpRelaxation.hierarchy != "npa":
-        raise Exception("The detection of rank loop is only implemented for \
-                         the NPA hierarchy")
-    if base_level == 0:
-        levels = range(1, sdpRelaxation.level + 1)
-    else:
-        levels = [base_level]
-    for level in levels:
-        base_monomials = \
-          pick_monomials_up_to_degree(sdpRelaxation.monomial_sets[0], level)
-        ranks.append(matrix_rank(x_mat[:len(base_monomials),
-                                       :len(base_monomials)]))
-    ranks.append(matrix_rank(x_mat))
-    return ranks
-
-def sos_decomposition(sdpRelaxation, y_mat, threshold=0.0):
-    """Given a solution of the dual problem, it returns the SOS
-    decomposition. Currently limited to unconstrained problems.
-
-    :param sdpRelaxation: The SDP relaxation to be solved.
-    :type sdpRelaxation: :class:`ncpol2sdpa.SdpRelaxation`.
-    :param y_mat: The dual solution of the problem.
-    :type y_mat: :class:`numpy.array`.
-    :param threshold: Optional parameter for specifying the threshold value
-                      below which the eigenvalues and entries of the
-                      eigenvectors are disregarded.
-    :type threshold: float.
-    """
-    sos = 0
-    vals, vecs = np.linalg.eigh(y_mat[0])
-    for j, val in enumerate(vals):
-        if abs(val) > threshold:
-            term = 0
-            for i, entry in enumerate(vecs[:, j]):
-                if abs(entry) > threshold:
-                    term += np.sqrt(val)*entry*sdpRelaxation.monomial_sets[0][i]
-            sos += term**2
-    return sos
-
+    return primal, dual, x_mat, y_mat
 
 def convert_row_to_sdpa_index(block_struct, row_offsets, row):
     """Helper function to map to sparse SDPA index values.

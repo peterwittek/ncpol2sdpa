@@ -8,7 +8,7 @@ Created on Fri May 16 14:27:47 2014
 """
 from sympy.physics.quantum.dagger import Dagger
 from .nc_utils import generate_variables, flatten
-from .sdpa_utils import solve_sdp
+from .solver_common import solve_sdp
 from .sdp_relaxation import SdpRelaxation
 
 
@@ -264,4 +264,5 @@ def maximum_violation(A_configuration, B_configuration, I, level):
     sdpRelaxation = SdpRelaxation(flatten([A, B]), verbose=0)
     sdpRelaxation.get_relaxation(level, objective=objective,
                                  substitutions=substitutions)
-    return solve_sdp(sdpRelaxation)
+    primal, dual, _, _ = solve_sdp(sdpRelaxation)
+    return primal, dual
