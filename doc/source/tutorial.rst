@@ -197,8 +197,8 @@ monomial by calling
 
     save_monomial_index("monomials.txt", sdpRelaxation.monomial_index)
 
-Defining and Solving a Optimization Problem of Noncommuting Variables
-=====================================================================
+Defining and Solving an Optimization Problem of Noncommuting Variables
+======================================================================
 Consider a slight variation of the problem discussed in the previous sections: 
 change the algebra of the variables from commutative to Hermitian noncommutative, and use 
 the following objective function:

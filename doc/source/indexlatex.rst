@@ -10,6 +10,7 @@ Ncpol2sdpa User's Guide
   
    introduction.rst
    download.rst
+   tutorial.rst
    examples.rst
    revision_history.rst
    reference.rst

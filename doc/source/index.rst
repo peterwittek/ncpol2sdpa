@@ -5,6 +5,7 @@
    :maxdepth: 2
    
    download.rst
+   tutorial.rst
    exampleshtml.rst
    revision_history.rst
    reference.rst
