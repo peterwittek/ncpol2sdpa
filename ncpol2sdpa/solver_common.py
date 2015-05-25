@@ -5,8 +5,10 @@ Created on Fri May 22 18:05:24 2015
 @author: Peter Wittek
 """
 import numpy as np
-from .nc_utils import pick_monomials_up_to_degree
-from .sdpa_utils import solve_with_sdpa
+from sympy import expand
+from .nc_utils import pick_monomials_up_to_degree, simplify_polynomial, \
+                      apply_substitutions, build_monomial
+from .sdpa_utils import solve_with_sdpa, convert_row_to_sdpa_index
 from .mosek_utils import solve_with_mosek
 
 def solve_sdp(sdpRelaxation, solver="sdpa", solverparameters=None):
@@ -69,3 +71,43 @@ def sos_decomposition(sdpRelaxation, y_mat, threshold=0.0):
                     term += np.sqrt(val)*entry*sdpRelaxation.monomial_sets[0][i]
             sos += term**2
     return sos
+
+def get_index_of_monomial(monomial, sdpRelaxation):
+    k = sdpRelaxation.monomial_index[monomial]
+    Fk = sdpRelaxation.F_struct[:, k]
+    for row in range(len(Fk.rows)):
+        if Fk.rows[row] != []:
+            block_index, i, j = \
+              convert_row_to_sdpa_index(sdpRelaxation.block_struct, [0], row)
+            if block_index > 0:
+                return -1, -1
+            else:
+                return i, j
+
+def get_xmat_value(monomial, sdpRelaxation, x_mat):
+    """Given a solution of the primal problem and a monomial, it returns the
+    value for the monomial in the solution matrix.
+
+    :param monomial: The monomial for which the value is requested.
+    :type monomial: :class:`sympy.core.exp.Expr`.
+    :param sdpRelaxation: The SDP relaxation to be solved.
+    :type sdpRelaxation: :class:`ncpol2sdpa.SdpRelaxation`.
+    :param x_mat: The primal solution of the problem.
+    :type x_mat: list of :class:`numpy.array`.
+    """
+
+    polynomial = expand(simplify_polynomial(monomial,
+                                            sdpRelaxation.substitutions))
+
+    if polynomial.is_Mul:
+        elements = [polynomial]
+    else:
+        elements = polynomial.as_coeff_mul()[1][0].as_coeff_add()[1]
+
+    result = 0
+    for element in elements:
+        element, _ = build_monomial(element)
+        element = apply_substitutions(element, sdpRelaxation.substitutions)
+        i, j = get_index_of_monomial(element, sdpRelaxation)
+        result += x_mat[0][i, j]
+    return result

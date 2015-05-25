@@ -24,6 +24,7 @@ __all__ = ['SdpRelaxation',
            'flatten',
            'get_neighbors',
            'solve_sdp',
+           'get_xmat_value',
            'write_to_sdpa',
            'find_rank_loop',
            'read_sdpa_out',
@@ -38,7 +39,8 @@ from .sdp_relaxation import SdpRelaxation
 from .nc_utils import generate_variables, get_ncmonomials, ncdegree, flatten, \
                       save_monomial_index
 from .sdpa_utils import write_to_sdpa, read_sdpa_out, write_to_human_readable
-from .solver_common import solve_sdp, find_rank_loop, sos_decomposition
+from .solver_common import solve_sdp, find_rank_loop, sos_decomposition, \
+                           get_xmat_value
 from .physics_utils import bosonic_constraints, fermionic_constraints, \
     pauli_constraints, get_neighbors, correlator, generate_measurements, \
     projective_measurement_constraints, \

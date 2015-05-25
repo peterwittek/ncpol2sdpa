@@ -17,23 +17,30 @@ def streamprinter(text):
     sys.stdout.write(text)
     sys.stdout.flush()
 
-def moseksol_to_xmat(vec):
-    v = len(vec)
-    n = int(np.sqrt(1+8*v)-1)/2
-    if n*(n+1)/2 != v:
+def moseksol_to_xmat(vec, block_struct):
+    n = int(np.sqrt(1+8*len(vec))-1)/2
+    if n*(n+1)/2 != len(vec):
         raise ValueError('vec should be of dimension n(n+1)/2')
-    M = np.zeros((n, n))
-    row = 0
-    column = 0
-    for v in vec:
-        if row == n:
-            column += 1
-            row = column
-        M[row, column] = v
-        M[column, row] = v
-        row += 1
-
-    return M
+    M = np.zeros((block_struct[0], block_struct[0]))
+    row, column, block, index = 0, 0, 0, 0
+    result = []
+    while True:
+        if column == block_struct[block]:
+            row += 1
+            column = row
+            index += sum(block_struct[block+1:])
+        if row == block_struct[block]:
+            result.append(M.copy())
+            block += 1
+            if block == len(block_struct):
+                break
+            M = np.zeros((block_struct[block], block_struct[block]))
+            row, column = 0, 0
+        M[row, column] = vec[index]
+        M[column, row] = vec[index]
+        index += 1
+        column += 1
+    return result
 
 def parse_mosek_solution(sdpRelaxation, task):
     import mosek
@@ -43,7 +50,10 @@ def parse_mosek_solution(sdpRelaxation, task):
     size_=sum(bs for bs in sdpRelaxation.block_struct)
     primal_solution = np.zeros(size_*(size_+1)/2)
     task.getbarxj(soltype, 0, primal_solution)
-    x_mat.append(moseksol_to_xmat(primal_solution))
+    y_mat = moseksol_to_xmat(primal_solution, sdpRelaxation.block_struct)
+    dual_solution = np.zeros(size_*(size_+1)/2)
+    task.getbarsj(soltype, 0, dual_solution)
+    x_mat = moseksol_to_xmat(dual_solution, sdpRelaxation.block_struct)
     return primal, dual, x_mat, y_mat
 
 def solve_with_mosek(sdpRelaxation, solverparameters=None):
