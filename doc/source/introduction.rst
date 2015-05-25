@@ -11,6 +11,7 @@ The objective is to be able to solve very large scale optimization problems. Exa
 - `Moroder <http://dx.doi.org/10.1103/PhysRevLett.111.030501>`_ hierarchy to enable PPT-style and other additional constraints.
 - Sums-of-square (SOS) decomposition based on the dual solution.
 - If using commutative variables, the hierarchy is identical to `Lasserre's <http://dx.doi.org/10.1137/S1052623400366802>`_. In this case, the functionality resembles the MATLAB toolboxes `Gloptipoly <http://homepages.laas.fr/henrion/software/gloptipoly/>`_, and, with the chordal extension, `SparsePOP <http://sparsepop.sourceforge.net/>`_.
+
 The implementation has an intuitive syntax for entering problems and it scales for a larger number of noncommutative variables using a sparse representation of the SDP problem. Further details are found in the following paper:
 
 Wittek, P. (2015). `Ncpol2sdpa -- Sparse Semidefinite Programming Relaxations for Polynomial Optimization Problems of Noncommuting Variables <http://arxiv.org/abs/1308.6029>`_. To Appear in ACM Transactions on Mathematical Software.

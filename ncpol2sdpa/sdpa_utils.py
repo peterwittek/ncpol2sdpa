@@ -41,11 +41,12 @@ def parse_solution_matrix(iterator):
 
 def read_sdpa_out(filename, solutionmatrix=False):
     """Helper function to parse the output file of SDPA.
+
     :param filename: The name of the SDPA output file.
     :type filename: str.
-    :param solutionmatrix: Optional parameter for retrieving the solution
-                           matrix.
+    :param solutionmatrix: Optional parameter for retrieving the solution matrix.
     :type solutionmatrix: bool.
+    :returns: tuple of two floats and optionally two lists of `numpy.array`
     """
     file_ = open(filename, 'r')
     for line in file_:

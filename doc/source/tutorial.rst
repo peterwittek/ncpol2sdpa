@@ -100,7 +100,7 @@ are based on SymPy.
 Above we must declare the variables as commutative. By default, the generated
 variables are noncommutative and non-Hermitian. With these variables, we can 
 define the objective and the inequality constraint. Notice that all 
-inequality-type constraints are assumed to be in the form $\ge 0$.
+inequality-type constraints are assumed to be in the form :math:`\ge 0`.
 
 ::
 

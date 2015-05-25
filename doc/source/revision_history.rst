@@ -1,7 +1,8 @@
 Revision History
 ****************
 
-**Since 1.7** 
+**Version 1.8 (2015-05-25)** 
+
   - New: Complex moment matrices are embedded to as real matrices in the SDPA export and the ``solve_sdp`` function.
   - New: Localizing monomials can be fine-tuned by supplying them to ``get_relaxation`` through the optional parameter ``localizing_monomials``.
   - New: `solve_sdp` can also solve a problem with Mosek.
