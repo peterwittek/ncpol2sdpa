@@ -84,6 +84,7 @@ class SdpRelaxation(object):
         self.level = 0
         self.clique_set = []
         self.monomial_sets = []
+        self.mark_conjugate = False
         self.complex_matrix = False
         if matrix_var_dim != None:
             self.complex_matrix = True
@@ -144,7 +145,7 @@ class SdpRelaxation(object):
                 # the moment matrix
                 k = n_vars + 1
                 self.monomial_index[monomial] = k
-        if self.matrix_var_dim != None and conjugate:
+        if (self.matrix_var_dim != None or self.mark_conjugate) and conjugate:
             k = -k
         return k, coeff
 
@@ -207,6 +208,10 @@ class SdpRelaxation(object):
             k, coeff = self.__process_monomial(monomial, n_vars)
             # We push the entry to the moment matrix
             if self.matrix_var_dim == None:
+                if self.mark_conjugate:
+                    if k<0:
+                        coeff = -coeff
+                        k = -k
                 self.F_struct[row_offset + rowA * N*lenB +
                               rowB * N +
                               columnA * lenB + columnB, k] = coeff
