@@ -11,14 +11,15 @@ SdpRelaxation. There are three steps to generate the relaxation:
 * Write the relaxation to a file or solve the problem.
 
 The second step is the most time consuming, often running for hours as
-the number of variables increases.
+the number of variables increases. Once the solution is obtained, it can
+be studied further with some helper functions.
 
 To instantiate the SdpRelaxation object, you need to specify the
 noncommuting variables:
 
 ::
 
-    X = ... # Define noncommuting variables
+    X = generate_variables(2, 'X')
     sdpRelaxation = SdpRelaxation(X)
 
 Getting the relaxation requires at least the level of relaxation:
@@ -35,9 +36,10 @@ The last step in is to write out the relaxation to a sparse SDPA file.
 The method (``write_to_sdpa``) takes one parameter, the file name.
 Alternatively, if SDPA is in the search path, then it can be solved by
 invoking a helper function (``solve_sdp``). Alternatively, MOSEK is
-also supported for writing a problem and solving it. Using a converter
-to PICOS, it is also possible to solve the problem with a range of
-other solvers, including CVXOPT.
+also supported for obtaining a solution by passing the parameter 
+``solver='mosek'`` to this function. Using a converter to PICOS, 
+it is also possible to solve the problem with a range of other solvers, 
+including CVXOPT.
 
 
 Example 1: Toy Example
@@ -145,7 +147,9 @@ function:
 
 This is close to the analytical optimum of :math:`-3/4`.
 
-If we solve the SDP with the arbitrary-precision solver ``sdpa_gmp``, we can find a rank loop at level two, indicating that convergence has been achieved. To see this, we read the solution file and analyse the ranks:
+If we solve the SDP with the arbitrary-precision solver ``sdpa_gmp``, 
+we can find a rank loop at level two, indicating that convergence has 
+been achieved. To see this, we read the solution file and analyse the ranks:
 
 ::
 
@@ -155,23 +159,11 @@ If we solve the SDP with the arbitrary-precision solver ``sdpa_gmp``, we can fin
 
 The output for this is ``[2, 2]``, clearly showing a rank loop.
 
-Example 2: Using MOSEK or PICOS
-==================================================
-
-Apart from SDPA, MOSEK also enjoys full support. Using the preliminaries
-of the problem outlined in Section [example1], once we have the
-relaxation, we can convert it to a MOSEK task and solve it:
-
-::
-
-    task = convert_to_mosek(sdpRelaxation)
-    task.optimize()
-    task.solutionsummary(mosek.streamtype.msg)
-
-Please ensure that the MOSEK installation is operational.
-
-A compatibility layer with PICOS allows calling a wider ranger of
-solvers. Assuming that the PICOS dependencies are in ``PYTHONPATH``, we
+Example 2: Additional manipulation of the generated SDPs with PICOS
+===================================================================
+A compatibility layer with PICOS allows additional manipulations of the 
+optimization problem and also calling a wider ranger of solvers. 
+Assuming that the PICOS dependencies are in ``PYTHONPATH``, we
 can pass an argument to the function ``get_relaxation`` to generate a
 PICOS optimization problem. Using the same example as before, we change
 the relevant function call to:
@@ -180,8 +172,15 @@ the relevant function call to:
 
     P = convert_to_picos(sdpRelaxation)
 
-This returns a PICOS problem, and with that, we can solve it with any
-solver that PICOS supports:
+This returns a PICOS problem. For instance, we can manually define the value
+of certain elements of the moment matrix before solving the SDP:
+
+::
+
+    X = P.get_variable('X')
+    P.add_constraint(X[0, 1] == 0.5)
+
+Finally we can solve the SDP with any of solvers that PICOS supports:
 
 ::
 
@@ -291,7 +290,9 @@ interpret.
                                  substitutions=substitutions)
     write_to_sdpa(sdpRelaxation, 'harmonic_oscillator.dat-s')                      
 
-The result is very close to zero, as the constant term is ignored in the objective function. The result is similarly precise for arbitrary numbers of oscillators.
+The result is very close to zero, as the constant term is ignored in the 
+objective function. The result is similarly precise for arbitrary numbers 
+of oscillators.
 
 It is remarkable that we get the correct value at the first level of
 relaxation, but this property is typical for bosonic systems (Navascués
@@ -463,7 +464,7 @@ If all we need is the partial positivity of the moment matrix, that is actually 
 ::
 
     sdpRelaxation = SdpRelaxation([flatten(A), flatten(B)], verbose=2,
-                                   hierarchy="moroder",ppt=True)
+                                   hierarchy="moroder", ppt=True)
     sdpRelaxation.get_relaxation(level, objective=objective,
                                  substitutions=substitutions)
 
