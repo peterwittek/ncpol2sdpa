@@ -2,9 +2,10 @@ Revision History
 ****************
 
 **Since 1.7** 
-  - New: Complex moment matrix is embedded to real matrices in the SDPA export and the ``solve_sdp`` function.
+  - New: Complex moment matrices are embedded to as real matrices in the SDPA export and the ``solve_sdp`` function.
   - New: Localizing monomials can be fine-tuned by supplying them to ``get_relaxation`` through the optional parameter ``localizing_monomials``.
   - New: `solve_sdp` can also solve a problem with Mosek.
+  - New: The function `get_xmat_value` returns the matching value for a monomial from a solution matrix, given the relaxation and the solution.
   - Changed: `solve_sdp` no longer accepts parameters `solutionmatrix` and `solverexecutable`. All parameters are now passed via the solverparameters dictionary.
   - Changed: Legacy Picos code removed. Requirement is now Picos >=1.0.2.
   - Fixed: Determining degree of polynomial also works when coefficient is complex.

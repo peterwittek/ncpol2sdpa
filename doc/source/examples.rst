@@ -1,192 +1,8 @@
 ********
 Examples
 ********
-The implementation follows an object-oriented design. The core object is
-SdpRelaxation. There are three steps to generate the relaxation:
 
-* Instantiate the SdpRelaxation object.
-
-* Get the relaxation.
-
-* Write the relaxation to a file or solve the problem.
-
-The second step is the most time consuming, often running for hours as
-the number of variables increases. Once the solution is obtained, it can
-be studied further with some helper functions.
-
-To instantiate the SdpRelaxation object, you need to specify the
-noncommuting variables:
-
-::
-
-    X = generate_variables(2, 'X')
-    sdpRelaxation = SdpRelaxation(X)
-
-Getting the relaxation requires at least the level of relaxation:
-
-::
-
-    sdpRelaxation.get_relaxation(level)
-
-This will generate the moment matrix. Additional elements of the
-problem, such as the objective function, inequalities, equalities, and
-bounds on the variables.
-
-The last step in is to write out the relaxation to a sparse SDPA file.
-The method (``write_to_sdpa``) takes one parameter, the file name.
-Alternatively, if SDPA is in the search path, then it can be solved by
-invoking a helper function (``solve_sdp``). Alternatively, MOSEK is
-also supported for obtaining a solution by passing the parameter 
-``solver='mosek'`` to this function. Using a converter to PICOS, 
-it is also possible to solve the problem with a range of other solvers, 
-including CVXOPT.
-
-
-Example 1: Toy Example
-==================================================
-
-Consider the following polynomial optimization problem (Pironio,
-Navascués, and Acín 2010):
-
-.. math:: \min_{x\in \mathbb{R}^2}x_1x_2+x_2x_1
-
-such that
-
-.. math:: -x_2^2+x_2+0.5\geq 0
-
-.. math:: x_1^2-x_1=0.
-
-Entering the objective function and the inequality constraint is easy.
-The equality constraint is a simple projection. We either substitute two
-inequalities to replace the equality, or treat the equality as a
-monomial substitution. The second option leads to a sparser SDP
-relaxation. The code samples below take this approach. In this case, the
-monomial basis is :math:`\{1, x_1, x_2, x_1x_2, x_2x_1, x_2^2\}`. The
-corresponding relaxation is written as
-
-.. math:: \min_{y}y_{12}+y_{21}
-
-such that
-
-.. math::
-
-   \left[\begin{array}{c|cc|ccc}
-   1 & y_{1} & y_{2} & y_{12} & y_{21} & y_{22}\\
-   \hline{}
-   y_{1} & y_{1} & y_{12} & y_{12} & y_{121} & y_{122}\\
-   y_{2} & y_{21} & y_{22} & y_{212} & y_{221} & y_{222}\\
-   \hline{}
-   y_{21} & y_{21} & y_{212} & y_{212} & y_{2121} & y_{2122} \\
-   y_{12} & y_{121} & y_{122} & y_{1212} & y_{1221} & y_{1222}\\
-   y_{22} & y_{221} & y_{222} & y_{2212} & y_{2221} & y_{2222}
-   \end{array} \right] \succeq{}0
-
-.. math::
-
-   \left[ \begin{array}{c|cc}
-   -y_{22}+y_{2}+0.5 & -y_{221}+y_{21}+0.5y_{1} & -y_{222}+y_{22}+0.5y_{2}\\
-   \hline{}
-   -y_{221}+y_{21}+0.5y_{1} & -y_{1221}+y_{121}+0.5y_{1} & -y_{1222}+y_{122}+0.5y_{12}\\
-   -y_{222}+y_{22}+0.5y_{2} & -y_{1222}+y_{122}+0.5y_{12} & -y_{2222}+y_{222}+0.5y_{22}
-   \end{array}\right]\succeq{}0.
-
-Apart from the matrices being symmetric, notice other regular patterns
-between the elements. These are taken care of as additional constraints
-in the implementation. The optimum for the objective function is
-:math:`-3/4`. The implementation reads as follows:
-
-::
-
-    from ncpol2sdpa import *
-
-    # Number of Hermitian variables
-    n_vars = 2
-    # Level of relaxation
-    level = 2
-
-    # Get Hermitian variables
-    X = generate_variables(n_vars, hermitian=True)
-
-    # Define the objective function
-    obj = X[0] * X[1] + X[1] * X[0]
-
-    # Inequality constraints
-    inequalities = [-X[1] ** 2 + X[1] + 0.5]
-
-    # Simple monomial substitutions
-    monomial_substitution = {}
-    monomial_substitution[X[0] ** 2] = X[0]
-
-    # Obtain SDP relaxation
-    sdpRelaxation = SdpRelaxation(X)
-    sdpRelaxation.get_relaxation(level, objective=obj, inequalities=inequalities,
-                                 substitutions=monomial_substitution)
-    write_to_sdpa(sdpRelaxation, 'examplenc.dat-s')
-
-Any flavour of the SDPA family of solvers will solve the exported
-problem:
-
-::
-
-    $ sdpa examplenc.dat-s examplenc.out
-
-If the SDPA solver is in the search path, we can invoke the solver from
-Python:
-
-::
-
-    primal, dual = solve_sdp(sdpRelaxation)
-
-The relevant part of the output shows the optimum for the objective
-function:
-
-::
-
-    objValPrimal = -7.5000001721851994e-01
-    objValDual   = -7.5000007373829902e-01
-
-This is close to the analytical optimum of :math:`-3/4`.
-
-If we solve the SDP with the arbitrary-precision solver ``sdpa_gmp``, 
-we can find a rank loop at level two, indicating that convergence has 
-been achieved. To see this, we read the solution file and analyse the ranks:
-
-::
-
-    primal, dual, x_sol, y_sol = read_sdpa_out("examplenc.out", 
-                                               solutionmatrix=True)
-    print find_rank_loop(sdpRelaxation, x_sol[0])
-
-The output for this is ``[2, 2]``, clearly showing a rank loop.
-
-Example 2: Additional manipulation of the generated SDPs with PICOS
-===================================================================
-A compatibility layer with PICOS allows additional manipulations of the 
-optimization problem and also calling a wider ranger of solvers. 
-Assuming that the PICOS dependencies are in ``PYTHONPATH``, we
-can pass an argument to the function ``get_relaxation`` to generate a
-PICOS optimization problem. Using the same example as before, we change
-the relevant function call to:
-
-::
-
-    P = convert_to_picos(sdpRelaxation)
-
-This returns a PICOS problem. For instance, we can manually define the value
-of certain elements of the moment matrix before solving the SDP:
-
-::
-
-    X = P.get_variable('X')
-    P.add_constraint(X[0, 1] == 0.5)
-
-Finally we can solve the SDP with any of solvers that PICOS supports:
-
-::
-
-    P.solve()
-
-Example 3: Mixed-Level Relaxation of a Bell Inequality
+Example 1: Mixed-Level Relaxation of a Bell Inequality
 ======================================================
 
 It is often the case that moving to a higher-order relaxation is
@@ -227,7 +43,34 @@ monomials should be considered:
                                  substitutions=monomial_substitutions,
                                  extramonomials=AB)
 
-Example 4: Bosonic System
+Example 2: Additional manipulation of the generated SDPs with PICOS
+===================================================================
+A compatibility layer with PICOS allows additional manipulations of the 
+optimization problem and also calling a wider ranger of solvers. 
+Assuming that the PICOS dependencies are in ``PYTHONPATH``, we
+can pass an argument to the function ``get_relaxation`` to generate a
+PICOS optimization problem. Using the same example as before, we change
+the relevant function call to:
+
+::
+
+    P = convert_to_picos(sdpRelaxation)
+
+This returns a PICOS problem. For instance, we can manually define the value
+of certain elements of the moment matrix before solving the SDP:
+
+::
+
+    X = P.get_variable('X')
+    P.add_constraint(X[0, 1] == 0.5)
+
+Finally we can solve the SDP with any of solvers that PICOS supports:
+
+::
+
+    P.solve()
+
+Example 3: Bosonic System
 ==================================================
 
 The system Hamiltonian describes :math:`N` harmonic oscillators with a
@@ -262,33 +105,20 @@ interpret.
 
     from sympy.physics.quantum.dagger import Dagger
 
-    # level of relaxation
-    level = 1
-
-    # Number of variables
-    N = 4
-
-    # Parameters for the Hamiltonian
-    hbar, omega = 1, 1
+    level = 1          # Level of relaxation
+    N = 4              # Number of variables
+    hbar, omega = 1, 1 # Parameters for the Hamiltonian
 
     # Define ladder operators
     a = generate_variables(N, name='a')
 
-    hamiltonian = 0
-    for i in range(N):
-        hamiltonian += hbar*omega*(Dagger(a[i])*a[i]+0.5)
-
+    hamiltonian = sum(hbar*omega*(Dagger(ai)*ai+0.5) for ai in a)
     substitutions = bosonic_constraints(a)
-    inequalities = []
 
-    time0 = time.time()
-
-    print("Obtaining SDP relaxation...")
-    verbose = 1
     sdpRelaxation = SdpRelaxation(a)
     sdpRelaxation.get_relaxation(level, objective=hamiltonian,
                                  substitutions=substitutions)
-    write_to_sdpa(sdpRelaxation, 'harmonic_oscillator.dat-s')                      
+    primal, dual, _, _ = solve_sdp(sdpRelaxation)
 
 The result is very close to zero, as the constant term is ignored in the 
 objective function. The result is similarly precise for arbitrary numbers 
@@ -298,7 +128,7 @@ It is remarkable that we get the correct value at the first level of
 relaxation, but this property is typical for bosonic systems (Navascués
 et al. 2013).
 
-Example 5: Using the Nieto-Silleras Hierarchy
+Example 4: Using the Nieto-Silleras Hierarchy
 ==================================================
 
 One of the newer approaches to the SDP relaxations takes all joint
@@ -399,9 +229,10 @@ From here, the solution follows the usual pathway:
                                  bounds=bounds,
                                  substitutions=monomial_substitutions)
 
-    print(solve_sdp(sdpRelaxation))
+    primal, dual, x_mat, y_mat = solve_sdp(sdpRelaxation)
+    print(primal, dual)
 
-Example 6: Using the Moroder Hierarchy
+Example 5: Using the Moroder Hierarchy
 ==================================================
 
 This type of hierarchy allows for a wider range of constraints of the
@@ -470,7 +301,7 @@ If all we need is the partial positivity of the moment matrix, that is actually 
 
 
 
-Example 7: Sparse Relaxation with Chordal Extension
+Example 6: Sparse Relaxation with Chordal Extension
 ===================================================
 This method replicates the behaviour of SparsePOP (Waki et. al, 2008). It is 
 invoked by defining the hierarchy as ``"npa_chordal"``. The following is a 
@@ -486,4 +317,6 @@ simple example:
 
     sdpRelaxation = SdpRelaxation(X, hierarchy="npa_chordal")
     sdpRelaxation.get_relaxation(level, objective=obj, inequalities=inequalities)
-    print(solve_sdp(sdpRelaxation))
+    primal, dual, x_mat, y_mat = solve_sdp(sdpRelaxation)
+    print(primal, dual)
+

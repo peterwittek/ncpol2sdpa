@@ -45,7 +45,9 @@ def find_rank_loop(sdpRelaxation, x_mat, base_level=0):
           pick_monomials_up_to_degree(sdpRelaxation.monomial_sets[0], level)
         ranks.append(matrix_rank(x_mat[:len(base_monomials),
                                        :len(base_monomials)]))
-    ranks.append(matrix_rank(x_mat))
+
+    if x_mat.shape != (len(base_monomials), len(base_monomials)):
+        ranks.append(matrix_rank(x_mat))
     return ranks
 
 def sos_decomposition(sdpRelaxation, y_mat, threshold=0.0):
