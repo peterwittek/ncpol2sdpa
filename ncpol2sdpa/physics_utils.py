@@ -160,7 +160,7 @@ def projective_measurement_constraints(*parties):
         for measurement in party:
             for projector1 in measurement:
                 for projector2 in measurement:
-                    if (projector1==projector2):
+                    if projector1 == projector2:
                         substitutions[projector1**2] = projector1
                     else:
                         substitutions[projector1*projector2] = 0

@@ -160,7 +160,7 @@ class SdpRelaxation(object):
                 if conjugate:
                     r, c = sub_column, sub_row
                 else:
-                    r,c = sub_row, sub_column
+                    r, c = sub_row, sub_column
                 block_row_index = rowA*self.matrix_var_dim + r
                 block_column_index = columnA*self.matrix_var_dim + c
                 if block_row_index > block_column_index:
@@ -209,7 +209,7 @@ class SdpRelaxation(object):
             # We push the entry to the moment matrix
             if self.matrix_var_dim == None:
                 if self.mark_conjugate:
-                    if k<0:
+                    if k < 0:
                         coeff = -coeff
                         k = -k
                 self.F_struct[row_offset + rowA * N*lenB +
@@ -217,13 +217,12 @@ class SdpRelaxation(object):
                               columnA * lenB + columnB, k] = coeff
             else:
                 conjugate = False
-                if k<0:
+                if k < 0:
                     conjugate = True
                     k = -k
-                k = self.__add_matrix_variable(row_offset, rowA,
-                                                        columnA, N, rowB,
-                                                        columnB, lenB,
-                                                        k, conjugate, coeff)
+                k = self.__add_matrix_variable(row_offset, rowA, columnA, N,
+                                               rowB, columnB, lenB, k,
+                                               conjugate, coeff)
             if k > n_vars:
                 n_vars = k
         return n_vars
@@ -433,9 +432,9 @@ class SdpRelaxation(object):
             localization_order = self.localization_order[
                 block_index - initial_block_index - 1]
             if localizing_monomial_sets is not None and \
-              k<len(localizing_monomial_sets) and\
+              k < len(localizing_monomial_sets) and\
               localizing_monomial_sets[k] is not None:
-                  monomials = localizing_monomial_sets[k]
+                monomials = localizing_monomial_sets[k]
             elif self.hierarchy == "npa_chordal":
                 index = find_clique_index(self.variables, ineq, self.clique_set)
                 monomials = \
@@ -715,7 +714,7 @@ class SdpRelaxation(object):
             self.localization_order.append(localization_order)
             if localizing_monomial_sets is not None and \
               localizing_monomial_sets[k] is not None:
-                  localizing_monomials = localizing_monomial_sets[k]
+                localizing_monomials = localizing_monomial_sets[k]
             elif self.hierarchy == "npa_chordal":
                 index = find_clique_index(self.variables, constraint,
                                           self.clique_set)
@@ -743,8 +742,8 @@ class SdpRelaxation(object):
                 self.localization_order.append(0)
                 self.block_struct.append(1)
         if self.matrix_var_dim != None:
-            self.block_struct =[self.matrix_var_dim*bs
-                                for bs in self.block_struct]
+            self.block_struct = [self.matrix_var_dim*bs
+                                 for bs in self.block_struct]
 
 
     def __generate_monomial_sets(self, objective, inequalities, equalities,

@@ -31,7 +31,7 @@ def flatten(lol):
             continue
         elif type(element) is not list:
             new_list.append(element)
-        elif len(element)>0:
+        elif len(element) > 0:
             new_list.extend(flatten(element))
     return new_list
 
