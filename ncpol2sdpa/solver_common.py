@@ -12,6 +12,15 @@ from .sdpa_utils import solve_with_sdpa, convert_row_to_sdpa_index
 from .mosek_utils import solve_with_mosek
 
 def solve_sdp(sdpRelaxation, solver="sdpa", solverparameters=None):
+    """Call a solver on the SDP relaxation.
+
+    :param sdpRelaxation: The SDP relaxation to be solved.
+    :type sdpRelaxation: :class:`ncpol2sdpa.SdpRelaxation`.
+    :param solver: The solver to be called, either "sdpa" or "mosek".
+    :type solver: str.
+    :param solverparameters: Parameters to be passed to the solver.
+    :type parameters: dict of str.
+    """
     if solver is "sdpa":
         return solve_with_sdpa(sdpRelaxation, solverparameters)
     elif solver is "mosek":
@@ -20,7 +29,7 @@ def solve_sdp(sdpRelaxation, solver="sdpa", solverparameters=None):
 def find_rank_loop(sdpRelaxation, x_mat, base_level=0):
     """Helper function to detect rank loop in the solution matrix.
 
-    :param sdpRelaxation: The SDP relaxation to be solved.
+    :param sdpRelaxation: The SDP relaxation.
     :type sdpRelaxation: :class:`ncpol2sdpa.SdpRelaxation`.
     :param x_mat: The solution of the moment matrix.
     :type x_mat: :class:`numpy.array`.
