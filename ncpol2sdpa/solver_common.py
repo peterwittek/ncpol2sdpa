@@ -84,16 +84,17 @@ def sos_decomposition(sdpRelaxation, y_mat, threshold=0.0):
     return sos
 
 def get_index_of_monomial(monomial, sdpRelaxation):
+    row_offsets = [0]
+    cumulative_sum = 0
+    for block_size in sdpRelaxation.block_struct:
+        cumulative_sum += block_size ** 2
+        row_offsets.append(cumulative_sum)
     k = sdpRelaxation.monomial_index[monomial]
     Fk = sdpRelaxation.F_struct[:, k]
     for row in range(len(Fk.rows)):
         if Fk.rows[row] != []:
-            block_index, i, j = \
-              convert_row_to_sdpa_index(sdpRelaxation.block_struct, [0], row)
-            if block_index > 0:
-                return -1, -1
-            else:
-                return i, j
+            return convert_row_to_sdpa_index(sdpRelaxation.block_struct,
+                                             row_offsets, row)
 
 def get_xmat_value(monomial, sdpRelaxation, x_mat):
     """Given a solution of the primal problem and a monomial, it returns the
@@ -119,6 +120,6 @@ def get_xmat_value(monomial, sdpRelaxation, x_mat):
     for element in elements:
         element, _ = build_monomial(element)
         element = apply_substitutions(element, sdpRelaxation.substitutions)
-        i, j = get_index_of_monomial(element, sdpRelaxation)
-        result += x_mat[0][i, j]
+        block, i, j = get_index_of_monomial(element, sdpRelaxation)
+        result += x_mat[block][i, j]
     return result
