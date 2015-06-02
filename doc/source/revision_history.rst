@@ -1,6 +1,9 @@
 Revision History
 ****************
 
+**Since Version 1.8**
+  - Fixed: Localizing matrices are built correctly when substitution rules contain polynomials.
+
 **Version 1.8 (2015-05-25)** 
 
   - New: Complex moment matrices are embedded to as real matrices in the SDPA export and the ``solve_sdp`` function.

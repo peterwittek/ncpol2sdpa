@@ -283,25 +283,35 @@ class SdpRelaxation(object):
     def __get_index_of_monomial(self, element, enablesubstitution=True):
         """Returns the index of a monomial.
         """
-        monomial, coeff = build_monomial(element)
+        processed_element, coeff1 = build_monomial(element)
         if enablesubstitution:
-            monomial = apply_substitutions(monomial,
-                                           self.substitutions)
+            processed_element = apply_substitutions(processed_element,
+                                                    self.substitutions)
         # Given the monomial, we need its mapping L_y(w) to push it into
         # a corresponding constraint matrix
-        if monomial != 0:
-            if monomial.as_coeff_Mul()[0] < 0:
-                monomial = -monomial
-                coeff = -1.0 * coeff
-        k = -1
-        if monomial.is_Number:
-            k = 0
+        if processed_element.is_Number:
+            return [(0, coeff1)]
+        elif processed_element.is_Add:
+            monomials = processed_element.as_coeff_mul()[1][0].as_coeff_add()[1]
         else:
+            monomials = [processed_element]
+        result = []
+        for monomial in monomials:
+            monomial, coeff2 = build_monomial(monomial)
+            coeff = coeff1*coeff2
+            if monomial.is_Number:
+                result.append((0, coeff))
+                continue
+            k = -1
+            if monomial != 0:
+                if monomial.as_coeff_Mul()[0] < 0:
+                    monomial = -monomial
+                    coeff = -1.0 * coeff
             try:
                 k = self.monomial_index[monomial]
             except KeyError:
                 try:
-                    [monomial, coeff] = build_monomial(element)
+                    monomial, coeff = build_monomial(element)
                     monomial, scalar_factor = separate_scalar_factor(
                         apply_substitutions(Dagger(monomial),
                                             self.substitutions))
@@ -322,12 +332,13 @@ class SdpRelaxation(object):
                         except KeyError:
                             exists = False
                     if not exists and self.verbose > 0:
-                        [monomial, coeff] = build_monomial(element)
+                        monomial, coeff = build_monomial(element)
                         sub = apply_substitutions(Dagger(monomial),
                                                   self.substitutions)
                         print(("DEBUG: %s, %s, %s" % (element,
                                                       Dagger(monomial), sub)))
-        return k, coeff
+            result.append((k, coeff))
+        return result
 
     def __push_facvar_sparse(self, polynomial, block_index, row_offset, i, j):
         """Calculate the sparse vector representation of a polynomial
@@ -347,10 +358,11 @@ class SdpRelaxation(object):
             elements = polynomial.as_coeff_mul()[1][0].as_coeff_add()[1]
         # Identify its constituent monomials
         for element in elements:
-            k, coeff = self.__get_index_of_monomial(element)
+            results = self.__get_index_of_monomial(element)
             # k identifies the mapped value of a word (monomial) w
-            if k > -1 and coeff != 0:
-                self.F_struct[row_offset + i * width + j, k] += coeff
+            for (k, coeff) in results:
+                if k > -1 and coeff != 0:
+                    self.F_struct[row_offset + i * width + j, k] += coeff
 
     def __get_facvar(self, polynomial):
         """Return dense vector representation of a polynomial. This function is
@@ -370,9 +382,10 @@ class SdpRelaxation(object):
         else:
             elements = polynomial.as_coeff_mul()[1][0].as_coeff_add()[1]
         for element in elements:
-            k, coeff = self.__get_index_of_monomial(
+            results = self.__get_index_of_monomial(
                 element)
-            facvar[k] += coeff
+            for (k, coeff) in results:
+                facvar[k] += coeff
         return facvar
 
     def __get_trace_facvar(self, polynomial):
