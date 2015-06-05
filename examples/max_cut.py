@@ -11,9 +11,7 @@ Created on Thu May 15 12:12:40 2014
 @author: wittek
 """
 import numpy as np
-from sympy.simplify import simplify
-from sympy.physics.quantum.operator import HermitianOperator
-from ncpol2sdpa import SdpRelaxation, write_to_sdpa
+from ncpol2sdpa import SdpRelaxation, write_to_sdpa, generate_variables
 
 W = np.diag(np.ones(8), 1) + np.diag(np.ones(7), 2) + np.diag([1, 1], 7) + \
     np.diag([1], 8)
@@ -22,14 +20,10 @@ n = len(W)
 e = np.ones(n)
 Q = (np.diag(np.dot(e.T, W)) - W) / 4
 
-x = []
-equalities = []
-for i in range(n):
-    x.append(HermitianOperator('x%s' % i))
-    x[i].is_commutative = True
-    equalities.append(x[i] ** 2 - 1)
+x = generate_variables(n, commutative=True)
+equalities = [xi ** 2 - 1 for xi in x]
 
-objective = simplify(np.dot(x, np.dot(Q, np.transpose(x))))
+objective = -np.dot(x, np.dot(Q, np.transpose(x)))
 
 level = 1
 
