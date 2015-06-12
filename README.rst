@@ -81,4 +81,4 @@ More Information
 ================
 For more information refer to the following manuscript:
 
-Wittek, P. (2015). `Ncpol2sdpa -- Sparse Semidefinite Programming Relaxations for Polynomial Optimization Problems of Noncommuting Variables <http://arxiv.org/abs/1308.6029>`_. To Appear in ACM Transactions on Mathematical Software.
+Wittek, P. (2015). `Algorithm 950: Ncpol2sdpa---Sparse Semidefinite Programming Relaxations for Polynomial Optimization Problems of Noncommuting Variables <http://dx.doi.org/10.1145/2699464>`_. ACM Transactions on Mathematical Software, 41(3), 21. `PDF <http://arxiv.org/pdf/1308.6029.pdf>`_
