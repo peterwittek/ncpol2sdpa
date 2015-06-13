@@ -49,16 +49,15 @@ def bosonic_constraints(a):
     :type a: list of :class:`sympy.physics.quantum.operator.Operator`.
     :returns: a dict of substitutions.
     """
-    n_vars = len(a)
     substitutions = {}
-    for i in range(n_vars):
-        substitutions[a[i] * Dagger(a[i])] = 1.0 + Dagger(a[i]) * a[i]
-        for j in range(i + 1, n_vars):
-            #substitutions[a[i]*Dagger(a[j])] = -Dagger(a[i])*a[j]
-            substitutions[a[i]*Dagger(a[j])] = Dagger(a[j])*a[i]
-            substitutions[Dagger(a[i])*a[j]] = a[j]*Dagger(a[i])
-            substitutions[a[i]*a[j]] = a[j]*a[i]
-            substitutions[Dagger(a[i]) * Dagger(a[j])] = Dagger(a[j]) * Dagger(a[i])
+    for i, ai in enumerate(a):
+        substitutions[ai * Dagger(ai)] = 1.0 + Dagger(ai) * ai
+        for aj in a[i+1:]:
+            #substitutions[ai*Dagger(aj)] = -Dagger(ai)*aj
+            substitutions[ai*Dagger(aj)] = Dagger(aj)*ai
+            substitutions[Dagger(ai)*aj] = aj*Dagger(ai)
+            substitutions[ai*aj] = aj*ai
+            substitutions[Dagger(ai) * Dagger(aj)] = Dagger(aj) * Dagger(ai)
 
     return substitutions
 
@@ -69,18 +68,17 @@ def fermionic_constraints(a):
     :type a: list of :class:`sympy.physics.quantum.operator.Operator`.
     :returns: a dict of substitutions.
     """
-    n_vars = len(a)
     substitutions = {}
-    for i in range(n_vars):
-        substitutions[a[i] ** 2] = 0
-        substitutions[Dagger(a[i]) ** 2] = 0
-        substitutions[a[i] * Dagger(a[i])] = 1.0 - Dagger(a[i]) * a[i]
-        for j in range(i + 1, n_vars):
-            #substitutions[a[i]*Dagger(a[j])] = -Dagger(a[i])*a[j]
-            substitutions[a[i]*Dagger(a[j])] = -Dagger(a[j])*a[i]
-            substitutions[Dagger(a[i])*a[j]] = -a[j]*Dagger(a[i])
-            substitutions[a[i]*a[j]] = -a[j]*a[i]
-            substitutions[Dagger(a[i]) * Dagger(a[j])] = - Dagger(a[j]) * Dagger(a[i])
+    for i, ai in enumerate(a):
+        substitutions[ai ** 2] = 0
+        substitutions[Dagger(ai) ** 2] = 0
+        substitutions[ai * Dagger(ai)] = 1.0 - Dagger(ai) * ai
+        for aj in a[i+1:]:
+            #substitutions[ai*Dagger(aj)] = -Dagger(ai)*aj
+            substitutions[ai*Dagger(aj)] = -Dagger(aj)*ai
+            substitutions[Dagger(ai)*aj] = -aj*Dagger(ai)
+            substitutions[ai*aj] = -aj*ai
+            substitutions[Dagger(ai) * Dagger(aj)] = - Dagger(aj) * Dagger(ai)
 
     return substitutions
 
