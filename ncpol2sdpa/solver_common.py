@@ -83,18 +83,38 @@ def sos_decomposition(sdpRelaxation, y_mat, threshold=0.0):
             sos += term**2
     return sos
 
-def get_index_of_monomial(monomial, sdpRelaxation):
-    row_offsets = [0]
-    cumulative_sum = 0
-    for block_size in sdpRelaxation.block_struct:
-        cumulative_sum += block_size ** 2
-        row_offsets.append(cumulative_sum)
+def get_index_of_monomial(monomial, row_offsets, sdpRelaxation):
     k = sdpRelaxation.monomial_index[monomial]
     Fk = sdpRelaxation.F_struct[:, k]
     for row in range(len(Fk.rows)):
         if Fk.rows[row] != []:
-            return convert_row_to_sdpa_index(sdpRelaxation.block_struct,
+            block, i, j = convert_row_to_sdpa_index(sdpRelaxation.block_struct,
                                              row_offsets, row)
+            return row, k, block, i, j
+
+def get_recursive_xmat_value(k, row_offsets, sdpRelaxation, x_mat):
+    """Given a solution of the primal problem and a monomial, it returns the
+    value for the monomial in the solution matrix.
+
+    :param monomial: The monomial for which the value is requested.
+    :type monomial: :class:`sympy.core.exp.Expr`.
+    :param sdpRelaxation: The SDP relaxation to be solved.
+    :type sdpRelaxation: :class:`ncpol2sdpa.SdpRelaxation`.
+    :param x_mat: The primal solution of the problem.
+    :type x_mat: list of :class:`numpy.array`.
+    """
+    Fk = sdpRelaxation.F_struct[:, k]
+    for row in range(len(Fk.rows)):
+        if Fk.rows[row] != []:
+            block, i, j = convert_row_to_sdpa_index(sdpRelaxation.block_struct,
+                                                    row_offsets, row)
+            value = x_mat[block][i, j]
+            for index in sdpRelaxation.F_struct.rows[row]:
+                if k != index:
+                    value -= sdpRelaxation.F_struct[row, index]*\
+                               get_recursive_xmat_value(index, row_offsets,
+                                                        sdpRelaxation, x_mat)
+            return value / sdpRelaxation.F_struct[row, k]
 
 def get_xmat_value(monomial, sdpRelaxation, x_mat):
     """Given a solution of the primal problem and a monomial, it returns the
@@ -115,11 +135,22 @@ def get_xmat_value(monomial, sdpRelaxation, x_mat):
         elements = [polynomial]
     else:
         elements = polynomial.as_coeff_mul()[1][0].as_coeff_add()[1]
-
+    row_offsets = [0]
+    cumulative_sum = 0
+    for block_size in sdpRelaxation.block_struct:
+        cumulative_sum += block_size ** 2
+        row_offsets.append(cumulative_sum)
     result = 0
     for element in elements:
         element, _ = build_monomial(element)
         element = apply_substitutions(element, sdpRelaxation.substitutions)
-        block, i, j = get_index_of_monomial(element, sdpRelaxation)
-        result += x_mat[block][i, j]
+        row, k, block, i, j = get_index_of_monomial(element, row_offsets,
+                                                    sdpRelaxation)
+        value = x_mat[block][i, j]
+        for index in sdpRelaxation.F_struct.rows[row]:
+            if k != index:
+                value -= sdpRelaxation.F_struct[row, index]*\
+                           get_recursive_xmat_value(index, row_offsets,
+                                                    sdpRelaxation, x_mat)
+        result += value / sdpRelaxation.F_struct[row, k]
     return result
