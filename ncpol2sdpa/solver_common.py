@@ -130,7 +130,6 @@ def get_xmat_value(monomial, sdpRelaxation, x_mat):
 
     polynomial = expand(simplify_polynomial(monomial,
                                             sdpRelaxation.substitutions))
-
     if polynomial.is_Mul:
         elements = [polynomial]
     else:
@@ -142,7 +141,7 @@ def get_xmat_value(monomial, sdpRelaxation, x_mat):
         row_offsets.append(cumulative_sum)
     result = 0
     for element in elements:
-        element, _ = build_monomial(element)
+        element, coeff = build_monomial(element)
         element = apply_substitutions(element, sdpRelaxation.substitutions)
         row, k, block, i, j = get_index_of_monomial(element, row_offsets,
                                                     sdpRelaxation)
@@ -152,5 +151,5 @@ def get_xmat_value(monomial, sdpRelaxation, x_mat):
                 value -= sdpRelaxation.F_struct[row, index]*\
                            get_recursive_xmat_value(index, row_offsets,
                                                     sdpRelaxation, x_mat)
-        result += value / sdpRelaxation.F_struct[row, k]
+        result += coeff * value / sdpRelaxation.F_struct[row, k]
     return result
