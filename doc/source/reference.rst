@@ -33,6 +33,7 @@ Functions to Define Physics Problems
 .. autofunction:: ncpol2sdpa.fermionic_constraints
 .. autofunction:: ncpol2sdpa.pauli_constraints
 .. autofunction:: ncpol2sdpa.get_neighbors
+.. autofunction:: ncpol2sdpa.get_next_neighbors
 .. autofunction:: ncpol2sdpa.correlator
 .. autofunction:: ncpol2sdpa.generate_measurements
 .. autofunction:: ncpol2sdpa.projective_measurement_constraints
