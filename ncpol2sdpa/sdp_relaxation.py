@@ -337,7 +337,8 @@ class SdpRelaxation(object):
                                                   self.substitutions)
                         print(("DEBUG: %s, %s, %s" % (element,
                                                       Dagger(monomial), sub)))
-                        raise RuntimeError("The requested monomial could not be found.")
+                                                                                        raise RuntimeError("The requested monomial could not be found.")
+
             result.append((k, coeff))
         return result
 
@@ -725,6 +726,8 @@ class SdpRelaxation(object):
             if ineq_order > 2 * self.level:
                 degree_warning = True
             localization_order = int(floor((2 * self.level - ineq_order) / 2))
+            if self.level == -1:
+                localization_order = 0
             self.localization_order.append(localization_order)
             if localizing_monomial_sets is not None and \
               localizing_monomial_sets[k] is not None:
