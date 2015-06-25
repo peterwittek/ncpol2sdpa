@@ -180,13 +180,13 @@ def write_to_sdpa(sdpRelaxation, filename):
     file_.close()
 
 
-def write_to_human_readable(sdpRelaxation, filename):
-    """Write the SDP relaxation to a human-readable format.
+def convert_to_human_readable(sdpRelaxation):
+    """Convert the SDP relaxation to a human-readable format.
 
     :param sdpRelaxation: The SDP relaxation to write.
     :type sdpRelaxation: :class:`ncpol2sdpa.SdpRelaxation`.
-    :param filename: The name of the file.
-    :type filename: str.
+    :returns: tuple of the objective function in a string and a matrix of
+              strings as the symbolic representation of the moment matrix
     """
 
     objective = ""
@@ -243,8 +243,17 @@ def write_to_human_readable(sdpRelaxation, filename):
                         matrix[offset+i][offset+j] += ("+%s%s" % (value, monomial))
                     else:
                         matrix[offset+i][offset+j] += ("%s%s" % (value, monomial))
+    return objective, matrix
 
+def write_to_human_readable(sdpRelaxation, filename):
+    """Write the SDP relaxation to a human-readable format.
 
+    :param sdpRelaxation: The SDP relaxation to write.
+    :type sdpRelaxation: :class:`ncpol2sdpa.SdpRelaxation`.
+    :param filename: The name of the file.
+    :type filename: str.
+    """
+    objective, matrix = convert_to_human_readable(sdpRelaxation)
     f = open(filename, 'w')
     f.write("Objective:" + objective + "\n")
     for matrix_line in matrix:

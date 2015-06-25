@@ -22,6 +22,7 @@ Functions to Export, Solve, and Study Relaxations
 .. autofunction:: ncpol2sdpa.get_xmat_value
 .. autofunction:: ncpol2sdpa.write_to_sdpa
 .. autofunction:: ncpol2sdpa.read_sdpa_out
+.. autofunction:: ncpol2sdpa.convert_to_human_readable
 .. autofunction:: ncpol2sdpa.convert_to_mosek
 .. autofunction:: ncpol2sdpa.convert_to_picos
 .. autofunction:: ncpol2sdpa.save_monomial_index
