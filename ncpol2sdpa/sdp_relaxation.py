@@ -337,7 +337,8 @@ class SdpRelaxation(object):
                                                   self.substitutions)
                         print(("DEBUG: %s, %s, %s" % (element,
                                                       Dagger(monomial), sub)))
-                                                                                        raise RuntimeError("The requested monomial could not be found.")
+
+                        raise RuntimeError("The requested monomial could not be found.")
 
             result.append((k, coeff))
         return result
