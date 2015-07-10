@@ -4,3 +4,4 @@
   - Start using unit testing.  
   - Support complex moment matrices in Picos and Mosek exports too.
   - Better support for steering hierarchy. Probably in a derived class.
+  - Verify if MOSEK always flip the sign of the solution when the optimization is minimization.
