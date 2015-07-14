@@ -767,7 +767,7 @@ class SdpRelaxation(object):
     def __generate_monomial_sets(self, objective, inequalities, equalities,
                                  extramonomials):
         if self.level == -1:
-            if extramonomials == None:
+            if extramonomials == None or extramonomials == []:
                 raise Exception("Cannot build relaxation at level -1 without \
                                 monomials specified.")
             if isinstance(extramonomials[0], list):
