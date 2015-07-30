@@ -22,7 +22,8 @@ except ImportError:
 from .nc_utils import apply_substitutions, build_monomial, \
     pick_monomials_up_to_degree, ncdegree, \
     separate_scalar_factor, flatten, build_permutation_matrix, \
-    simplify_polynomial, get_monomials, unique, iscomplex
+    simplify_polynomial, get_monomials, unique, iscomplex, \
+    is_pure_substitution_rule
 from .chordal_extension import generate_clique, find_clique_index
 from .faacets_utils import get_faacets_moment_matrix, collinsgisin_to_faacets
 
@@ -84,6 +85,7 @@ class SdpRelaxation(object):
         self.level = 0
         self.clique_set = []
         self.monomial_sets = []
+        self.pure_substitution_rules = True
         self.mark_conjugate = False
         self.complex_matrix = False
         if matrix_var_dim != None:
@@ -132,7 +134,8 @@ class SdpRelaxation(object):
             if self.is_hermitian_variables and \
               (self.matrix_var_dim != None or ncdegree(monomial) > 2):
                 daggered_monomial = apply_substitutions(Dagger(monomial),
-                                                        self.substitutions)
+                                                        self.substitutions,
+                                                        self.pure_substitution_rules)
                 try:
                     k = self.monomial_index[daggered_monomial]
                     conjugate = True
@@ -183,7 +186,7 @@ class SdpRelaxation(object):
 
     def __push_monomial(self, monomial, n_vars, row_offset, rowA, columnA, N,
                         rowB, columnB, lenB):
-        monomial = apply_substitutions(monomial, self.substitutions)
+        monomial = apply_substitutions(monomial, self.substitutions, self.pure_substitution_rules)
         if isinstance(monomial, Number) or isinstance(monomial, int) or isinstance(monomial, float):
             if rowA == 0 and columnA == 0 and rowB == 0 and columnB == 0 and \
               monomial == 1.0 and not self.normalized:
@@ -286,7 +289,8 @@ class SdpRelaxation(object):
         processed_element, coeff1 = build_monomial(element)
         if enablesubstitution:
             processed_element = apply_substitutions(processed_element,
-                                                    self.substitutions)
+                                                    self.substitutions,
+                                                    self.pure_substitution_rules)
         # Given the monomial, we need its mapping L_y(w) to push it into
         # a corresponding constraint matrix
         if processed_element.is_Number:
@@ -314,7 +318,8 @@ class SdpRelaxation(object):
                     monomial, coeff = build_monomial(element)
                     monomial, scalar_factor = separate_scalar_factor(
                         apply_substitutions(Dagger(monomial),
-                                            self.substitutions))
+                                            self.substitutions,
+                                            self.pure_substitution_rules))
                     coeff *= scalar_factor
                     k = self.monomial_index[monomial]
                 except KeyError:
@@ -325,7 +330,8 @@ class SdpRelaxation(object):
                     if self.is_hermitian_variables:
                         daggered_monomial = \
                           apply_substitutions(Dagger(monomial),
-                                              self.substitutions)
+                                              self.substitutions,
+                                              self.pure_substitution_rules)
                         try:
                             k = self.monomial_index[daggered_monomial]
                             exists = True
@@ -334,7 +340,8 @@ class SdpRelaxation(object):
                     if not exists and self.verbose > 0:
                         monomial, coeff = build_monomial(element)
                         sub = apply_substitutions(Dagger(monomial),
-                                                  self.substitutions)
+                                                  self.substitutions,
+                                                  self.pure_substitution_rules)
                         print(("DEBUG: %s, %s, %s" % (element,
                                                       Dagger(monomial), sub)))
 
@@ -402,7 +409,8 @@ class SdpRelaxation(object):
         for i in range(self.matrix_var_dim):
             for j in range(self.matrix_var_dim):
                 for key, value in polynomial[i, j].as_coefficients_dict().items():
-                    skey = apply_substitutions(key, self.substitutions)
+                    skey = apply_substitutions(key, self.substitutions,\
+                                               self.pure_substitution_rules)
                     try:
                         Fk = F[skey]
                     except KeyError:
@@ -1025,6 +1033,8 @@ class SdpRelaxation(object):
         else:
             self.substitutions = substitutions
             for lhs, rhs in substitutions.items():
+                if not is_pure_substitution_rule(lhs, rhs):
+                    self.pure_substitution_rules = False
                 if iscomplex(lhs) or iscomplex(rhs):
                     self.complex_matrix = True
         # Generate monomials and remove substituted ones

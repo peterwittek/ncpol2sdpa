@@ -59,15 +59,44 @@ def simplify_polynomial(polynomial, monomial_substitutions):
         new_polynomial += coeff * monomial
     return new_polynomial
 
+def is_pure_substitution_rule(lhs, rhs):
+    if isinstance(rhs, int) or isinstance(rhs, float):
+        return True
+    if rhs.is_Mul:
+        elements = [rhs]
+    else:
+        elements = rhs.as_coeff_mul()[1][0].as_coeff_add()[1]
+    for element in elements:
+        monomial, _ = build_monomial(element)
+        for atom in monomial.atoms():
+            if atom.is_Number:
+                continue
+            if not lhs.has(atom):
+                return False
+    return True
 
-def apply_substitutions(monomial, monomial_substitutions):
+def apply_substitutions(monomial, monomial_substitutions, pure=False):
     """Helper function to remove monomials from the basis."""
     if isinstance(monomial, int) or isinstance(monomial, float):
         return monomial
     original_monomial = monomial
     changed = True
-    while changed:
+    if not pure:
+        substitutions = monomial_substitutions
+    else:
+        substitutions = {}
         for lhs, rhs in monomial_substitutions.items():
+            irrelevant = False
+            for atom in lhs.atoms():
+                if atom.is_Number:
+                    continue
+                if not monomial.has(atom):
+                    irrelevant = True
+                    break
+            if not irrelevant:
+                substitutions[lhs] = rhs
+    while changed:
+        for lhs, rhs in substitutions.items():
             # The fast substitution routine still fails on some rare
             # conditions. In production environments, it is safer to use
             # the default substitution routine that comes with SymPy.
