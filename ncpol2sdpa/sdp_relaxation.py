@@ -101,7 +101,10 @@ class SdpRelaxation(object):
             raise Exception('PPT condition only makes sense with the Moroder \
                              hierarchy')
         if isinstance(variables, list):
-            self.variables = variables
+            if len(variables) > 0 and isinstance(variables[0], list):
+                self.variables = [unique(vs) for vs in variables]
+            else:
+                self.variables = unique(variables)
         else:
             self.variables = [variables]
         self.is_hermitian_variables = True

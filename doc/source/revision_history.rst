@@ -4,6 +4,7 @@ Revision History
 **Since Version 1.8**
   - New: `convert_to_human_readable` function returns the objective function and the moment matrix as a string and a matrix of strings to give a symbolic representation of the problem.
   - New: Much faster substitutions if the right-hand side of the substitution never contains variables that are not in the left-hand side.
+  - New: Non-unique variables are considered only once in each variable set.
   - Fixed: Localizing matrices are built correctly when substitution rules contain polynomials.
 
 **Version 1.8 (2015-05-25)** 
