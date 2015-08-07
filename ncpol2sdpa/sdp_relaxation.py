@@ -8,7 +8,7 @@ Created on Sun May 26 15:06:17 2013
 @author: Peter Wittek
 """
 from __future__ import division, print_function
-from math import floor, copysign
+from math import floor
 import numpy as np
 from sympy import S, Number
 from sympy.matrices import Matrix, zeros
@@ -25,9 +25,18 @@ from .nc_utils import apply_substitutions, build_monomial, \
     simplify_polynomial, get_monomials, unique, iscomplex, \
     is_pure_substitution_rule, convert_relational
 from .chordal_extension import generate_clique, find_clique_index
-from .faacets_utils import get_faacets_moment_matrix, collinsgisin_to_faacets
 
-class SdpRelaxation(object):
+class Relaxation(object):
+
+    def __init__(self):
+        """Constructor for the class.
+        """
+        self.n_vars = 0
+        self.F_struct = None
+        self.block_struct = []
+        self.obj_facvar = 0
+
+class SdpRelaxation(Relaxation):
 
     """Class for obtaining sparse SDP relaxation.
 
@@ -72,11 +81,7 @@ class SdpRelaxation(object):
 
         self.substitutions = {}
         self.monomial_index = {}
-        self.n_vars = 0
         self.var_offsets = [0]
-        self.F_struct = None
-        self.block_struct = []
-        self.obj_facvar = 0
         self.variables = []
         self.verbose = verbose
         self.localization_order = []
@@ -910,25 +915,6 @@ class SdpRelaxation(object):
         if removeequalities and equalities is not None:
             A = self.__process_equalities(equalities, flatten(self.monomial_sets))
             self.__remove_equalities(equalities, A)
-
-    def get_faacets_relaxation(self, A_configuration, B_configuration, I):
-        coefficients = collinsgisin_to_faacets(I)
-        M, ncIndices = get_faacets_moment_matrix(A_configuration,
-                                                 B_configuration, coefficients)
-        self.n_vars = M.max() - 1
-        bs = len(M) # The block size
-        self.block_struct = [bs]
-        self.F_struct = lil_matrix((bs**2, self.n_vars + 1))
-        # Constructing the internal representation of the constraint matrices
-        # See Section 2.1 in the SDPA manual and also Yalmip's internal
-        # representation
-        for i in range(bs):
-            for j in range(i, bs):
-                if M[i, j] != 0:
-                    self.F_struct[i*bs+j, abs(M[i, j])-1] = copysign(1, M[i, j])
-        self.obj_facvar = [0 for _ in range(self.n_vars)]
-        for i in range(1, len(ncIndices)):
-            self.obj_facvar[abs(ncIndices[i])-2] += copysign(1, ncIndices[i])*coefficients[i]
 
     def set_objective(self, objective, extraobjexpr=None):
         """Set or change the objective function of the polynomial optimization

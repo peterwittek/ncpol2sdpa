@@ -1,5 +1,4 @@
-"""
-Ncpol2SDPA
+"""Ncpol2SDPA
 =====
 
 Provides
@@ -10,6 +9,7 @@ Provides
 """
 
 __all__ = ['SdpRelaxation',
+           'FaacetsRelaxation',
            'generate_variables',
            'get_ncmonomials',
            'ncdegree',
@@ -37,6 +37,7 @@ __all__ = ['SdpRelaxation',
            'write_to_human_readable',
            'sos_decomposition']
 
+from .faacets_relaxation import FaacetsRelaxation
 from .sdp_relaxation import SdpRelaxation
 from .nc_utils import generate_variables, get_ncmonomials, ncdegree, flatten, \
                       save_monomial_index
