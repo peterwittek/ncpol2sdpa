@@ -516,3 +516,12 @@ def build_permutation_matrix(permutation):
         matrix[row, column] = 1
         column += 1
     return matrix
+
+def convert_relational(relational):
+    rel = relational.rel_op
+    if rel in ['==', '>=', '>']:
+        return relational.lhs-relational.rhs
+    elif rel in ['<=', '<']:
+        return relational.rhs-relational.lhs
+    else:
+        raise Exception('The relational operation ' + rel + ' is not implemented!')

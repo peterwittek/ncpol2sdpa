@@ -99,13 +99,20 @@ are based on SymPy.
 
 Above we must declare the variables as commutative. By default, the generated
 variables are noncommutative and non-Hermitian. With these variables, we can 
-define the objective and the inequality constraint. Notice that all 
-inequality-type constraints are assumed to be in the form :math:`\ge 0`.
+define the objective and the inequality constraint.
 
 ::
 
     obj = x[0]*x[1] + x[1]*x[0]
+    inequalities = [-x[1]**2 + x[1] + 0.5>=0]
+
+We can also write all inequality-type constraints assuming to be in the form :math:`\ge 0` as
+
+::
+
     inequalities = [-x[1]**2 + x[1] + 0.5]
+
+This is more convenient when we have a large number of constraints.
 
 The equality, as discussed, is entered as a substitution rule:
 

@@ -23,7 +23,7 @@ from .nc_utils import apply_substitutions, build_monomial, \
     pick_monomials_up_to_degree, ncdegree, \
     separate_scalar_factor, flatten, build_permutation_matrix, \
     simplify_polynomial, get_monomials, unique, iscomplex, \
-    is_pure_substitution_rule
+    is_pure_substitution_rule, convert_relational
 from .chordal_extension import generate_clique, find_clique_index
 from .faacets_utils import get_faacets_moment_matrix, collinsgisin_to_faacets
 
@@ -456,6 +456,8 @@ class SdpRelaxation(object):
             if isinstance(ineq, str):
                 self.__parse_expression(ineq, row_offsets[block_index-1])
                 continue
+            if ineq.is_Relational:
+                ineq = convert_relational(ineq)
             localization_order = self.localization_order[
                 block_index - initial_block_index - 1]
             if localizing_monomial_sets is not None and \
@@ -525,6 +527,8 @@ class SdpRelaxation(object):
         max_localization_order = 0
         for equality in equalities:
             # Find the order of the localizing matrix
+            if equality.is_Relational:
+                equality = convert_relational(equality)
             eq_order = ncdegree(equality)
             if eq_order > 2 * self.level:
                 print("An equality constraint has degree %d. Choose a "\
@@ -732,6 +736,8 @@ class SdpRelaxation(object):
             if isinstance(constraint, str):
                 ineq_order = 2 * self.level
             else:
+                if constraint.is_Relational:
+                    constraint = convert_relational(constraint)
                 ineq_order = ncdegree(constraint)
                 if iscomplex(constraint):
                     self.complex_matrix = True
@@ -892,6 +898,8 @@ class SdpRelaxation(object):
         if not (removeequalities or equalities is None):
             # Equalities are converted to pairs of inequalities
             for equality in equalities:
+                if equality.is_Relational:
+                    equality = convert_relational(equality)
                 constraints.append(equality)
                 constraints.append(-equality)
         if bounds is not None:
