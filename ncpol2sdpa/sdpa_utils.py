@@ -65,6 +65,23 @@ def read_sdpa_out(filename, solutionmatrix=False):
     else:
         return primal, dual
 
+def which(program):
+    import os
+    def is_exe(fpath):
+        return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+
+    fpath, fname = os.path.split(program)
+    if fpath:
+        if is_exe(program):
+            return program
+    else:
+        for path in os.environ["PATH"].split(os.pathsep):
+            path = path.strip('"')
+            exe_file = os.path.join(path, program)
+            if is_exe(exe_file):
+                return exe_file
+
+    return None
 
 def solve_with_sdpa(sdpRelaxation, solverparameters=None):
     """Helper function to write out the SDP problem to a temporary
@@ -85,6 +102,8 @@ def solve_with_sdpa(sdpRelaxation, solverparameters=None):
     solverexecutable = "sdpa"
     if solverparameters is not None and solverparameters.has_key("executable"):
         solverexecutable = solverparameters["executable"]
+    if which(solverexecutable) is None:
+        raise OSError(solverexecutable +" is not in the path")
     primal, dual = 0, 0
     tempfile_ = tempfile.NamedTemporaryFile()
     tmp_filename = tempfile_.name
