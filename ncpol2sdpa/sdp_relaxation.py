@@ -450,7 +450,6 @@ class SdpRelaxation(Relaxation):
         block_index -- the current block index in constraint matrices of the
                        SDP relaxation
         """
-
         all_monomials = flatten(self.monomial_sets)
         initial_block_index = block_index
         row_offsets = [0]

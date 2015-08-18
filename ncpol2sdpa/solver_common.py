@@ -14,13 +14,14 @@ from .nc_utils import pick_monomials_up_to_degree, simplify_polynomial, \
                       apply_substitutions, build_monomial
 from .sdpa_utils import solve_with_sdpa, convert_row_to_sdpa_index
 from .mosek_utils import solve_with_mosek
+from .picos_utils import solve_with_cvxopt
 
 def solve_sdp(sdpRelaxation, solver="sdpa", solverparameters=None):
     """Call a solver on the SDP relaxation.
 
     :param sdpRelaxation: The SDP relaxation to be solved.
     :type sdpRelaxation: :class:`ncpol2sdpa.SdpRelaxation`.
-    :param solver: The solver to be called, either "sdpa" or "mosek".
+    :param solver: The solver to be called, either "sdpa", "mosek", or "cvxopt".
     :type solver: str.
     :param solverparameters: Parameters to be passed to the solver.
     :type parameters: dict of str.
@@ -29,6 +30,10 @@ def solve_sdp(sdpRelaxation, solver="sdpa", solverparameters=None):
         return solve_with_sdpa(sdpRelaxation, solverparameters)
     elif solver is "mosek":
         return solve_with_mosek(sdpRelaxation, solverparameters)
+    elif solver is "cvxopt":
+        return solve_with_cvxopt(sdpRelaxation, solverparameters)
+    else:
+        raise Exception("Unkown solver: " + solver)
 
 def find_rank_loop(sdpRelaxation, x_mat, base_level=0):
     """Helper function to detect rank loop in the solution matrix.

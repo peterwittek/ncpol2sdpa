@@ -89,14 +89,11 @@ def solve_with_sdpa(sdpRelaxation, solverparameters=None):
 
     :param sdpRelaxation: The SDP relaxation to be solved.
     :type sdpRelaxation: :class:`ncpol2sdpa.SdpRelaxation`.
-    :param solutionmatrix: Optional parameter for retrieving the solution
-                           matrix.
-    :type solutionmatrix: bool.
-    :param solverexecutable: Optional paramater to specify the name of the
+    :param executable: Optional paramater to specify the name of the
                              executable if sdpa is not in the path or has a
                              different name.
-    :type solverexecutable: str.
-    :returns: tuple of float -- the primal and dual solution of the SDP,
+    :type executable: str.
+    :returns: tuple of float and list -- the primal and dual solution of the SDP,
               respectively.
     """
     solverexecutable = "sdpa"
