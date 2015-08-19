@@ -4,9 +4,15 @@ Created on Tue Jan 27 11:41:52 2015
 
 @author: wittek
 """
+from math import copysign
 import numpy as np
 import glob
 import os
+try:
+    from scipy.sparse import lil_matrix
+except ImportError:
+    from .sparse_utils import lil_matrix
+from .sdp_relaxation import Relaxation
 
 def collinsgisin_to_faacets(I):
     coefficients = []
@@ -41,3 +47,24 @@ def get_faacets_moment_matrix(A_configuration, B_configuration, coefficients):
     ncIndices = np.array(sdp.ncIndices())
     shutdownJVM()
     return M, ncIndices
+
+class FaacetsRelaxation(Relaxation):
+
+    def get_relaxation(self, A_configuration, B_configuration, I):
+        coefficients = collinsgisin_to_faacets(I)
+        M, ncIndices = get_faacets_moment_matrix(A_configuration,
+                                                 B_configuration, coefficients)
+        self.n_vars = M.max() - 1
+        bs = len(M) # The block size
+        self.block_struct = [bs]
+        self.F_struct = lil_matrix((bs**2, self.n_vars + 1))
+        # Constructing the internal representation of the constraint matrices
+        # See Section 2.1 in the SDPA manual and also Yalmip's internal
+        # representation
+        for i in range(bs):
+            for j in range(i, bs):
+                if M[i, j] != 0:
+                    self.F_struct[i*bs+j, abs(M[i, j])-1] = copysign(1, M[i, j])
+        self.obj_facvar = [0 for _ in range(self.n_vars)]
+        for i in range(1, len(ncIndices)):
+            self.obj_facvar[abs(ncIndices[i])-2] += copysign(1, ncIndices[i])*coefficients[i]

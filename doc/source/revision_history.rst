@@ -2,9 +2,15 @@ Revision History
 ****************
 
 **Since Version 1.8**
+  - New: Defining the constraints now also allows using for the symbols `<`, `<=`, `>=`, `>`. Additionally, the function `Eq` from SymPy can be used to defined equalities.
+  - New: The function `solve_sdp` also accepts `solver="cvxopt"` to use CVXOPT for solving a relaxation (requires PICOS and CVXOPT).
   - New: `convert_to_human_readable` function returns the objective function and the moment matrix as a string and a matrix of strings to give a symbolic representation of the problem.
+  - New: `get_next_neighbors` function retrieves the forward neighbors at a given distance of a site or set of sites in a lattice.
   - New: Much faster substitutions if the right-hand side of the substitution never contains variables that are not in the left-hand side.
-  - Fixed: Localizing matrices are built correctly when substitution rules contain polynomials.
+  - New: Non-unique variables are considered only once in each variable set.
+  - Changed: Faacets relaxations got their own class `FaacetsRelaxation`. 
+  - Fixed: Localizing matrices are built correctly when substitution rules contain polynomials and when the identity operator is not part of the monomial sets.
+  - Fixed: The function `get_xmat_value` also works in Pypy.
 
 **Version 1.8 (2015-05-25)** 
 

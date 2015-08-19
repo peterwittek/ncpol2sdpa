@@ -9,6 +9,21 @@ Created on Wed Dec 10 18:33:34 2014
 from __future__ import print_function
 import numpy as np
 
+def solve_with_cvxopt(sdpRelaxation, solverparameters=None):
+    """Helper function to convert the SDP problem to PICOS
+    and call CVXOPT solver, and parse the output.
+
+    :param sdpRelaxation: The SDP relaxation to be solved.
+    :type sdpRelaxation: :class:`ncpol2sdpa.SdpRelaxation`.
+    """
+    P = convert_to_picos(sdpRelaxation)
+    solution = P.solve(solver="cvxopt", verbose=0)
+    x_mat = [np.array(P.get_valued_variable('X'))]
+    y_mat = [np.array(P.get_constraint(i).dual) for i in range(len(P.constraints))]
+    return solution["cvxopt_sol"]["primal objective"], \
+           solution["cvxopt_sol"]["dual objective"], \
+           x_mat, y_mat
+
 def convert_to_picos_extra_moment_matrix(sdpRelaxation):
     """Convert an SDP relaxation to a PICOS problem, returning the moment
     matrix with positive semidefinite imposed, and an extra copy of the moment
