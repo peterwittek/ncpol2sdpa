@@ -620,6 +620,16 @@ class lil_matrix(spmatrix, IndexMixin):
                 val += "  %s\t%s\n" % (str((i, j)), str(self.data[i][pos]))
         return val[:-1]
 
+    def getcol(self, i):
+        new = lil_matrix((self.shape[0], 1), dtype=self.dtype)
+        for row_index, row in enumerate(self.rows):
+            for column_index, column in enumerate(row):
+                if column>i:
+                    break
+                if column == i:
+                    new[row_index ,0] = self.data[row_index][column_index]
+        return new
+
     def getrowview(self, i):
         """Returns a view of the 'i'th row (without copying).
         """

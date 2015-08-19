@@ -1,5 +1,4 @@
-"""
-Ncpol2SDPA
+"""Ncpol2SDPA
 =====
 
 Provides
@@ -10,6 +9,7 @@ Provides
 """
 
 __all__ = ['SdpRelaxation',
+           'FaacetsRelaxation',
            'generate_variables',
            'get_ncmonomials',
            'ncdegree',
@@ -37,6 +37,7 @@ __all__ = ['SdpRelaxation',
            'write_to_human_readable',
            'sos_decomposition']
 
+from .faacets_relaxation import FaacetsRelaxation
 from .sdp_relaxation import SdpRelaxation
 from .nc_utils import generate_variables, get_ncmonomials, ncdegree, flatten, \
                       save_monomial_index
@@ -45,7 +46,7 @@ from .sdpa_utils import write_to_sdpa, read_sdpa_out, \
 from .solver_common import solve_sdp, find_rank_loop, sos_decomposition, \
                            get_xmat_value
 from .physics_utils import bosonic_constraints, fermionic_constraints, \
-    pauli_constraints, get_next_neighbors, get_neighbors, correlator, generate_measurements, \
+    pauli_constraints, get_neighbors, get_next_neighbors, correlator, generate_measurements, \
     projective_measurement_constraints, \
     maximum_violation, define_objective_with_I
 from .mosek_utils import convert_to_mosek

@@ -48,16 +48,16 @@ Documentation is available `online <http://peterwittek.github.io/ncpol2sdpa/>`_.
   obj = X[0] * X[1] + X[1] * X[0]
 
   # Inequality constraints
-  inequalities = [-X[1] ** 2 + X[1] + 0.5]
+  inequalities = [-X[1] ** 2 + X[1] + 0.5>=0]
 
   # Simple monomial substitutions
-  monomial_substitution = {}
-  monomial_substitution[X[0] ** 2] = X[0]
+  substitutions = {}
+  substitutions[X[0] ** 2] = X[0]
 
   # Obtain SDP relaxation
   sdpRelaxation = SdpRelaxation(X)
   sdpRelaxation.get_relaxation(level, objective=obj, inequalities=inequalities,
-                               substitutions=monomial_substitution)
+                               substitutions=substitutions)
   write_to_sdpa(sdpRelaxation, 'examplenc.dat-s')
 
 

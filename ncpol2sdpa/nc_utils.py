@@ -455,7 +455,9 @@ def pick_monomials_up_to_degree(monomials, degree):
     """Collect monomials up to a given degree.
     """
     ordered_monomials = []
-    for deg in range(degree + 1):
+    if degree >= 0:
+        ordered_monomials.append(S.One)
+    for deg in range(1, degree + 1):
         ordered_monomials.extend(pick_monomials_of_degree(monomials, deg))
     return ordered_monomials
 
@@ -516,3 +518,12 @@ def build_permutation_matrix(permutation):
         matrix[row, column] = 1
         column += 1
     return matrix
+
+def convert_relational(relational):
+    rel = relational.rel_op
+    if rel in ['==', '>=', '>']:
+        return relational.lhs-relational.rhs
+    elif rel in ['<=', '<']:
+        return relational.rhs-relational.lhs
+    else:
+        raise Exception('The relational operation ' + rel + ' is not implemented!')

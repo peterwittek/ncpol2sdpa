@@ -38,9 +38,9 @@ The method (``write_to_sdpa``) takes one parameter, the file name.
 Alternatively, if SDPA is in the search path, then it can be solved by
 invoking a helper function (``solve_sdp``). Alternatively, MOSEK is
 also supported for obtaining a solution by passing the parameter 
-``solver='mosek'`` to this function. Using a converter to PICOS, 
-it is also possible to solve the problem with a range of other solvers, 
-including CVXOPT.
+``solver='mosek'`` to this function. If PICOS and CVXOPT is available, 
+passing ``solver='cvxopt'`` will solve the SDP with CVXOPT. Other solvers are
+supported by using a converter to PICOS.
 
 
 Defining a Polynomial Optimization Problem of Commuting Variables
@@ -99,13 +99,20 @@ are based on SymPy.
 
 Above we must declare the variables as commutative. By default, the generated
 variables are noncommutative and non-Hermitian. With these variables, we can 
-define the objective and the inequality constraint. Notice that all 
-inequality-type constraints are assumed to be in the form :math:`\ge 0`.
+define the objective and the inequality constraint.
 
 ::
 
     obj = x[0]*x[1] + x[1]*x[0]
+    inequalities = [-x[1]**2 + x[1] + 0.5>=0]
+
+We can also write all inequality-type constraints assuming to be in the form :math:`\ge 0` as
+
+::
+
     inequalities = [-x[1]**2 + x[1] + 0.5]
+
+This is more convenient when we have a large number of constraints.
 
 The equality, as discussed, is entered as a substitution rule:
 
@@ -143,8 +150,14 @@ want to solve the problem in MATLAB, you export the relaxation to SDPA format:
 
     write_to_sdpa(sdpRelaxation, 'example.dat-s')
 
-Alternatively, if you have MOSEK installed and it is callable from your Python
-distribution, you can request to use it:
+If SDPA proves to be difficult to install or compile, you can use CVXOPT:
+
+    primal, dual, x_mat, y_mat = solve_sdp(sdpRelaxation, solver='cvxopt')
+    print(primal, dual)
+
+This solution also requires PICOS on top of CXOPT. Alternatively, if you have 
+MOSEK installed and it is callable from your Python distribution, you can 
+request to use it:
 
     primal, dual, x_mat, y_mat = solve_sdp(sdpRelaxation, solver='mosek')
     print(primal, dual)

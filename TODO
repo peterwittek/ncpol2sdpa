@@ -1,5 +1,6 @@
+  - Improve documentation of solve_sdp, include the dictionary of solverparameters for each solver. Also document return values.
+  - Change return value of solve_sdp to dictionary or named tuple.
   - Circular symmetry of trace is not fully exploited for Hermitian variables.
-  - Better integration of Faacets. Reorganize class hierarchy to move Faacets relaxation to a new class.
   - Implement logging interface.
   - Start using unit testing.  
   - Support complex moment matrices in Picos and Mosek exports too.
