@@ -118,7 +118,8 @@ def solve_with_sdpa(sdpRelaxation, solverparameters=None):
     if sdpRelaxation.verbose < 2:
         os.remove(tmp_dats_filename)
         os.remove(tmp_out_filename)
-    return primal, dual, x_mat, y_mat
+    return primal+sdpRelaxation.constant_term, \
+           dual+sdpRelaxation.constant_term, x_mat, y_mat
 
 def convert_row_to_sdpa_index(block_struct, row_offsets, row):
     """Helper function to map to sparse SDPA index values.

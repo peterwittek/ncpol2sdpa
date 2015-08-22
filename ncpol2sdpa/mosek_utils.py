@@ -59,7 +59,10 @@ def parse_mosek_solution(sdpRelaxation, task):
 def solve_with_mosek(sdpRelaxation, solverparameters=None):
     task = convert_to_mosek(sdpRelaxation)
     task.optimize()
-    return parse_mosek_solution(sdpRelaxation, task)
+    primal, dual, x_mat, y_mat = parse_mosek_solution(sdpRelaxation, task)
+    return -primal+sdpRelaxation.constant_term, \
+           -dual+sdpRelaxation.constant_term, x_mat, y_mat
+
 
 def convert_to_mosek_index(block_struct, row_offsets, block_offsets, row):
     """MOSEK requires a specific sparse format to define the lower-triangular

@@ -8,6 +8,8 @@ Revision History
   - New: `get_next_neighbors` function retrieves the forward neighbors at a given distance of a site or set of sites in a lattice.
   - New: Much faster substitutions if the right-hand side of the substitution never contains variables that are not in the left-hand side.
   - New: Non-unique variables are considered only once in each variable set.
+  - Changed: Constant term in objective function is added to the primal and dual values when using the `solve_sdp` function.
+  - Changed: The primal and dual values of the Mosek solution change their signs when using the `solve_sdp` function.
   - Changed: Faacets relaxations got their own class `FaacetsRelaxation`. 
   - Fixed: Localizing matrices are built correctly when substitution rules contain polynomials and when the identity operator is not part of the monomial sets.
   - Fixed: The function `get_xmat_value` also works in Pypy.

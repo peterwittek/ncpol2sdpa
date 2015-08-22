@@ -120,8 +120,7 @@ interpret.
                                  substitutions=substitutions)
     primal, dual, _, _ = solve_sdp(sdpRelaxation)
 
-The result is very close to zero, as the constant term is ignored in the 
-objective function. The result is similarly precise for arbitrary numbers 
+The result is very close to two. The result is similarly precise for arbitrary numbers 
 of oscillators.
 
 It is remarkable that we get the correct value at the first level of

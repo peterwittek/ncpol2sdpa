@@ -35,6 +35,7 @@ class Relaxation(object):
         self.F_struct = None
         self.block_struct = []
         self.obj_facvar = 0
+        self.constant_term = 0
 
 class SdpRelaxation(Relaxation):
 
@@ -934,6 +935,7 @@ class SdpRelaxation(Relaxation):
                                                                self.substitutions))
 
             self.obj_facvar = facvar[1:]
+            self.constant_term = facvar[0]
             if self.verbose > 0 and facvar[0] != 0:
                 print("Warning: The objective function has a non-zero %s"\
                       "constant term. It is not included in the SDP objective."
