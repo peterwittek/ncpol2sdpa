@@ -133,18 +133,30 @@ with the variables, and request generating the relaxation given the constraints:
                                  substitutions=substitutions)
   
 For large problems, getting the relaxation can take a long time. Once we have 
-the relaxation, we can try to solve it solve it. Currently two solvers are 
-supported fully: SDPA and MOSEK. SDPA is the default and it has to be in the 
-path. If it is, we obtain the solution by calling the ``solve_sdp`` function:
+the relaxation, we can try to solve it solve it. Currently three solvers are 
+supported fully: SDPA, MOSEK, and CVXOPT. SDPA is the default and it has to be 
+in the path. If it is, we obtain the solution by calling the ``solve_sdp`` 
+function:
 
 ::
 
     primal, dual, x_mat, y_mat = solve_sdp(sdpRelaxation)
     print(primal, dual)
 
-This gives a solution close to the optimum around -0.7321. If the solver is not
-in the path, or you want more control over the parameters of the solver, or you
-want to solve the problem in MATLAB, you export the relaxation to SDPA format:
+This gives a solution close to the optimum around -0.7321. The solution and some
+status information and the time it takes to solve it become part of the 
+relaxation object. For instance, if you are interested in the primal, whether it
+is optimal, and the time it takes for obtaining the solution, you can write:
+
+::
+
+    solve_sdp(sdpRelaxation)
+    print(sdpRelaxation.primal, sdpRelaxation.status, sdpRelaxation.solution_time)
+
+
+If the solver is not in the path, or you want more control over the parameters 
+of the solver, or you want to solve the problem in MATLAB, you export the 
+relaxation to SDPA format:
   
 ::
 
@@ -152,15 +164,15 @@ want to solve the problem in MATLAB, you export the relaxation to SDPA format:
 
 If SDPA proves to be difficult to install or compile, you can use CVXOPT:
 
-    primal, dual, x_mat, y_mat = solve_sdp(sdpRelaxation, solver='cvxopt')
-    print(primal, dual)
+    solve_sdp(sdpRelaxation, solver='cvxopt')
+    print(sdpRelaxation.primal, sdpRelaxation.dual)
 
 This solution also requires PICOS on top of CXOPT. Alternatively, if you have 
 MOSEK installed and it is callable from your Python distribution, you can 
 request to use it:
 
-    primal, dual, x_mat, y_mat = solve_sdp(sdpRelaxation, solver='mosek')
-    print(primal, dual)
+    solve_sdp(sdpRelaxation, solver='mosek')
+    print(sdpRelaxation.primal, sdpRelaxation.dual)
 
 
 Analyzing the Solution
@@ -170,13 +182,13 @@ we are interested in. For example:
 
 ::
   
-    get_xmat_value(X[0]*X[1], sdpRelaxation, x_mat)
+    get_xmat_value(X[0]*X[1], sdpRelaxation)
 
 The sums-of-square (SOS) decomposition is extracted from the dual solution:
 
 ::
 
-    sos_decomposition(sdpRelaxation, y_mat, threshold=0.001)
+    sos_decomposition(sdpRelaxation, threshold=0.001)
 
 If we solve the SDP with the arbitrary-precision solver ``sdpa_gmp``, 
 we can find a rank loop at level two, indicating that convergence has 
@@ -186,7 +198,7 @@ Python, we read the solution file and analyse the ranks:
 ::
 
     primal, dual, x_mat, y_mat = read_sdpa_out("example.out", True)
-    find_rank_loop(sdpRelaxation, x_mat[0])
+    find_rank_loop(sdpRelaxation)
 
 The output for this problem is ``[2, 3]``, not showing a rank loop at this level
 of relaxation.
@@ -252,7 +264,7 @@ Solving this with the arbitrary-precision solver, we discover a rank loop:
 ::
 
     primal_nc, dual_nc, x_mat_nc, y_mat_nc = read_sdpa_out("data/examplenc.out", True)
-    find_rank_loop(sdpRelaxation_nc, x_mat_nc[0])
+    find_rank_loop(sdpRelaxation_nc)
 
 The output is ``[2, 2]``, indicating a rank loop and showing that the 
 noncommutative case of the relaxation converges faster.

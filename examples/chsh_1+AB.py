@@ -29,4 +29,5 @@ sdpRelaxation = SdpRelaxation(flatten([A, B]))
 sdpRelaxation.get_relaxation(level, objective=objective,
                              substitutions=monomial_substitutions,
                              extramonomials=AB)
-print(solve_sdp(sdpRelaxation))
+solve_sdp(sdpRelaxation)
+print(sdpRelaxation.primal)

@@ -46,4 +46,5 @@ chsh = -(C[0] * C[2] + C[0] * C[3] + C[1] * C[2] - C[1] * C[3])
 sdpRelaxation = SdpRelaxation(E, verbose=2)
 sdpRelaxation.get_relaxation(level, objective=chsh,
                              substitutions=substitutions)
-print(solve_sdp(sdpRelaxation))
+solve_sdp(sdpRelaxation)
+print(sdpRelaxation.primal)

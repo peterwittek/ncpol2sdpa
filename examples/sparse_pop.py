@@ -30,5 +30,5 @@ inequalities = [1-X[0]**2-X[1]**2, 1-X[1]**2-X[2]**2]
 # Obtain SDP relaxation
 sdpRelaxation = SdpRelaxation(X, hierarchy="npa_chordal")
 sdpRelaxation.get_relaxation(level, objective=obj, inequalities=inequalities)
-primal, dual, _, _ = solve_sdp(sdpRelaxation)
-print(primal, dual)
+solve_sdp(sdpRelaxation)
+print(sdpRelaxation.primal, sdpRelaxation.dual)

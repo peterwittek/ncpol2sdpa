@@ -21,4 +21,4 @@ I = [[0, -1.5,  0.5,  0.5,  0.5],
      [0,    1,   -1,    1,   -1],
      [0,    1,   -1,   -1,    1]]
 
-print maximum_violation(A_configuration, B_configuration, I, level)
+print(maximum_violation(A_configuration, B_configuration, I, level))

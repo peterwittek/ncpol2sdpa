@@ -62,6 +62,7 @@ def find_rank_loop(sdpRelaxation, base_level=0):
     :returns: list of int -- the ranks of the solution matrix with in the
                              order of increasing degree.
     """
+    x_mat = sdpRelaxation.x_mat[0]
     if sdpRelaxation.status == "unsolved":
         raise Exception("The SDP relaxation is unsolved!")
     ranks = []
@@ -76,11 +77,11 @@ def find_rank_loop(sdpRelaxation, base_level=0):
     for level in levels:
         base_monomials = \
           pick_monomials_up_to_degree(sdpRelaxation.monomial_sets[0], level)
-        ranks.append(matrix_rank(sdpRelaxation.x_mat[:len(base_monomials),
-                                                     :len(base_monomials)]))
+        ranks.append(matrix_rank(x_mat[:len(base_monomials),
+                                       :len(base_monomials)]))
 
     if x_mat.shape != (len(base_monomials), len(base_monomials)):
-        ranks.append(matrix_rank(sdpRelaxation.x_mat))
+        ranks.append(matrix_rank(x_mat))
     return ranks
 
 def sos_decomposition(sdpRelaxation, threshold=0.0):

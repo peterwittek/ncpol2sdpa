@@ -118,7 +118,7 @@ interpret.
     sdpRelaxation = SdpRelaxation(a)
     sdpRelaxation.get_relaxation(level, objective=hamiltonian,
                                  substitutions=substitutions)
-    primal, dual, _, _ = solve_sdp(sdpRelaxation)
+    solve_sdp(sdpRelaxation)
 
 The result is very close to two. The result is similarly precise for arbitrary numbers 
 of oscillators.
@@ -228,8 +228,8 @@ From here, the solution follows the usual pathway:
                                  bounds=bounds,
                                  substitutions=monomial_substitutions)
 
-    primal, dual, x_mat, y_mat = solve_sdp(sdpRelaxation)
-    print(primal, dual)
+    solve_sdp(sdpRelaxation)
+    print(sdpRelaxation.primal, sdpRelaxation.dual)
 
 Example 5: Using the Moroder Hierarchy
 ==================================================
@@ -316,6 +316,6 @@ simple example:
 
     sdpRelaxation = SdpRelaxation(X, hierarchy="npa_chordal")
     sdpRelaxation.get_relaxation(level, objective=obj, inequalities=inequalities)
-    primal, dual, x_mat, y_mat = solve_sdp(sdpRelaxation)
-    print(primal, dual)
+    solve_sdp(sdpRelaxation)
+    print(sdpRelaxation.primal, sdpRelaxation.dual)
 
