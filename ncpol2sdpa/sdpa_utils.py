@@ -39,14 +39,17 @@ def parse_solution_matrix(iterator):
             break
     return solution_matrix
 
-def read_sdpa_out(filename, solutionmatrix=False):
+def read_sdpa_out(filename, solutionmatrix=False, status=False):
     """Helper function to parse the output file of SDPA.
 
     :param filename: The name of the SDPA output file.
     :type filename: str.
     :param solutionmatrix: Optional parameter for retrieving the solution matrix.
     :type solutionmatrix: bool.
-    :returns: tuple of two floats and optionally two lists of `numpy.array`
+    :param status: Optional parameter for retrieving the status of the solution.
+    :type status: bool.
+    :returns: tuple of two floats and optionally two lists of `numpy.array` and 
+              a status string
     """
     file_ = open(filename, 'r')
     for line in file_:
@@ -59,11 +62,25 @@ def read_sdpa_out(filename, solutionmatrix=False):
                 x_mat = parse_solution_matrix(file_)
             if line.find("yMat =") > -1:
                 y_mat = parse_solution_matrix(file_)
+        if line.find("phase.value") > -1:
+            if line.find("pdOPT") > -1:
+                    status_string='optimal'
+            elif line.find("INF") > -1:
+                    status_string='infeasible'
+            elif line.find("UNBD") > -1:
+                    status_string='unbounded'
+            else:
+                    status_string='unknown'
     file_.close()
-    if solutionmatrix:
+    if solutionmatrix and status:
+        return primal, dual, x_mat, y_mat, status_string
+    elif solutionmatrix:
         return primal, dual, x_mat, y_mat
+    elif status:
+        return primal, dual, status_string
     else:
         return primal, dual
+
 
 def which(program):
     import os
@@ -94,7 +111,7 @@ def solve_with_sdpa(sdpRelaxation, solverparameters=None):
                              different name.
     :type executable: str.
     :returns: tuple of float and list -- the primal and dual solution of the SDP,
-              respectively.
+              respectively, and a status string.
     """
     solverexecutable = "sdpa"
     if solverparameters is not None and solverparameters.has_key("executable"):
@@ -114,12 +131,13 @@ def solve_with_sdpa(sdpRelaxation, solverparameters=None):
                  stdout=fnull, stderr=fnull)
     else:
         call([solverexecutable, tmp_dats_filename, tmp_out_filename])
-    primal, dual, x_mat, y_mat = read_sdpa_out(tmp_out_filename, True)
+    primal, dual, x_mat, y_mat, status = read_sdpa_out(tmp_out_filename, True, 
+                                                       True)
     if sdpRelaxation.verbose < 2:
         os.remove(tmp_dats_filename)
         os.remove(tmp_out_filename)
     return primal+sdpRelaxation.constant_term, \
-           dual+sdpRelaxation.constant_term, x_mat, y_mat
+           dual+sdpRelaxation.constant_term, x_mat, y_mat, status
 
 def convert_row_to_sdpa_index(block_struct, row_offsets, row):
     """Helper function to map to sparse SDPA index values.

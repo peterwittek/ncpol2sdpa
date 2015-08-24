@@ -8,6 +8,7 @@ Revision History
   - New: `get_next_neighbors` function retrieves the forward neighbors at a given distance of a site or set of sites in a lattice.
   - New: Much faster substitutions if the right-hand side of the substitution never contains variables that are not in the left-hand side.
   - New: Non-unique variables are considered only once in each variable set.
+  - New: When using `solve_sdp` to solve the relaxation, the solution, its status, and the time it takes to solve are now part of the class `SdpRelaxation`.
   - Changed: Constant term in objective function is added to the primal and dual values when using the `solve_sdp` function.
   - Changed: The primal and dual values of the Mosek solution change their signs when using the `solve_sdp` function.
   - Changed: The verbosity parameter also controls the console output of every solver.

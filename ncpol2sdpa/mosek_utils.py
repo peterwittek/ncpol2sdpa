@@ -54,14 +54,15 @@ def parse_mosek_solution(sdpRelaxation, task):
     dual_solution = np.zeros(size_*(size_+1)/2)
     task.getbarsj(soltype, 0, dual_solution)
     x_mat = moseksol_to_xmat(dual_solution, sdpRelaxation.block_struct)
-    return primal, dual, x_mat, y_mat
+    status = repr(task.getsolsta(soltype))
+    return primal, dual, x_mat, y_mat, status
 
 def solve_with_mosek(sdpRelaxation, solverparameters=None):
     task = convert_to_mosek(sdpRelaxation)
     task.optimize()
-    primal, dual, x_mat, y_mat = parse_mosek_solution(sdpRelaxation, task)
+    primal, dual, x_mat, y_mat, status = parse_mosek_solution(sdpRelaxation, task)
     return -primal+sdpRelaxation.constant_term, \
-           -dual+sdpRelaxation.constant_term, x_mat, y_mat
+           -dual+sdpRelaxation.constant_term, x_mat, y_mat, status
 
 
 def convert_to_mosek_index(block_struct, row_offsets, block_offsets, row):

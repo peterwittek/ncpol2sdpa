@@ -120,6 +120,13 @@ class SdpRelaxation(Relaxation):
                 self.is_hermitian_variables = False
                 break
         self.nonrelaxed = nonrelaxed
+        # Variables related to the solution
+        self.primal = None
+        self.dual = None
+        self.x_mat = None
+        self.y_mat = None
+        self.solution_time = None
+        self.status = "unsolved"
 
     ########################################################################
     # ROUTINES RELATED TO GENERATING THE MOMENT MATRICES                   #

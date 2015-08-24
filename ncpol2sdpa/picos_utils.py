@@ -22,7 +22,7 @@ def solve_with_cvxopt(sdpRelaxation, solverparameters=None):
     y_mat = [np.array(P.get_constraint(i).dual) for i in range(len(P.constraints))]
     return -solution["cvxopt_sol"]["primal objective"]+sdpRelaxation.constant_term, \
            -solution["cvxopt_sol"]["dual objective"]+sdpRelaxation.constant_term, \
-           x_mat, y_mat
+           x_mat, y_mat, solution["status"]
 
 def convert_to_picos_extra_moment_matrix(sdpRelaxation):
     """Convert an SDP relaxation to a PICOS problem, returning the moment

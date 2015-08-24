@@ -5,6 +5,7 @@ Created on Fri May 22 18:05:24 2015
 @author: Peter Wittek
 """
 import numpy as np
+import time
 from sympy import expand
 try:
     from scipy.sparse import lil_matrix
@@ -26,15 +27,27 @@ def solve_sdp(sdpRelaxation, solver="sdpa", solverparameters=None):
     :param solverparameters: Parameters to be passed to the solver.
     :type parameters: dict of str.
     """
+    primal, dual, x_mat, y_mat, status = None, None, None, None, None
+    tstart = time.time()
     if solver is "sdpa":
-        return solve_with_sdpa(sdpRelaxation, solverparameters)
+        primal, dual, x_mat, y_mat, status = \
+          solve_with_sdpa(sdpRelaxation, solverparameters)
     elif solver is "mosek":
-        return solve_with_mosek(sdpRelaxation, solverparameters)
+        primal, dual, x_mat, y_mat, status = \
+          solve_with_mosek(sdpRelaxation, solverparameters)
     elif solver is "cvxopt":
-        return solve_with_cvxopt(sdpRelaxation, solverparameters)
+        primal, dual, x_mat, y_mat, status = \
+          solve_with_cvxopt(sdpRelaxation, solverparameters)
     else:
         raise Exception("Unkown solver: " + solver)
-
+    sdpRelaxation.solution_time = time.time() - tstart
+    sdpRelaxation.primal = primal
+    sdpRelaxation.dual = dual
+    sdpRelaxation.x_mat = x_mat
+    sdpRelaxation.y_mat = y_mat
+    sdpRelaxation.status = status
+    return primal, dual, x_mat, y_mat
+    
 def find_rank_loop(sdpRelaxation, x_mat, base_level=0):
     """Helper function to detect rank loop in the solution matrix.
 

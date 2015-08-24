@@ -35,7 +35,7 @@ monomial_substitution = {}
 monomial_substitution[X[0] ** 2] = X[0]
 
 # Obtain SDP relaxation
-sdpRelaxation = SdpRelaxation(X)
+sdpRelaxation = SdpRelaxation(X, verbose=1)
 sdpRelaxation.get_relaxation(level, objective=obj, inequalities=inequalities,
                              substitutions=monomial_substitution)
 task = convert_to_mosek(sdpRelaxation)
