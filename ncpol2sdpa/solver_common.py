@@ -48,7 +48,7 @@ def solve_sdp(sdpRelaxation, solver="sdpa", solverparameters=None):
     sdpRelaxation.status = status
     return primal, dual, x_mat, y_mat
     
-def find_rank_loop(sdpRelaxation, x_mat, base_level=0):
+def find_rank_loop(sdpRelaxation, base_level=0):
     """Helper function to detect rank loop in the solution matrix.
 
     :param sdpRelaxation: The SDP relaxation.
@@ -62,6 +62,8 @@ def find_rank_loop(sdpRelaxation, x_mat, base_level=0):
     :returns: list of int -- the ranks of the solution matrix with in the
                              order of increasing degree.
     """
+    if sdpRelaxation.status == "unsolved":
+        raise Exception("The SDP relaxation is unsolved!")
     ranks = []
     from numpy.linalg import matrix_rank
     if sdpRelaxation.hierarchy != "npa":
@@ -74,28 +76,28 @@ def find_rank_loop(sdpRelaxation, x_mat, base_level=0):
     for level in levels:
         base_monomials = \
           pick_monomials_up_to_degree(sdpRelaxation.monomial_sets[0], level)
-        ranks.append(matrix_rank(x_mat[:len(base_monomials),
-                                       :len(base_monomials)]))
+        ranks.append(matrix_rank(sdpRelaxation.x_mat[:len(base_monomials),
+                                                     :len(base_monomials)]))
 
     if x_mat.shape != (len(base_monomials), len(base_monomials)):
-        ranks.append(matrix_rank(x_mat))
+        ranks.append(matrix_rank(sdpRelaxation.x_mat))
     return ranks
 
-def sos_decomposition(sdpRelaxation, y_mat, threshold=0.0):
+def sos_decomposition(sdpRelaxation, threshold=0.0):
     """Given a solution of the dual problem, it returns the SOS
     decomposition. Currently limited to unconstrained problems.
 
     :param sdpRelaxation: The SDP relaxation to be solved.
     :type sdpRelaxation: :class:`ncpol2sdpa.SdpRelaxation`.
-    :param y_mat: The dual solution of the problem.
-    :type y_mat: :class:`numpy.array`.
     :param threshold: Optional parameter for specifying the threshold value
                       below which the eigenvalues and entries of the
                       eigenvectors are disregarded.
     :type threshold: float.
     """
+    if sdpRelaxation.status == "unsolved":
+        raise Exception("The SDP relaxation is unsolved!")
     sos = 0
-    vals, vecs = np.linalg.eigh(y_mat[0])
+    vals, vecs = np.linalg.eigh(sdpRelaxation.y_mat[0])
     for j, val in enumerate(vals):
         if abs(val) > threshold:
             term = 0
@@ -116,7 +118,7 @@ def get_index_of_monomial(monomial, row_offsets, sdpRelaxation):
                                              row_offsets, row)
             return row, k, block, i, j
 
-def get_recursive_xmat_value(k, row_offsets, sdpRelaxation, x_mat):
+def get_recursive_xmat_value(k, row_offsets, sdpRelaxation):
     """Given a solution of the primal problem and a monomial, it returns the
     value for the monomial in the solution matrix.
 
@@ -124,23 +126,21 @@ def get_recursive_xmat_value(k, row_offsets, sdpRelaxation, x_mat):
     :type monomial: :class:`sympy.core.exp.Expr`.
     :param sdpRelaxation: The SDP relaxation to be solved.
     :type sdpRelaxation: :class:`ncpol2sdpa.SdpRelaxation`.
-    :param x_mat: The primal solution of the problem.
-    :type x_mat: list of :class:`numpy.array`.
     """
     Fk = sdpRelaxation.F_struct[:, k]
     for row in range(len(Fk.rows)):
         if Fk.rows[row] != []:
             block, i, j = convert_row_to_sdpa_index(sdpRelaxation.block_struct,
                                                     row_offsets, row)
-            value = x_mat[block][i, j]
+            value = sdpRelaxation.x_mat[block][i, j]
             for index in sdpRelaxation.F_struct.rows[row]:
                 if k != index:
                     value -= sdpRelaxation.F_struct[row, index]*\
                                get_recursive_xmat_value(index, row_offsets,
-                                                        sdpRelaxation, x_mat)
+                                                        sdpRelaxation)
             return value / sdpRelaxation.F_struct[row, k]
 
-def get_xmat_value(monomial, sdpRelaxation, x_mat):
+def get_xmat_value(monomial, sdpRelaxation):
     """Given a solution of the primal problem and a monomial, it returns the
     value for the monomial in the solution matrix.
 
@@ -148,10 +148,9 @@ def get_xmat_value(monomial, sdpRelaxation, x_mat):
     :type monomial: :class:`sympy.core.exp.Expr`.
     :param sdpRelaxation: The SDP relaxation to be solved.
     :type sdpRelaxation: :class:`ncpol2sdpa.SdpRelaxation`.
-    :param x_mat: The primal solution of the problem.
-    :type x_mat: list of :class:`numpy.array`.
     """
-
+    if sdpRelaxation.status == "unsolved":
+        raise Exception("The SDP relaxation is unsolved!")
     polynomial = expand(simplify_polynomial(monomial,
                                             sdpRelaxation.substitutions))
     if polynomial.is_Mul:
@@ -169,11 +168,11 @@ def get_xmat_value(monomial, sdpRelaxation, x_mat):
         element = apply_substitutions(element, sdpRelaxation.substitutions)
         row, k, block, i, j = get_index_of_monomial(element, row_offsets,
                                                     sdpRelaxation)
-        value = x_mat[block][i, j]
+        value = sdpRelaxation.x_mat[block][i, j]
         for index in sdpRelaxation.F_struct.rows[row]:
             if k != index:
                 value -= sdpRelaxation.F_struct[row, index]*\
                            get_recursive_xmat_value(index, row_offsets,
-                                                    sdpRelaxation, x_mat)
+                                                    sdpRelaxation)
         result += coeff * value / sdpRelaxation.F_struct[row, k]
     return result

@@ -36,6 +36,13 @@ class Relaxation(object):
         self.block_struct = []
         self.obj_facvar = 0
         self.constant_term = 0
+        self.primal = None
+        self.dual = None
+        self.x_mat = None
+        self.y_mat = None
+        self.solution_time = None
+        # Variables related to the solution
+        self.status = "unsolved"
 
 class SdpRelaxation(Relaxation):
 
@@ -120,13 +127,6 @@ class SdpRelaxation(Relaxation):
                 self.is_hermitian_variables = False
                 break
         self.nonrelaxed = nonrelaxed
-        # Variables related to the solution
-        self.primal = None
-        self.dual = None
-        self.x_mat = None
-        self.y_mat = None
-        self.solution_time = None
-        self.status = "unsolved"
 
     ########################################################################
     # ROUTINES RELATED TO GENERATING THE MOMENT MATRICES                   #
