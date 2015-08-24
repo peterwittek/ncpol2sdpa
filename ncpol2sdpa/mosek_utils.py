@@ -137,7 +137,8 @@ def convert_to_mosek(sdpRelaxation):
 
     env = mosek.Env()
     task = env.Task(0, 0)
-    task.set_Stream(mosek.streamtype.log, streamprinter)
+    if sdpRelaxation.verbose>0:
+        task.set_Stream(mosek.streamtype.log, streamprinter)
     numvar = 0
     numcon = len(bkc)
     BARVARDIM = [sum(sdpRelaxation.block_struct)]

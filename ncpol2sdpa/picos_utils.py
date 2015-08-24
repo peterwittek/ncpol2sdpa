@@ -17,7 +17,7 @@ def solve_with_cvxopt(sdpRelaxation, solverparameters=None):
     :type sdpRelaxation: :class:`ncpol2sdpa.SdpRelaxation`.
     """
     P = convert_to_picos(sdpRelaxation)
-    solution = P.solve(solver="cvxopt", verbose=0)
+    solution = P.solve(solver="cvxopt", verbose=sdpRelaxation.verbose)
     x_mat = [np.array(P.get_valued_variable('X'))]
     y_mat = [np.array(P.get_constraint(i).dual) for i in range(len(P.constraints))]
     return -solution["cvxopt_sol"]["primal objective"]+sdpRelaxation.constant_term, \

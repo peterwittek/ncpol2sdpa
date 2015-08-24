@@ -108,7 +108,7 @@ def solve_with_sdpa(sdpRelaxation, solverparameters=None):
     tmp_dats_filename = tmp_filename + ".dat-s"
     tmp_out_filename = tmp_filename + ".out"
     write_to_sdpa(sdpRelaxation, tmp_dats_filename)
-    if sdpRelaxation.verbose < 2:
+    if sdpRelaxation.verbose < 1:
         with open(os.devnull, "w") as fnull:
             call([solverexecutable, tmp_dats_filename, tmp_out_filename],
                  stdout=fnull, stderr=fnull)
