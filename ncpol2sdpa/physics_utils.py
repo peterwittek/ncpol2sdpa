@@ -6,6 +6,7 @@ Created on Fri May 16 14:27:47 2014
 
 @author: Peter Wittek
 """
+from sympy.core import S
 from sympy.physics.quantum.dagger import Dagger
 from .nc_utils import generate_variables, flatten
 from .solver_common import solve_sdp
@@ -179,6 +180,8 @@ def projective_measurement_constraints(*parties):
     """
     substitutions = {}
     #Idempotency and orthogonality of projectors
+    if type(parties[0][0][0]) is list:
+        parties = parties[0]
     for party in parties:
         for measurement in party:
             for projector1 in measurement:
@@ -289,3 +292,95 @@ def maximum_violation(A_configuration, B_configuration, I, level):
                                  substitutions=substitutions)
     primal, dual, _, _ = solve_sdp(sdpRelaxation)
     return primal, dual
+
+class Probability(object):
+  
+    def __init__(self, *args):
+        """Class for working with quantum probabilities.
+        
+        :param *args: Input configurations for each parties
+        :type *args: tuple of list of lists
+        
+        :Example:
+        
+        For a CHSH scenario, instantiate the class as
+        
+            P = Probability([2, 2], [2, 2])
+        
+        """
+
+        self.n_parties = len(args)
+        self.parties = []
+        self.labels = []
+        for i, configuration in enumerate(args):
+            label = chr(ord('A') + i)
+            self.labels.append(label)
+            self.parties.append(generate_measurements(configuration, label))
+        self.substitutions = projective_measurement_constraints(self.parties)
+
+    def get_all_operators(self):
+        """Return all operators across all parties and measurements to supply
+        them to the `ncpol2sdpa.SdpRelaxation` class.
+        
+        """
+        return flatten(self.parties)
+
+    def _convert_marginal_index(self, marginal):
+        if type(marginal) is str:
+            return [self.labels.index(marginal)]
+        else:
+            return sorted([self.labels.index(m) if type(m) is str else m 
+                           for m in marginal])
+        
+    def __call__(self, output_, input_, marginal=None):
+        """Obtain your probabilities in the p(ab...|xy...) notation.
+        
+        :param output_: Conditional output as [a, b, ...]
+        :type output_: list of ints.
+        :param input_: The input to condition on as [x, y, ...]
+        :type input_: list of ints.
+        :param marginal: Optional parameter. If it is a marginal, then you can 
+                         define which party or parties it belongs to.
+        :type marginal: list of str.
+        :returns: polynomial of `sympy.physics.quantum.HermitianOperator`.
+        
+        :Example:
+        
+        For the CHSH scenario, to get p(10|01), write
+        
+            P([1,0], [0,1])
+        
+        To get the marginal p_A(0|1), write
+        
+            P([0], [1], ['A'])
+                
+        """
+        
+        if len(output_) != len(input_):
+            raise Exception("The number of inputs does not match the number of outputs!")
+        elif len(input_) > self.n_parties:
+            raise Exception("The number of inputs exceeds the number of parties!")
+        elif marginal is None and len(input_) < self.n_parties:
+            raise Exception("Marginal requested, but without defining which!")
+        elif marginal is None:
+            marginal = self._convert_marginal_index(self.labels)
+        else:
+            marginal = self._convert_marginal_index(marginal)
+            if len(marginal) != len(input_):
+                raise Exception("The number of parties in the marginal does not match the number of inputs!")
+        result = S.One
+        for party, (proj, meas) in enumerate(zip(output_, input_)):
+            if len(self.parties[marginal[party]]) < meas + 1:
+                raise Exception("Invalid measurement index " + str(meas) + 
+                                " for party " + self.labels[party])
+            elif len(self.parties[marginal[party]][meas]) < proj:
+                raise Exception("Invalid projection operator index " + str(proj) + 
+                                " for party " + self.labels[party])
+            elif len(self.parties[marginal[party]][meas]) == proj:
+                # We are in the Collins-Gisin picture: the last projector
+                # is not part of the measurement.
+                result *= S.One-sum(op for op in self.parties[marginal[party]][meas])
+            else:
+                result *= self.parties[marginal[party]][meas][proj]
+        return result
+

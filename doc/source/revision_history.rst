@@ -9,6 +9,7 @@ Revision History
   - New: Much faster substitutions if the right-hand side of the substitution never contains variables that are not in the left-hand side.
   - New: Non-unique variables are considered only once in each variable set.
   - New: When using `solve_sdp` to solve the relaxation, the solution, its status, and the time it takes to solve are now part of the class `SdpRelaxation`.
+  - New: The class `Probability` provides an intuitive way to define quantum probabilities and Bell inequalities.
   - Changed: The functions `find_rank_loop`, `sos_decomposition`, and `get_xmat_value` no longer need an `x_mat` or `y_mat` parameter to pass the primal or dual solution. These values are extracted from the solved relaxation.
   - Changed: Constant term in objective function is added to the primal and dual values when using the `solve_sdp` function.
   - Changed: The primal and dual values of the Mosek solution change their signs when using the `solve_sdp` function.

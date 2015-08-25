@@ -21,6 +21,7 @@ __all__ = ['SdpRelaxation',
            'maximum_violation',
            'generate_measurements',
            'define_objective_with_I',
+           'Probability',
            'flatten',
            'get_neighbors',
            'get_next_neighbors',
@@ -46,9 +47,9 @@ from .sdpa_utils import write_to_sdpa, read_sdpa_out, \
 from .solver_common import solve_sdp, find_rank_loop, sos_decomposition, \
                            get_xmat_value
 from .physics_utils import bosonic_constraints, fermionic_constraints, \
-    pauli_constraints, get_neighbors, get_next_neighbors, correlator, generate_measurements, \
-    projective_measurement_constraints, \
-    maximum_violation, define_objective_with_I
+    pauli_constraints, get_neighbors, get_next_neighbors, correlator, \
+    generate_measurements, projective_measurement_constraints, \
+    maximum_violation, define_objective_with_I, Probability
 from .mosek_utils import convert_to_mosek
 from .picos_utils import convert_to_picos, \
     convert_to_picos_extra_moment_matrix

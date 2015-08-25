@@ -33,8 +33,10 @@ Functions to Export, Solve, and Study Relaxations
 .. autofunction:: ncpol2sdpa.save_monomial_index
 .. autofunction:: ncpol2sdpa.write_to_human_readable
 
-Functions to Define Physics Problems
-====================================
+Functions and Classes to Define Physics Problems
+================================================
+.. autoclass:: ncpol2sdpa.Probability
+   :members: __call__, get_all_operators
 .. autofunction:: ncpol2sdpa.bosonic_constraints
 .. autofunction:: ncpol2sdpa.fermionic_constraints
 .. autofunction:: ncpol2sdpa.pauli_constraints
