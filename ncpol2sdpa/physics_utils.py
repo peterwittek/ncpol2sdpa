@@ -201,24 +201,32 @@ def projective_measurement_constraints(*parties):
                             substitutions[projector2*projector1] = projector1*projector2
     return substitutions
 
-def define_objective_with_I(I, A, B):
+def define_objective_with_I(I, *args):
     """Define a polynomial using measurements and an I matrix describing a Bell
     inequality.
 
     :param I: The I matrix of a Bell inequality in the Collins-Gisin notation.
     :type I: list of list of int.
-    :param A: Measurements of Alice.
-    :type A: list of list of
-             :class:`sympy.physics.quantum.operator.HermitianOperator`.
-    :param B: Measurements of Bob.
-    :type B: list of list of
-             :class:`sympy.physics.quantum.operator.HermitianOperator`.
+    :param *args: Either the measurements of Alice and Bob or a `Probability`
+                  class describing their measurement operators.
+    :type A: tuple of list of list of
+             :class:`sympy.physics.quantum.operator.HermitianOperator` or
+             :class:`ncpol2sdpa.Probability`
 
     :returns: :class:`sympy.core.expr.Expr` -- the objective function to be
-              solved by SDPA as minimization problem to find the maximum quantum
-              violation.
+              solved as a minimization problem to find the maximum quantum
+              violation. Note that the sign is flipped compared to the Bell
+              inequality.
     """
     objective = I[0][0]
+    if len(args) > 2 or len(args) == 0:
+        raise Exception("Wrong number of arguments!")
+    elif len(args) == 1:
+        A = args[0].parties[0]
+        B = args[0].parties[1]
+    else:
+        A = args[0]
+        B = args[1]
     i, j = 0, 1  # Row and column index in I
     for m_Bj in B:  # Define first row
         for Bj in m_Bj:
@@ -265,8 +273,8 @@ def correlator(A, B):
     return correlators
 
 
-def maximum_violation(A_configuration, B_configuration, I, level):
-    """Get the maximum violation of a Bell inequality.
+def maximum_violation(A_configuration, B_configuration, I, level, extra=None):
+    """Get the maximum violation of a two-party Bell inequality.
 
     :param A_configuration: Measurement settings of Alice.
     :type A_configuration: list of int.
@@ -279,28 +287,28 @@ def maximum_violation(A_configuration, B_configuration, I, level):
 
     :returns: tuple of primal and dual solutions of the SDP relaxation.
     """
-    A = generate_measurements(A_configuration, 'A')
-    B = generate_measurements(B_configuration, 'B')
-
-    substitutions = projective_measurement_constraints(
-        A, B)
-
-    objective = define_objective_with_I(I, A, B)
-
-    sdpRelaxation = SdpRelaxation(flatten([A, B]), verbose=0)
+    P = Probability(A_configuration, B_configuration)
+    objective = define_objective_with_I(I, P)
+    if extra is None:
+        extramonomials = []
+    else:
+        extramonomials = P.get_extra_monomials(extra)
+    sdpRelaxation = SdpRelaxation(P.get_all_operators(), verbose=0)
     sdpRelaxation.get_relaxation(level, objective=objective,
-                                 substitutions=substitutions)
-    primal, dual, _, _ = solve_sdp(sdpRelaxation)
-    return primal, dual
+                                 substitutions=P.substitutions,
+                                 extramonomials=extramonomials)
+    solve_sdp(sdpRelaxation)
+    return sdpRelaxation.primal, sdpRelaxation.dual
 
 class Probability(object):
   
-    def __init__(self, *args):
+    def __init__(self, *args, **kwargs):
         """Class for working with quantum probabilities.
         
         :param *args: Input configurations for each parties
         :type *args: tuple of list of lists
-        
+        :param labels: Optional parameter string to define the label of each party.
+        :type labels: list of str.
         :Example:
         
         For a CHSH scenario, instantiate the class as
@@ -311,11 +319,18 @@ class Probability(object):
 
         self.n_parties = len(args)
         self.parties = []
-        self.labels = []
+        self.labels = [chr(ord('A') + i) for i in range(self.n_parties)]
+        for name, value in kwargs.items():
+            if name == "labels":
+                if len(value) != self.n_parties:
+                    raise Exception("Incorrect number of labels!")
+                else:
+                    self.labels = value
+            else:
+                raise Exception("Unknown parameter " + name)
         for i, configuration in enumerate(args):
-            label = chr(ord('A') + i)
-            self.labels.append(label)
-            self.parties.append(generate_measurements(configuration, label))
+            self.parties.append(generate_measurements(configuration, 
+                                                      self.labels[i]))
         self.substitutions = projective_measurement_constraints(self.parties)
 
     def get_all_operators(self):
@@ -325,6 +340,28 @@ class Probability(object):
         """
         return flatten(self.parties)
 
+    def _monomial_generator(self, monomials, label_indices):
+        if label_indices == []:
+            return monomials
+        elif monomials == []:
+             return self._monomial_generator(
+                      flatten(self.parties[label_indices[0]]), label_indices[1:])
+        else:
+            result = [m1*m2 for m1 in monomials 
+                      for m2 in flatten(self.parties[label_indices[0]])]
+            return self._monomial_generator(result, label_indices[1:])
+
+    def get_extra_monomials(self, *args):
+        if len(args) == 0:
+            return []
+        if type(args[0]) is list:
+            args = args[0]
+        extra_monomials = []
+        for s in args:
+            label_indices = [self.labels.index(party) for party in s]
+            extra_monomials.extend(self._monomial_generator([], label_indices))
+        return extra_monomials        
+        
     def _convert_marginal_index(self, marginal):
         if type(marginal) is str:
             return [self.labels.index(marginal)]

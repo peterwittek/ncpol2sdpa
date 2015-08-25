@@ -11,37 +11,58 @@ extra monomials to a lower level relaxation. We refer to this case as a
 mixed-level relaxation.
 
 As an example, we consider the CHSH inequality in the probability
-picture at level 1+AB relaxation.
+picture at level 1+AB relaxation. The lazy way of doing this is as follows:
 
 ::
 
     level = 1
-    A_configuration = [2, 2]
-    B_configuration = [2, 2]
     I = [[ 0,   -1,    0 ],
-         [-1,    1,    1 ], 
+         [-1,    1,    1 ],
          [ 0,    1,   -1 ]]
-    A = generate_measurements(A_configuration, 'A')
-    B = generate_measurements(B_configuration, 'B')
-    monomial_substitutions = projective_measurement_constraints(A, B)
-    objective = define_objective_with_I(I, A, B)
+    print(maximum_violation(A_configuration, B_configuration, I, level, 
+          extra='AB')
 
-Then we need to generate the monomials we would like to add to the
-relaxation.
+This will immediately give you the negative of the maximum violation. 
+The function `maximum_violation` only works for two-party configuration, so for
+educational purposes, we spell out what goes on in the background. With `level`
+and `I` defined as above, we create the measurements that will make up the
+probabilities, and define the objective function with the `I` matrix.
+          
+::
+
+    P = Probability([2, 2], [2, 2])
+    objective = define_objective_with_I(I, P)
+
+Unfortunately, the function `define_objective_with_I` only works for two parties
+again, which is not surprising, as it would be hard to define an `I` matrix for 
+more than two parties. So if you have a multipartite scenario, you can use the 
+probabilities to define your Bell inequality. For the CHSH, it is
 
 ::
 
-    AB = [Ai*Bj for Ai in flatten(A) for Bj in flatten(B)]  
+    CHSH = -P([0],[0],'A') + P([0,0],[0,0])  + P([0,0],[0,1]) + \
+            P([0,0],[1,0]) - P([0,0],[1,1]) - P([0],[0],'B')
 
-We have to tell when we ask for the relaxation that these extra
-monomials should be considered:
+Note that we can only minimize a function, so we have to flip the sign to get 
+the same objective function as above:
 
 ::
 
-    sdpRelaxation = SdpRelaxation(flatten([A, B]))
+    objective = -CHSH
+
+We need to generate the monomials we would like to add to the
+relaxation. This is aided by a helper function in the class `Probability`. We
+only need to provide the strings we would like to see -- this time it is AB:
+
+::
+
+    sdpRelaxation = SdpRelaxation(P.get_all_operators())
     sdpRelaxation.get_relaxation(level, objective=objective,
-                                 substitutions=monomial_substitutions,
-                                 extramonomials=AB)
+                                 substitutions=P.substitutions,
+                                 extramonomials=P.get_extra_monomials('AB'))
+    solve_sdp(sdpRelaxation)
+    print(sdpRelaxation.primal)
+
 
 Example 2: Additional manipulation of the generated SDPs with PICOS
 ===================================================================
@@ -152,63 +173,26 @@ quantum violation of the CHSH inequality:
 
 ::
 
-    def joint_probabilities():
-        psi = (tensor(basis(2,0),basis(2,0)) + 
-               tensor(basis(2,1),basis(2,1))).unit()
-        A_0 = sigmax()
-        A_1 = sigmay()
-        B_0 = (-sigmay()+sigmax())/sqrt(2)
-        B_1 = (sigmay()+sigmax())/sqrt(2)
+    psi = (tensor(basis(2,0),basis(2,0)) + tensor(basis(2,1),basis(2,1))).unit()
+    A = [(qeye(2) + sigmax())/2, (qeye(2) + sigmay())/2]
+    B = [(qeye(2) + (-sigmay()+sigmax())/sqrt(2))/2,
+         (qeye(2) + (sigmay()+sigmax())/sqrt(2))/2]
 
-        A_00 = (qeye(2) + A_0)/2
-        A_10 = (qeye(2) + A_1)/2
-        B_00 = (qeye(2) + B_0)/2
-        B_10 = (qeye(2) + B_1)/2
-
-        p=[]
-        p.append(expect(tensor(A_00, qeye(2)), psi))
-        p.append(expect(tensor(A_10, qeye(2)), psi))
-        p.append(expect(tensor(qeye(2), B_00), psi))
-        p.append(expect(tensor(qeye(2), B_10), psi))
-
-        p.append(expect(tensor(A_00, B_00), psi))
-        p.append(expect(tensor(A_00, B_10), psi))
-        p.append(expect(tensor(A_10, B_00), psi))
-        p.append(expect(tensor(A_10, B_10), psi))
-        return p
-
-Next we need the basic configuration of the projectors. We also set the
-level of the SDP relaxation and the objective.
+Next we need the basic configuration of the probabilities and we must make them
+match the observed distribution.
 
 ::
 
-    level = 1
-    A_configuration = [2, 2]
-    B_configuration = [2, 2]
-    P_A = generate_measurements(A_configuration, 'P_A')
-    P_B = generate_measurements(B_configuration, 'P_B')
-    monomial_substitutions = projective_measurement_constraints(
-        P_A, P_B)
-    objective = -P_A[0][0]
-
-We must define further constraints, namely that the joint probabilities
-must match:
-
-::
-
-    probabilities = joint_probabilities()
-    bounds = []
-    k=0
-    for i in range(len(A_configuration)):
-        bounds.append(P_A[i][0] - probabilities[k])
-        k += 1
-    for i in range(len(B_configuration)):
-        bounds.append(P_B[i][0] - probabilities[k])
-        k += 1
-    for i in range(len(A_configuration)):
-        for j in range(len(B_configuration)):
-            bounds.append(P_A[i][0]*P_B[j][0] - probabilities[k])
-            k += 1
+    P = Probability([2, 2], [2, 2])
+    bounds = [
+      P([0],[0],'A')-expect(tensor(A[0], qeye(2)), psi),
+      P([0],[1],'A')-expect(tensor(A[1], qeye(2)), psi),
+      P([0],[0],'B')-expect(tensor(qeye(2), B[0]), psi),
+      P([0],[1],'B')-expect(tensor(qeye(2), B[1]), psi),
+      P([0,0],[0,0])-expect(tensor(A[0], B[0]), psi),
+      P([0,0],[0,1])-expect(tensor(A[0], B[1]), psi),
+      P([0,0],[1,0])-expect(tensor(A[1], B[0]), psi),
+      P([0,0],[1,1])-expect(tensor(A[1], B[1]), psi)]
     bounds.extend([-bound for bound in bounds])
 
 We also have to define normalization of the subalgebras, in this case, only one:
@@ -222,14 +206,15 @@ From here, the solution follows the usual pathway:
 
 ::
 
-    sdpRelaxation = SdpRelaxation([flatten([P_A, P_B])], 
-                                  normalized=False, verbose=2)
-    sdpRelaxation.get_relaxation(level, objective=objective, 
+    level = 1
+    sdpRelaxation = SdpRelaxation(P.get_all_operators(), 
+                                  normalized=False, verbose=1)
+    sdpRelaxation.get_relaxation(level, objective=-P([0],[0],'A'), 
                                  bounds=bounds,
-                                 substitutions=monomial_substitutions)
-
+                                 substitutions=P.substitutions)
     solve_sdp(sdpRelaxation)
     print(sdpRelaxation.primal, sdpRelaxation.dual)
+
 
 Example 5: Using the Moroder Hierarchy
 ==================================================
@@ -248,16 +233,11 @@ identical to the one discussed in Section [mixedlevel].
 
 ::
 
-    level = 1
-    A_configuration = [2, 2]
-    B_configuration = [2, 2]
     I = [[ 0,   -1,    0 ],
          [-1,    1,    1 ], 
          [ 0,    1,   -1 ]]
-    A = generate_measurements(A_configuration, 'A')
-    B = generate_measurements(B_configuration, 'B')
-    substitutions = projective_measurement_constraints(A, B)
-    objective = define_objective_with_I(I, A, B)
+    P = Probability([2, 2], [2, 2])
+    objective = define_objective_with_I(I, P)
 
 When obtaining the relaxation for this kind of problem, it can prove
 useful to disable the normalization of the top-left element of the
@@ -266,22 +246,27 @@ to zero, but further processing of the SDP matrix can be easier without
 this constraint set a priori. Hence we write:
 
 ::
-
-    sdpRelaxation = SdpRelaxation([flatten(A), flatten(B)], verbose=2,
-                                   hierarchy="moroder", normalized=False)
+    
+    level = 1
+    sdpRelaxation = SdpRelaxation([flatten(P.parties[0]), flatten(P.parties[1])], 
+                                   verbose=1, hierarchy="moroder", normalized=False)
     sdpRelaxation.get_relaxation(level, objective=objective,
-                                 substitutions=substitutions)
+                                 substitutions=P.substitutions)
+
     
 We can further process the moment matrix, for instance, to impose partial positivity, or a matrix decomposition. To do these operations, we rely on PICOS:
 
 ::
 
-    P, X, Y = convert_to_picos_extra_moment_matrix(sdpRelaxation)
-    Z = P.add_variable('Z', (sdpRelaxation.block_struct[0],
+    Problem, X, Y = convert_to_picos_extra_moment_matrix(sdpRelaxation)
+    Z = Problem.add_variable('Z', (sdpRelaxation.block_struct[0],
                              sdpRelaxation.block_struct[0]))
-    P.add_constraint(partial_transpose(Y)>>0)
-    P.add_constraint(X - Y + Z == 0)
-    P.add_constraint(Z[0,0] == 1)
+    Problem.add_constraint(Y.partial_transpose()>>0)
+    Problem.add_constraint(Z.partial_transpose()>>0)
+    Problem.add_constraint(X - Y + Z == 0)
+    Problem.add_constraint(Z[0,0] == 1)
+    solution = Problem.solve()
+    print(solution)
 
 Alternatively, with SeDuMi’s ``fromsdpa`` function (Sturm 1999), we can also impose the positivity of the partial trace of the moment matrix using MATLAB, or decompose the moment matrix in various forms. For this, we have to write the relaxation to a file:
 
@@ -293,10 +278,10 @@ If all we need is the partial positivity of the moment matrix, that is actually 
 
 ::
 
-    sdpRelaxation = SdpRelaxation([flatten(A), flatten(B)], verbose=2,
-                                   hierarchy="moroder", ppt=True)
+    sdpRelaxation = SdpRelaxation([flatten(P.parties[0]), flatten(P.parties[1])], 
+                                   verbose=1, hierarchy="moroder", ppt=True)
     sdpRelaxation.get_relaxation(level, objective=objective,
-                                 substitutions=substitutions)
+                                 substitutions=P.substitutions)
 
 
 
