@@ -13,11 +13,29 @@ except ImportError:
     from .sparse_utils import lil_matrix
 from .nc_utils import pick_monomials_up_to_degree, simplify_polynomial, \
                       apply_substitutions, build_monomial
-from .sdpa_utils import solve_with_sdpa, convert_row_to_sdpa_index
+from .sdpa_utils import solve_with_sdpa, convert_row_to_sdpa_index, detect_sdpa
 from .mosek_utils import solve_with_mosek
 from .picos_utils import solve_with_cvxopt
 
-def solve_sdp(sdpRelaxation, solver="sdpa", solverparameters=None):
+def autodetect_solvers(solverparameters):
+    solvers = []
+    if detect_sdpa(solverparameters) is not None:
+        solvers.append("sdpa")
+    try:
+        import mosek
+    except ImportError:
+        pass
+    else:
+        solvers.append("mosek")
+    try:
+        import picos
+    except ImportError:
+        pass
+    else:
+        solvers.append("picos")
+    return solvers
+
+def solve_sdp(sdpRelaxation, solver=None, solverparameters=None):
     """Call a solver on the SDP relaxation.
 
     :param sdpRelaxation: The SDP relaxation to be solved.
@@ -27,15 +45,25 @@ def solve_sdp(sdpRelaxation, solver="sdpa", solverparameters=None):
     :param solverparameters: Parameters to be passed to the solver.
     :type parameters: dict of str.
     """
+    solvers = autodetect_solvers(solverparameters)
+    solver = solver.lower() if solver is not None else solver
+    if solvers == []:
+        raise Exception("Could not find any SDP solver. Please install SDPA, "+
+                        "Mosek, or Picos with Cvxopt")
+    elif solver is not None and solver not in solvers:
+        print("Available solvers: " + str(solvers))
+        raise Exception("Could not detect requested "+ solver)
+    elif solver is None:
+        solver = solvers[0]
     primal, dual, x_mat, y_mat, status = None, None, None, None, None
     tstart = time.time()
-    if solver is "sdpa":
+    if solver == "sdpa":
         primal, dual, x_mat, y_mat, status = \
           solve_with_sdpa(sdpRelaxation, solverparameters)
-    elif solver is "mosek":
+    elif solver == "mosek":
         primal, dual, x_mat, y_mat, status = \
           solve_with_mosek(sdpRelaxation, solverparameters)
-    elif solver is "cvxopt":
+    elif solver == "cvxopt":
         primal, dual, x_mat, y_mat, status = \
           solve_with_cvxopt(sdpRelaxation, solverparameters)
     else:

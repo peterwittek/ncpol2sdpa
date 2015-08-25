@@ -100,6 +100,12 @@ def which(program):
 
     return None
 
+def detect_sdpa(solverparameters):
+    solverexecutable = "sdpa"
+    if solverparameters is not None and solverparameters.has_key("executable"):
+        solverexecutable = solverparameters["executable"]
+    return which(solverexecutable)
+
 def solve_with_sdpa(sdpRelaxation, solverparameters=None):
     """Helper function to write out the SDP problem to a temporary
     file, call the solver, and parse the output.
@@ -113,11 +119,9 @@ def solve_with_sdpa(sdpRelaxation, solverparameters=None):
     :returns: tuple of float and list -- the primal and dual solution of the SDP,
               respectively, and a status string.
     """
-    solverexecutable = "sdpa"
-    if solverparameters is not None and solverparameters.has_key("executable"):
-        solverexecutable = solverparameters["executable"]
-    if which(solverexecutable) is None:
-        raise OSError(solverexecutable +" is not in the path")
+    solverexecutable = detect_sdpa(solverparameters)
+    if solverexecutable is None:
+        raise OSError("SDPA is not in the path or the executable provided is not correct")
     primal, dual = 0, 0
     tempfile_ = tempfile.NamedTemporaryFile()
     tmp_filename = tempfile_.name
