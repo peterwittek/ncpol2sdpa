@@ -59,6 +59,18 @@ def parse_mosek_solution(sdpRelaxation, task):
 
 def solve_with_mosek(sdpRelaxation, solverparameters=None):
     task = convert_to_mosek(sdpRelaxation)
+    import mosek
+    if solverparameters is not None:
+        for par,val in solverparameters.items():
+            try:
+                mskpar = eval('mosek.iparam.' + par)
+                task.putintparam(mskpar, val)
+            except AttributeError:
+                try:
+                    mskpar = eval('mosek.dparam.' + par)
+                    task.putdouparam(mskpar, val)
+                except AttributeError:
+                    raise Exception('Unknown mosek parameter')
     task.optimize()
     primal, dual, x_mat, y_mat, status = parse_mosek_solution(sdpRelaxation, task)
     return -primal+sdpRelaxation.constant_term, \

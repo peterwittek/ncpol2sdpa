@@ -32,18 +32,42 @@ def autodetect_solvers(solverparameters):
     except ImportError:
         pass
     else:
-        solvers.append("picos")
+        solvers.append("cvxopt")
     return solvers
 
 def solve_sdp(sdpRelaxation, solver=None, solverparameters=None):
-    """Call a solver on the SDP relaxation.
+    """Call a solver on the SDP relaxation. Upon successful solution, it returns
+    the primal and dual objective values along with the solution matrices. It 
+    also sets these values in the `sdpRelaxation` object, along with some status 
+    information.
 
     :param sdpRelaxation: The SDP relaxation to be solved.
     :type sdpRelaxation: :class:`ncpol2sdpa.SdpRelaxation`.
-    :param solver: The solver to be called, either "sdpa", "mosek", or "cvxopt".
+    :param solver: The solver to be called, either `None`, "sdpa", "mosek", or 
+                   "cvxopt". The default is `None`, which triggers autodetection.
     :type solver: str.
-    :param solverparameters: Parameters to be passed to the solver.
-    :type parameters: dict of str.
+    :param solverparameters: Parameters to be passed to the solver. Actual 
+                             options depend on the solver:
+
+                             SDPA:
+
+                               - "executable": 
+                                 Specify the executable for SDPA. E.g., 
+                                 "executable":"/usr/local/bin/sdpa", or
+                                 "executable":"sdpa_gmp"
+                               - "paramsfile": Specify the parameter file for SDPA.
+                             
+                             Mosek:
+                             Refer to the Mosek documentation. All arguments are
+                             passed on.
+                             
+                             Cvxopt:
+                             Refer to the PICOS documentation. All arguments are
+                             passed on.
+    :type solverparameters: dict of str.
+    :returns: tuple of the primal and dual optimum, and the solutions for the 
+              primal and dual.
+    :rtype: (float, float, list of `numpy.array`, list of `numpy.array`)
     """
     solvers = autodetect_solvers(solverparameters)
     solver = solver.lower() if solver is not None else solver
@@ -122,6 +146,8 @@ def sos_decomposition(sdpRelaxation, threshold=0.0):
                       below which the eigenvalues and entries of the
                       eigenvectors are disregarded.
     :type threshold: float.
+    :returns: The SOS decomposition
+    :rtype: :class:`sympy.core.exp.Expr`.
     """
     if sdpRelaxation.status == "unsolved":
         raise Exception("The SDP relaxation is unsolved!")
@@ -148,14 +174,6 @@ def get_index_of_monomial(monomial, row_offsets, sdpRelaxation):
             return row, k, block, i, j
 
 def get_recursive_xmat_value(k, row_offsets, sdpRelaxation):
-    """Given a solution of the primal problem and a monomial, it returns the
-    value for the monomial in the solution matrix.
-
-    :param monomial: The monomial for which the value is requested.
-    :type monomial: :class:`sympy.core.exp.Expr`.
-    :param sdpRelaxation: The SDP relaxation to be solved.
-    :type sdpRelaxation: :class:`ncpol2sdpa.SdpRelaxation`.
-    """
     Fk = sdpRelaxation.F_struct[:, k]
     for row in range(len(Fk.rows)):
         if Fk.rows[row] != []:
@@ -177,6 +195,8 @@ def get_xmat_value(monomial, sdpRelaxation):
     :type monomial: :class:`sympy.core.exp.Expr`.
     :param sdpRelaxation: The SDP relaxation to be solved.
     :type sdpRelaxation: :class:`ncpol2sdpa.SdpRelaxation`.
+    :returns: The value of the monomial in the solved relaxation.
+    :rtype: float.
     """
     if sdpRelaxation.status == "unsolved":
         raise Exception("The SDP relaxation is unsolved!")

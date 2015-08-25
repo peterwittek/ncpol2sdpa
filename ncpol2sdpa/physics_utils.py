@@ -207,8 +207,8 @@ def define_objective_with_I(I, *args):
 
     :param I: The I matrix of a Bell inequality in the Collins-Gisin notation.
     :type I: list of list of int.
-    :param *args: Either the measurements of Alice and Bob or a `Probability`
-                  class describing their measurement operators.
+    :param args: Either the measurements of Alice and Bob or a `Probability`
+                 class describing their measurement operators.
     :type A: tuple of list of list of
              :class:`sympy.physics.quantum.operator.HermitianOperator` or
              :class:`ncpol2sdpa.Probability`

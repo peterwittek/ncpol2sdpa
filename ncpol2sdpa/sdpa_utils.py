@@ -102,7 +102,7 @@ def which(program):
 
 def detect_sdpa(solverparameters):
     solverexecutable = "sdpa"
-    if solverparameters is not None and solverparameters.has_key("executable"):
+    if solverparameters is not None and "executable" in solverparameters:
         solverexecutable = solverparameters["executable"]
     return which(solverexecutable)
 
@@ -112,10 +112,8 @@ def solve_with_sdpa(sdpRelaxation, solverparameters=None):
 
     :param sdpRelaxation: The SDP relaxation to be solved.
     :type sdpRelaxation: :class:`ncpol2sdpa.SdpRelaxation`.
-    :param executable: Optional paramater to specify the name of the
-                             executable if sdpa is not in the path or has a
-                             different name.
-    :type executable: str.
+    :param solverparameters: Optional parameters to SDPA.
+    :type solverparameters: dict of str.
     :returns: tuple of float and list -- the primal and dual solution of the SDP,
               respectively, and a status string.
     """
@@ -129,12 +127,21 @@ def solve_with_sdpa(sdpRelaxation, solverparameters=None):
     tmp_dats_filename = tmp_filename + ".dat-s"
     tmp_out_filename = tmp_filename + ".out"
     write_to_sdpa(sdpRelaxation, tmp_dats_filename)
+    command_line = [solverexecutable, "-ds", tmp_dats_filename, 
+                    "-o", tmp_out_filename]
+    if solverparameters is not None:
+        for key, value in list(solverparameters.items()):
+            if key == "executable":
+                continue
+            elif key == "paramsfile":
+                command_line.extend(["-p", value])
+            else:
+                 raise Exception("Unknown parameter for SDPA: " + key)
     if sdpRelaxation.verbose < 1:
         with open(os.devnull, "w") as fnull:
-            call([solverexecutable, tmp_dats_filename, tmp_out_filename],
-                 stdout=fnull, stderr=fnull)
+            call(command_line, stdout=fnull, stderr=fnull)
     else:
-        call([solverexecutable, tmp_dats_filename, tmp_out_filename])
+        call(command_line)
     primal, dual, x_mat, y_mat, status = read_sdpa_out(tmp_out_filename, True, 
                                                        True)
     if sdpRelaxation.verbose < 2:
