@@ -33,14 +33,11 @@ This will generate the moment matrix. Additional elements of the
 problem, such as the objective function, inequalities, equalities, and
 bounds on the variables.
 
-The last step in is to write out the relaxation to a sparse SDPA file.
-The method (``write_to_sdpa``) takes one parameter, the file name.
-Alternatively, if SDPA is in the search path, then it can be solved by
-invoking a helper function (``solve_sdp``). Alternatively, MOSEK is
-also supported for obtaining a solution by passing the parameter 
-``solver='mosek'`` to this function. If PICOS and CVXOPT is available, 
-passing ``solver='cvxopt'`` will solve the SDP with CVXOPT. Other solvers are
-supported by using a converter to PICOS.
+The last step in is to either solve or export the relaxation. The function
+`solve_sdp` autodetects the possible solvers: SDPA, MOSEK, and CVXOPT. 
+Alternatively, the method ``write_to_sdpa`` exports the file to sparse SDPA 
+format, which can be solved externally on a supercomputer, in MATLAB, or by 
+any other means that accepts this input format.
 
 
 Defining a Polynomial Optimization Problem of Commuting Variables
@@ -134,9 +131,8 @@ with the variables, and request generating the relaxation given the constraints:
   
 For large problems, getting the relaxation can take a long time. Once we have 
 the relaxation, we can try to solve it solve it. Currently three solvers are 
-supported fully: SDPA, MOSEK, and CVXOPT. SDPA is the default and it has to be 
-in the path. If it is, we obtain the solution by calling the ``solve_sdp`` 
-function:
+supported fully: SDPA, MOSEK, and CVXOPT. If any of them are available, we 
+obtain the solution by calling the ``solve_sdp`` function:
 
 ::
 
@@ -154,7 +150,7 @@ is optimal, and the time it takes for obtaining the solution, you can write:
     print(sdpRelaxation.primal, sdpRelaxation.status, sdpRelaxation.solution_time)
 
 
-If the solver is not in the path, or you want more control over the parameters 
+If no solver is detected, or you want more control over the parameters 
 of the solver, or you want to solve the problem in MATLAB, you export the 
 relaxation to SDPA format:
   
@@ -162,7 +158,19 @@ relaxation to SDPA format:
 
     write_to_sdpa(sdpRelaxation, 'example.dat-s')
 
-If SDPA proves to be difficult to install or compile, you can use CVXOPT:
+You can also specify a solver if you wish. For instance, if you want to use
+the arbitrary-precision solver that you have available in the path, along with a
+matching parameter file, you can call
+
+:: 
+
+    solve_sdp(sdpRelaxation, solver='sdpa', 
+      solverparameters={"executable":"sdpa_gmp", "paramsfile"="params.gmp.sdpa"})
+
+If you have multiple solvers available, you might want to specify which exactly
+you want to use. For CVXOPT, call
+
+::
 
     solve_sdp(sdpRelaxation, solver='cvxopt')
     print(sdpRelaxation.primal, sdpRelaxation.dual)
