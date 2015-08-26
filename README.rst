@@ -19,14 +19,16 @@ The implementation requires `SymPy <http://sympy.org/>`_ and `Numpy <http://www.
 
 While the default CPython interpreter is sufficient for small to medium-scale problems, execution time becomes excessive for larger problems. The code is compatible with Pypy. Using it yields a 10-20x speedup. If you use Pypy, you will need the `Pypy fork of Numpy <https://bitbucket.org/pypy/numpy/>`_.
 
+By default, Ncpol2sdpa does not require a solver, but then it will not be able to solve a generated relaxation either. Install any supported solver and it will be detected automatically.
+
 Optional dependencies include:
 
-- `SciPy <http://scipy.org/>`_ allows faster execution with the default CPython interpreter, and enables removal of equations and chordal graph extensions.
-- `Chompack <http://chompack.readthedocs.org/en/latest/>`_ improves the sparsity of the chordal graph extension.
-- `PICOS <http://picos.zib.de/>`_ is necessary for converting the problem to a PICOS problem.
-- `MOSEK <http://www.mosek.com/>`_ Python module is necessary to work with the MOSEK converter.
+- `SDPA <http://sdpa.sourceforge.net/>`_ is a possible target solver.
+- `SciPy <http://scipy.org/>`_ allows faster execution with the default CPython interpreter.
+- `PICOS <http://picos.zib.de/>`_ is necessary for using the Cvxopt solver and for converting the problem to a PICOS instance.
+- `MOSEK <http://www.mosek.com/>`_ Python module is necessary to work with the MOSEK solver.
 - `Cvxopt <http://cvxopt.org/>`_ is required by both Chompack and PICOS.
-
+- `Chompack <http://chompack.readthedocs.org/en/latest/>`_ improves the sparsity of the chordal graph extension.
 
 Usage
 =====
@@ -34,7 +36,7 @@ Documentation is available `online <http://peterwittek.github.io/ncpol2sdpa/>`_.
 
 ::
 
-  from ncpol2sdpa import generate_variables, SdpRelaxation, write_to_sdpa
+  from ncpol2sdpa import generate_variables, SdpRelaxation, solve_sdp
 
   # Number of Hermitian variables
   n_vars = 2
@@ -58,7 +60,8 @@ Documentation is available `online <http://peterwittek.github.io/ncpol2sdpa/>`_.
   sdpRelaxation = SdpRelaxation(X)
   sdpRelaxation.get_relaxation(level, objective=obj, inequalities=inequalities,
                                substitutions=substitutions)
-  write_to_sdpa(sdpRelaxation, 'examplenc.dat-s')
+  solve_sdp(sdpRelaxation)
+  print(sdpRelaxation.primal, sdpRelaxation.dual, sdpRelaxation.status)
 
 
 Further instances are in the examples folder and also in the manual.
@@ -69,7 +72,7 @@ The code is available on PyPI, hence it can be installed by
 
 ``$ sudo pip install ncpol2sdpa``
 
-If you want the latest git version, follow the standard procedure for installing Python modules:
+If you want the latest git version, follow the standard procedure for installing Python modules after cloning the repository:
 
 ``$ sudo python setup.py install``
 
