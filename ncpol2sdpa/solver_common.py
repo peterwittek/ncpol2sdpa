@@ -6,7 +6,7 @@ Created on Fri May 22 18:05:24 2015
 """
 import numpy as np
 import time
-from sympy import expand
+from sympy import expand, Number
 try:
     from scipy.sparse import lil_matrix
 except ImportError:
@@ -215,13 +215,16 @@ def get_xmat_value(monomial, sdpRelaxation):
     for element in elements:
         element, coeff = build_monomial(element)
         element = apply_substitutions(element, sdpRelaxation.substitutions)
-        row, k, block, i, j = get_index_of_monomial(element, row_offsets,
-                                                    sdpRelaxation)
-        value = sdpRelaxation.x_mat[block][i, j]
-        for index in sdpRelaxation.F_struct.rows[row]:
-            if k != index:
-                value -= sdpRelaxation.F_struct[row, index]*\
-                           get_recursive_xmat_value(index, row_offsets,
-                                                    sdpRelaxation)
-        result += coeff * value / sdpRelaxation.F_struct[row, k]
+        if isinstance(element, Number):
+            result += coeff*float(element)
+        else:
+            row, k, block, i, j = get_index_of_monomial(element, row_offsets,
+                                                        sdpRelaxation)
+            value = sdpRelaxation.x_mat[block][i, j]
+            for index in sdpRelaxation.F_struct.rows[row]:
+                if k != index:
+                    value -= sdpRelaxation.F_struct[row, index]*\
+                               get_recursive_xmat_value(index, row_offsets,
+                                                        sdpRelaxation)
+            result += coeff * value / sdpRelaxation.F_struct[row, k]
     return result
