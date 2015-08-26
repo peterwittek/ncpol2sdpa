@@ -565,8 +565,19 @@ class lil_matrix(spmatrix, IndexMixin):
     shape = property(fget=spmatrix.get_shape, fset=set_shape)
 
     def __iadd__(self, other):
-        self[:, :] = self + other
-        return self
+        if isinstance(other, lil_matrix):
+            if self.shape != other.shape:
+                raise Exception("Shapes don't match!")
+            # Super-retarded solution
+            for i in range(self.shape[0]):
+                for j in range(self.shape[1]):
+                    a = self[i, j]
+                    b = other[i, j]
+                    if a != 0 or b != 0:
+                        self[i, j] = a + b
+            return self
+        else:
+            raise NotImplementedError
 
     def __isub__(self, other):
         self[:, :] = self - other
@@ -585,6 +596,14 @@ class lil_matrix(spmatrix, IndexMixin):
             return self
         else:
             raise NotImplementedError
+
+    def __mul__(self, other):
+        if isscalarlike(other):
+            return self._mul_scalar(other)
+        else:
+            raise NotImplementedError
+    
+    __rmul__ = __mul__
 
     # Whenever the dimensions change, empty lists should be created for each
     # row
@@ -652,6 +671,8 @@ class lil_matrix(spmatrix, IndexMixin):
         Python lists return copies.
         """
         # Utilities found in IndexMixin
+        if isinstance(index, int):
+            return self.getrow(index)
         if isinstance(index[0], int) and isinstance(index[1], int):
             return lil_get1(self.shape[0], self.shape[1], self.rows, self.data,
                             index[0], index[1])
@@ -682,16 +703,21 @@ class lil_matrix(spmatrix, IndexMixin):
                             self.rows, self.data,
                             i, j, x)
                 return
-
+        elif (isinstance(index, int) or isinstance(index, np.integer)) and \
+          isinstance(x, lil_matrix) and x.shape == (1, self.shape[1]):
+            self.rows[index] = x.rows[0][:]
+            self.data[index] = x.data[0][:]
+            return
+        else:
+            raise NotImplementedError
+            
+            
     def _mul_scalar(self, other):
         if other == 0:
             # Multiply by zero: return the zero matrix
             new = lil_matrix(self.shape, dtype=self.dtype)
         else:
-            res_dtype = upcast_scalar(self.dtype, other)
-
             new = self.copy()
-            new = new.astype(res_dtype)
             # Multiply this scalar by every element.
             for j, rowvals in enumerate(new.data):
                 new.data[j] = [val*other for val in rowvals]

@@ -67,7 +67,7 @@ class ElegantBell(unittest.TestCase):
              [0,    1,    1,   -1,   -1],
              [0,    1,   -1,    1,   -1],
              [0,    1,   -1,   -1,    1]]
-        self.assertTrue(abs(maximum_violation([2, 2, 2], [2, 2, 2, 2], I, 2)[0]
+        self.assertTrue(abs(maximum_violation([2, 2, 2], [2, 2, 2, 2], I, 1)[0]
                             +np.sqrt(3))<10e-5)
 
 
