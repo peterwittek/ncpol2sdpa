@@ -7,19 +7,15 @@ Created on Thu May 15 11:16:58 2014
 
 @author: wittek
 """
-from sympy.physics.quantum.operator import HermitianOperator
-from ncpol2sdpa import SdpRelaxation, write_to_sdpa
+from ncpol2sdpa import SdpRelaxation, write_to_sdpa, generate_variables
 
 # Get commutative variables
-x1 = HermitianOperator("x1")
-x1.is_commutative = True
-x2 = HermitianOperator("x2")
-x2.is_commutative = True
+x = generate_variables(2, commutative=True)
 
-g0 = 4 * x1 ** 2 + x1 * x2 - 4 * x2 ** 2 - \
-    2.1 * x1 ** 4 + 4 * x2 ** 4 + x1 ** 6 / 3
+g0 = 4 * x[0] ** 2 + x[0] * x[1] - 4 * x[1] ** 2 - \
+    2.1 * x[0] ** 4 + 4 * x[1] ** 4 + x[0] ** 6 / 3
 
 # Obtain SDP relaxation
-sdpRelaxation = SdpRelaxation([x1, x2])
+sdpRelaxation = SdpRelaxation(x)
 sdpRelaxation.get_relaxation(3, objective=g0)
 write_to_sdpa(sdpRelaxation, 'gloptipoly_demo.dat-s')

@@ -30,10 +30,7 @@ hbar, omega = 1, 1
 a = generate_variables(N, name='a')
 substitutions = bosonic_constraints(a)
 
-hamiltonian = 0
-for i in range(N):
-    hamiltonian += hbar * omega * (Dagger(a[i]) * a[i])
-
+hamiltonian = sum(hbar * omega * (Dagger(a[i]) * a[i]) for i in range(N))
 
 time0 = time.time()
 # Obtain SDP relaxation

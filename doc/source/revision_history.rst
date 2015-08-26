@@ -12,6 +12,7 @@ Revision History
   - New: The class `Probability` provides an intuitive way to define quantum probabilities and Bell inequalities.
   - New: The function `solve_sdp` autodetects available solvers and complains if there is none.
   - New: The optional parameter `solverparameters` to the function `solve_sdp` can contain a dictionary of options, with a different set for each of the target solvers.
+  - New: Regression testing framework added.
   - Changed: The functions `find_rank_loop`, `sos_decomposition`, and `get_xmat_value` no longer need an `x_mat` or `y_mat` parameter to pass the primal or dual solution. These values are extracted from the solved relaxation.
   - Changed: Constant term in objective function is added to the primal and dual values when using the `solve_sdp` function.
   - Changed: The primal and dual values of the Mosek solution change their signs when using the `solve_sdp` function.

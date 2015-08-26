@@ -1,5 +1,3 @@
   - Circular symmetry of trace is not fully exploited for Hermitian variables.
-  - Implement logging interface.
-  - Start using unit testing and regression testing.
   - Support complex moment matrices in Picos and Mosek exports too.
   - Better support for steering hierarchy. Probably in a derived class.
