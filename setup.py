@@ -10,11 +10,11 @@ optimization problem can be unconstrained or constrained by equalities and
 inequalities.
 """
 
-from distutils.core import setup
+from setuptools import setup
 
 setup(
     name='ncpol2sdpa',
-    version='1.8',
+    version='1.9',
     author='Peter Wittek',
     author_email='peterwittek@users.noreply.github.com',
     packages=['ncpol2sdpa'],
@@ -43,4 +43,5 @@ setup(
         "sympy >= 0.7.2",
         "numpy"
     ],
+    test_suite="tests"
 )
