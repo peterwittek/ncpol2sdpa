@@ -26,6 +26,7 @@ from .nc_utils import apply_substitutions, build_monomial, \
     is_pure_substitution_rule, convert_relational
 from .chordal_extension import generate_clique, find_clique_index
 
+
 class Relaxation(object):
 
     def __init__(self):
@@ -44,6 +45,7 @@ class Relaxation(object):
         # Variables related to the solution
         self.status = "unsolved"
 
+
 class SdpRelaxation(Relaxation):
 
     """Class for obtaining sparse SDP relaxation.
@@ -51,11 +53,13 @@ class SdpRelaxation(Relaxation):
     :param variables: Commutative or noncommutative, Hermitian or nonhermiatian
                       variables, possibly a list of list of variables if the
                       hierarchy is not NPA.
-    :type variables: list of :class:`sympy.physics.quantum.operator.Operator` or
+    :type variables: list of :class:`sympy.physics.quantum.operator.Operator`
+                     or
                      :class:`sympy.physics.quantum.operator.HermitianOperator`
                      or a list of list.
     :param nonrelaxed: Optional variables which are not to be relaxed.
-    :type nonrelaxed: list of :class:`sympy.physics.quantum.operator.Operator` or
+    :type nonrelaxed: list of :class:`sympy.physics.quantum.operator.Operator`
+                     or
                      :class:`sympy.physics.quantum.operator.HermitianOperator`
                      or a list of list.
     :param verbose: Optional parameter for level of verbosity:
@@ -86,7 +90,7 @@ class SdpRelaxation(Relaxation):
                  normalized=True, ppt=False, matrix_var_dim=None):
         """Constructor for the class.
         """
-
+        super(SdpRelaxation, self).__init__()
         self.substitutions = {}
         self.monomial_index = {}
         self.var_offsets = [0]
@@ -101,7 +105,7 @@ class SdpRelaxation(Relaxation):
         self.pure_substitution_rules = True
         self.mark_conjugate = False
         self.complex_matrix = False
-        if matrix_var_dim != None:
+        if matrix_var_dim is not None:
             self.complex_matrix = True
             self.normalized = False
         self.matrix_var_dim = matrix_var_dim
@@ -148,10 +152,11 @@ class SdpRelaxation(Relaxation):
             # the monomial if all the variables are Hermitian
             need_new_variable = True
             if self.is_hermitian_variables and \
-              (self.matrix_var_dim != None or ncdegree(monomial) > 2):
-                daggered_monomial = apply_substitutions(Dagger(monomial),
-                                                        self.substitutions,
-                                                        self.pure_substitution_rules)
+                    (self.matrix_var_dim is not None or
+                     ncdegree(monomial) > 2):
+                daggered_monomial = \
+                    apply_substitutions(Dagger(monomial), self.substitutions,
+                                        self.pure_substitution_rules)
                 try:
                     k = self.monomial_index[daggered_monomial]
                     conjugate = True
@@ -164,7 +169,8 @@ class SdpRelaxation(Relaxation):
                 # the moment matrix
                 k = n_vars + 1
                 self.monomial_index[monomial] = k
-        if (self.matrix_var_dim != None or self.mark_conjugate) and conjugate:
+        if (self.matrix_var_dim is not None or self.mark_conjugate) and \
+                conjugate:
             k = -k
         return k, coeff
 
@@ -199,17 +205,19 @@ class SdpRelaxation(Relaxation):
         k -= 1
         return k
 
-
     def __push_monomial(self, monomial, n_vars, row_offset, rowA, columnA, N,
                         rowB, columnB, lenB):
-        monomial = apply_substitutions(monomial, self.substitutions, self.pure_substitution_rules)
-        if isinstance(monomial, Number) or isinstance(monomial, int) or isinstance(monomial, float):
+        monomial = apply_substitutions(monomial, self.substitutions,
+                                       self.pure_substitution_rules)
+        if isinstance(monomial, Number) or isinstance(monomial, int) or \
+                isinstance(monomial, float):
             if rowA == 0 and columnA == 0 and rowB == 0 and columnB == 0 and \
               monomial == 1.0 and not self.normalized:
-                if self.matrix_var_dim == None:
+                if self.matrix_var_dim is None:
                     n_vars += 1
                     self.F_struct[row_offset + rowA * N*lenB +
-                                  rowB * N + columnA * lenB + columnB, n_vars] = 1
+                                  rowB * N + columnA * lenB + columnB,
+                                  n_vars] = 1
                 else:
                     n_vars = self.__add_matrix_variable(row_offset, rowA,
                                                         columnA, N, rowB,
@@ -217,7 +225,8 @@ class SdpRelaxation(Relaxation):
                                                         n_vars + 1, False, 1)
             else:
                 self.F_struct[row_offset + rowA * N*lenB +
-                              rowB * N + columnA * lenB + columnB, 0] = monomial
+                              rowB * N + columnA * lenB + columnB,
+                              0] = monomial
         elif monomial.is_Add:
             for element in monomial.as_ordered_terms():
                 n_vars = self.__push_monomial(element, n_vars, row_offset,
@@ -226,7 +235,7 @@ class SdpRelaxation(Relaxation):
         elif monomial != 0:
             k, coeff = self.__process_monomial(monomial, n_vars)
             # We push the entry to the moment matrix
-            if self.matrix_var_dim == None:
+            if self.matrix_var_dim is None:
                 if self.mark_conjugate:
                     if k < 0:
                         coeff = -coeff
@@ -285,10 +294,11 @@ class SdpRelaxation(Relaxation):
                                                       columnA, N, rowB,
                                                       columnB, len(monomialsB))
             if self.verbose > 0:
-                percentage = "{0:.0f}%".format(
-                  float(processed_entries-1)/self.n_vars * 100)
-                sys.stdout.write("\r\x1b[KCurrent number of SDP variables: %d"\
-                                 " (done: %s)" % (n_vars, percentage) )
+                percentage = \
+                    "{0:.0f}%".format(float(processed_entries-1)/self.n_vars *
+                                      100)
+                sys.stdout.write("\r\x1b[KCurrent number of SDP variables: %d"
+                                 " (done: %s)" % (n_vars, percentage))
                 sys.stdout.flush()
         if self.verbose > 0:
             sys.stdout.write("\r")
@@ -304,15 +314,16 @@ class SdpRelaxation(Relaxation):
         """
         processed_element, coeff1 = build_monomial(element)
         if enablesubstitution:
-            processed_element = apply_substitutions(processed_element,
-                                                    self.substitutions,
-                                                    self.pure_substitution_rules)
+            processed_element = \
+                apply_substitutions(processed_element, self.substitutions,
+                                    self.pure_substitution_rules)
         # Given the monomial, we need its mapping L_y(w) to push it into
         # a corresponding constraint matrix
         if processed_element.is_Number:
             return [(0, coeff1)]
         elif processed_element.is_Add:
-            monomials = processed_element.as_coeff_mul()[1][0].as_coeff_add()[1]
+            monomials = \
+                processed_element.as_coeff_mul()[1][0].as_coeff_add()[1]
         else:
             monomials = [processed_element]
         result = []
@@ -341,7 +352,7 @@ class SdpRelaxation(Relaxation):
                 except KeyError:
                     # An extra round of substitutions is granted on the
                     # conjugate of the monomial if all the variables are
-                    #Hermitian
+                    # Hermitian
                     exists = False
                     if self.is_hermitian_variables:
                         daggered_monomial = \
@@ -361,7 +372,8 @@ class SdpRelaxation(Relaxation):
                         print(("DEBUG: %s, %s, %s" % (element,
                                                       Dagger(monomial), sub)))
 
-                        raise RuntimeError("The requested monomial could not be found.")
+                        raise RuntimeError("The requested monomial could not "
+                                           "be found.")
 
             result.append((k, coeff))
         return result
@@ -424,8 +436,9 @@ class SdpRelaxation(Relaxation):
         F = {}
         for i in range(self.matrix_var_dim):
             for j in range(self.matrix_var_dim):
-                for key, value in polynomial[i, j].as_coefficients_dict().items():
-                    skey = apply_substitutions(key, self.substitutions,\
+                for key, value in \
+                        polynomial[i, j].as_coefficients_dict().items():
+                    skey = apply_substitutions(key, self.substitutions,
                                                self.pure_substitution_rules)
                     try:
                         Fk = F[skey]
@@ -433,7 +446,7 @@ class SdpRelaxation(Relaxation):
                         Fk = zeros(self.matrix_var_dim, self.matrix_var_dim)
                     Fk[i, j] += value
                     F[skey] = Fk
-        #This is the tracing part
+        # This is the tracing part
         for key, Fk in F.items():
             if key == S.One:
                 k = 1
@@ -441,12 +454,12 @@ class SdpRelaxation(Relaxation):
                 k = self.monomial_index[key]
             for i in range(self.matrix_var_dim):
                 for j in range(self.matrix_var_dim):
-                    sym_matrix = zeros(self.matrix_var_dim, self.matrix_var_dim)
+                    sym_matrix = zeros(self.matrix_var_dim,
+                                       self.matrix_var_dim)
                     sym_matrix[i, j] = 1
                     facvar[k+i*self.matrix_var_dim+j] = (sym_matrix*Fk).trace()
         facvar = [float(f) for f in facvar]
         return facvar
-
 
     def __process_inequalities(self, inequalities, block_index,
                                localizing_monomial_sets):
@@ -473,14 +486,15 @@ class SdpRelaxation(Relaxation):
             localization_order = self.localization_order[
                 block_index - initial_block_index - 1]
             if localizing_monomial_sets is not None and \
-              k < len(localizing_monomial_sets) and\
-              localizing_monomial_sets[k] is not None:
+                    k < len(localizing_monomial_sets) and\
+                    localizing_monomial_sets[k] is not None:
                 monomials = localizing_monomial_sets[k]
             elif self.hierarchy == "npa_chordal":
-                index = find_clique_index(self.variables, ineq, self.clique_set)
+                index = find_clique_index(self.variables, ineq,
+                                          self.clique_set)
                 monomials = \
-                 pick_monomials_up_to_degree(self.monomial_sets[index],
-                                             localization_order)
+                    pick_monomials_up_to_degree(self.monomial_sets[index],
+                                                localization_order)
 
             else:
                 monomials = \
@@ -543,7 +557,7 @@ class SdpRelaxation(Relaxation):
                 equality = convert_relational(equality)
             eq_order = ncdegree(equality)
             if eq_order > 2 * self.level:
-                print("An equality constraint has degree %d. Choose a "\
+                print("An equality constraint has degree %d. Choose a "
                       "higher level of relaxation." % eq_order)
                 raise Exception
             localization_order = int(floor((2 * self.level - eq_order) / 2))
@@ -636,14 +650,13 @@ class SdpRelaxation(Relaxation):
                         start_columnB = rowB
                     for columnB in range(start_columnB, rowB):
                         original_row = self.F_struct[row_offset + rowA*N*lenB +
-                                                     rowB * N + columnA * lenB
-                                                     + columnB]
+                                                     rowB * N +
+                                                     columnA * lenB + columnB]
                         self.F_struct[row_offset + rowA*N*lenB +
                                       rowB * N +
                                       columnA * lenB + columnB] = \
-                                        self.F_struct[row_offset + rowA*N*lenB
-                                                      + columnB * N
-                                                      + columnA * lenB + rowB]
+                            self.F_struct[row_offset + rowA*N*lenB +
+                                          columnB * N + columnA * lenB + rowB]
                         self.F_struct[row_offset + rowA*N*lenB + columnB * N +
                                       columnA * lenB + rowB] = original_row
 
@@ -692,7 +705,7 @@ class SdpRelaxation(Relaxation):
                                            self.block_struct[:mm_ind]])
                     width = self.block_struct[mm_ind]
                     self.F_struct[row_offset] += \
-                      value*self.F_struct[base_row_offset + i*width + j]
+                        value*self.F_struct[base_row_offset + i*width + j]
                 else:
                     value = float(sub_expr)
                     self.F_struct[row_offset, 0] += value
@@ -711,16 +724,16 @@ class SdpRelaxation(Relaxation):
             print("Calculating block structure...")
         if self.nonrelaxed is not None:
             self.block_struct.append(-len(self.nonrelaxed))
-        if  self.hierarchy == "moroder":
-            self.block_struct.append(len(self.monomial_sets[0])*
+        if self.hierarchy == "moroder":
+            self.block_struct.append(len(self.monomial_sets[0]) *
                                      len(self.monomial_sets[1]))
         else:
             for monomials in self.monomial_sets:
                 self.block_struct.append(len(monomials))
         if extramomentmatrix is not None:
             for _ in extramomentmatrix:
-                if  self.hierarchy == "moroder":
-                    self.block_struct.append(len(self.monomial_sets[0])*
+                if self.hierarchy == "moroder":
+                    self.block_struct.append(len(self.monomial_sets[0]) *
                                              len(self.monomial_sets[1]))
                 else:
                     for monomials in self.monomial_sets:
@@ -760,7 +773,7 @@ class SdpRelaxation(Relaxation):
                 localization_order = 0
             self.localization_order.append(localization_order)
             if localizing_monomial_sets is not None and \
-              localizing_monomial_sets[k] is not None:
+                    localizing_monomial_sets[k] is not None:
                 localizing_monomials = localizing_monomial_sets[k]
             elif self.hierarchy == "npa_chordal":
                 index = find_clique_index(self.variables, constraint,
@@ -780,23 +793,22 @@ class SdpRelaxation(Relaxation):
                 self.block_struct.append(len(localizing_monomials))
 
         if degree_warning and self.verbose > 0:
-            print("A constraint has degree %d. Either choose a higher level "\
-                  "relaxation or ensure that a mixed-order relaxation has the"\
+            print("A constraint has degree %d. Either choose a higher level "
+                  "relaxation or ensure that a mixed-order relaxation has the"
                   " necessary monomials" % (ineq_order))
 
         if bounds is not None:
             for _ in bounds:
                 self.localization_order.append(0)
                 self.block_struct.append(1)
-        if self.matrix_var_dim != None:
+        if self.matrix_var_dim is not None:
             self.block_struct = [self.matrix_var_dim*bs
                                  for bs in self.block_struct]
-
 
     def __generate_monomial_sets(self, objective, inequalities, equalities,
                                  extramonomials):
         if self.level == -1:
-            if extramonomials == None or extramonomials == []:
+            if extramonomials is None or extramonomials == []:
                 raise Exception("Cannot build relaxation at level -1 without \
                                 monomials specified.")
             if isinstance(extramonomials[0], list):
@@ -811,9 +823,9 @@ class SdpRelaxation(Relaxation):
                 if extramonomials is not None:
                     extramonomials_ = extramonomials[k]
                 self.monomial_sets.append(
-                  get_monomials(variables, extramonomials_, self.substitutions,
-                                self.level,
-                                removesubstitutions=self.is_hermitian_variables))
+                    get_monomials(variables, extramonomials_,
+                                  self.substitutions, self.level,
+                                  removesubstitutions=self.is_hermitian_variables))
                 k += 1
         elif self.hierarchy == "npa_chordal":
             self.clique_set = generate_clique(self.variables, objective,
@@ -823,14 +835,14 @@ class SdpRelaxation(Relaxation):
             for clique in self.clique_set:
                 variables = [self.variables[i] for i in np.nonzero(clique)[0]]
                 self.monomial_sets.append(
-                  get_monomials(variables, extramonomials, self.substitutions,
-                                self.level,
-                                removesubstitutions=self.is_hermitian_variables))
+                    get_monomials(variables, extramonomials,
+                                  self.substitutions, self.level,
+                                  removesubstitutions=self.is_hermitian_variables))
         else:
             self.monomial_sets.append(
-              get_monomials(self.variables, extramonomials, self.substitutions,
-                            self.level,
-                            removesubstitutions=self.is_hermitian_variables))
+                get_monomials(self.variables, extramonomials,
+                              self.substitutions, self.level,
+                              removesubstitutions=self.is_hermitian_variables))
 
     def __estimate_n_vars(self):
         self.n_vars = 0
@@ -842,7 +854,7 @@ class SdpRelaxation(Relaxation):
 
                 # The minus one compensates for the constant term in the
                 # top left corner of the moment matrix
-                if self.matrix_var_dim == None:
+                if self.matrix_var_dim is None:
                     self.n_vars += int(n_monomials * (n_monomials + 1) / 2)
                     if self.hierarchy == "npa" and self.normalized:
                         self.n_vars -= 1
@@ -871,20 +883,19 @@ class SdpRelaxation(Relaxation):
             self.F_struct.rows[row] = []
             self.F_struct.data[row] = []
 
-
     ########################################################################
     # PUBLIC ROUTINES EXPOSED TO THE USER                                  #
     ########################################################################
-
 
     def process_constraints(self, inequalities=None, equalities=None,
                             bounds=None, psd=None, block_index=0,
                             removeequalities=False,
                             localizing_monomial_sets=None):
-        """Process the constraints and generate localizing matrices. Useful only
-        if the moment matrix already exists. Call it if you want to replace your
-        constraints. The number of the respective types of constraints and the
-        maximum degree of each constraint must remain the same.
+        """Process the constraints and generate localizing matrices. Useful
+        only if the moment matrix already exists. Call it if you want to
+        replace your constraints. The number of the respective types of
+        constraints and the maximum degree of each constraint must remain the
+        same.
 
         :param inequalities: Optional parameter to list inequality constraints.
         :type inequalities: list of :class:`sympy.core.exp.Expr`.
@@ -920,7 +931,8 @@ class SdpRelaxation(Relaxation):
         self.__process_inequalities(constraints, block_index,
                                     localizing_monomial_sets)
         if removeequalities and equalities is not None:
-            A = self.__process_equalities(equalities, flatten(self.monomial_sets))
+            A = self.__process_equalities(equalities,
+                                          flatten(self.monomial_sets))
             self.__remove_equalities(equalities, A)
 
     def set_objective(self, objective, extraobjexpr=None):
@@ -935,16 +947,17 @@ class SdpRelaxation(Relaxation):
         :type extraobjexpr: str.
         """
         if objective is not None:
-            if self.matrix_var_dim != None:
+            if self.matrix_var_dim is not None:
                 facvar = self.__get_trace_facvar(objective)
             else:
-                facvar = self.__get_facvar(simplify_polynomial(objective,
-                                                               self.substitutions))
+                facvar = \
+                    self.__get_facvar(simplify_polynomial(objective,
+                                                          self.substitutions))
 
             self.obj_facvar = facvar[1:]
             self.constant_term = facvar[0]
             if self.verbose > 0 and facvar[0] != 0:
-                print("Warning: The objective function has a non-zero %s"\
+                print("Warning: The objective function has a non-zero %s "
                       "constant term. It is not included in the SDP objective."
                       % facvar[0])
         else:
@@ -970,8 +983,8 @@ class SdpRelaxation(Relaxation):
                     width = self.block_struct[mm_ind]
                     for column in self.F_struct[base_row_offset + i*width + j].rows[0]:
                         self.obj_facvar[column-1] = \
-                          value*self.F_struct[base_row_offset + i*width + j, column]
-
+                            value*self.F_struct[base_row_offset + i*width + j,
+                                                column]
 
     def get_relaxation(self, level, objective=None, inequalities=None,
                        equalities=None, substitutions=None, bounds=None,
@@ -1003,8 +1016,8 @@ class SdpRelaxation(Relaxation):
         :param removeequalities: Optional parameter to attempt removing the
                                  equalities by solving the linear equations.
         :type removeequalities: bool.
-        :param extramonomials: Optional paramter of monomials to be included, on
-                               top of the requested level of relaxation.
+        :param extramonomials: Optional paramter of monomials to be included,
+                               on top of the requested level of relaxation.
         :type extramonomials: list of :class:`sympy.core.exp.Expr`.
         :param extramomentmatrices: Optional paramter of duplicating or adding
                                moment matrices.  A new moment matrix can be
@@ -1091,8 +1104,8 @@ class SdpRelaxation(Relaxation):
                 self.var_offsets.append(new_n_vars)
         if extramomentmatrices is not None:
             new_n_vars, block_index = \
-            self.__add_extra_momentmatrices(extramomentmatrices, new_n_vars,
-                                            block_index)
+                self.__add_extra_momentmatrices(extramomentmatrices,
+                                                new_n_vars, block_index)
         # The initial estimate for the size of F_struct was overly generous.
         self.n_vars = new_n_vars
         # We don't correct the size of F_struct, because that would trigger

@@ -11,7 +11,6 @@ Created on Fri May 10 09:45:11 2013
 
 @author: Peter Wittek
 """
-import mosek
 from ncpol2sdpa import generate_variables, SdpRelaxation, solve_sdp
 # Number of Hermitian variables
 n_vars = 2

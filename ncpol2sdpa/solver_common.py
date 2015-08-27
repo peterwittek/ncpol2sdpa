@@ -109,15 +109,15 @@ def find_rank_loop(sdpRelaxation, x_mat=None, base_level=0):
     :param sdpRelaxation: The SDP relaxation.
     :type sdpRelaxation: :class:`ncpol2sdpa.SdpRelaxation`.
     :param x_mat: Optional parameter providing the primal solution of the
-                   moment matrix. If not provided, the solution is extracted
+                  moment matrix. If not provided, the solution is extracted
                   from the sdpRelaxation object.
-   :type x_mat: :class:`numpy.array`.
+    :type x_mat: :class:`numpy.array`.
     :param base_level: Optional parameter for specifying the lower level
                        relaxation for which the rank loop should be tested
                        against.
     :type base_level: int.
     :returns: list of int -- the ranks of the solution matrix with in the
-                             order of increasing degree.
+              order of increasing degree.
     """
     if sdpRelaxation.status == "unsolved" and x_mat is None:
         raise Exception("The SDP relaxation is unsolved and no primal " +
@@ -206,7 +206,7 @@ def get_recursive_xmat_value(k, row_offsets, sdpRelaxation, x_mat):
                 if k != index:
                     value -= sdpRelaxation.F_struct[row, index] * \
                                get_recursive_xmat_value(index, row_offsets,
-                                                        sdpRelaxation)
+                                                        sdpRelaxation, x_mat)
             return value / sdpRelaxation.F_struct[row, k]
 
 

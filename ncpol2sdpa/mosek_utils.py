@@ -17,6 +17,7 @@ def streamprinter(text):
     sys.stdout.write(text)
     sys.stdout.flush()
 
+
 def moseksol_to_xmat(vec, block_struct):
     n = int(np.sqrt(1+8*len(vec))-1)/2
     if n*(n+1)/2 != len(vec):
@@ -42,6 +43,7 @@ def moseksol_to_xmat(vec, block_struct):
         column += 1
     return result
 
+
 def parse_mosek_solution(sdpRelaxation, task):
     import mosek
     soltype = mosek.soltype.itr
@@ -57,11 +59,11 @@ def parse_mosek_solution(sdpRelaxation, task):
     status = repr(task.getsolsta(soltype))
     return primal, dual, x_mat, y_mat, status
 
+
 def solve_with_mosek(sdpRelaxation, solverparameters=None):
     task = convert_to_mosek(sdpRelaxation)
-    import mosek
     if solverparameters is not None:
-        for par,val in solverparameters.items():
+        for par, val in solverparameters.items():
             try:
                 mskpar = eval('mosek.iparam.' + par)
                 task.putintparam(mskpar, val)
@@ -72,7 +74,8 @@ def solve_with_mosek(sdpRelaxation, solverparameters=None):
                 except AttributeError:
                     raise Exception('Unknown mosek parameter')
     task.optimize()
-    primal, dual, x_mat, y_mat, status = parse_mosek_solution(sdpRelaxation, task)
+    primal, dual, x_mat, y_mat, status = parse_mosek_solution(sdpRelaxation,
+                                                              task)
     return -primal+sdpRelaxation.constant_term, \
            -dual+sdpRelaxation.constant_term, x_mat, y_mat, status
 
@@ -150,7 +153,7 @@ def convert_to_mosek(sdpRelaxation):
 
     env = mosek.Env()
     task = env.Task(0, 0)
-    if sdpRelaxation.verbose>0:
+    if sdpRelaxation.verbose > 0:
         task.set_Stream(mosek.streamtype.log, streamprinter)
     numvar = 0
     numcon = len(bkc)

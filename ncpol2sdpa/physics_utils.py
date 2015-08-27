@@ -43,8 +43,10 @@ def get_neighbors(index, lattice_length, width=0, periodic=False):
     return neighbors
 
 
-def get_next_neighbors(indices, lattice_length, width=0, distance=1, periodic=False):
-    """Get the forward neighbors at a given distance of a site or set of sites in a lattice.
+def get_next_neighbors(indices, lattice_length, width=0, distance=1,
+                       periodic=False):
+    """Get the forward neighbors at a given distance of a site or set of sites
+    in a lattice.
 
     :param index: Linear index of operator.
     :type index: int.
@@ -60,13 +62,21 @@ def get_next_neighbors(indices, lattice_length, width=0, distance=1, periodic=Fa
 
     :returns: list of int -- the neighbors at given distance in linear index.
     """
-    if not isinstance(indices,list):
+    if not isinstance(indices, list):
         indices = [indices]
     if distance == 1:
-        return flatten(get_neighbors(index, lattice_length, width, periodic) for index in indices)
+        return flatten(get_neighbors(index, lattice_length, width, periodic)
+                       for index in indices)
     else:
-        return list(set(flatten(get_next_neighbors(get_neighbors(index, lattice_length, width, periodic), lattice_length, width, distance-1, periodic) for index in indices)) - set(get_next_neighbors(indices, lattice_length, width, distance-1, periodic)))
-    
+        s1 = set(flatten(get_next_neighbors(get_neighbors(index,
+                                                          lattice_length,
+                                                          width, periodic),
+                                            lattice_length, width, distance-1,
+                                            periodic) for index in indices))
+        s2 = set(get_next_neighbors(indices, lattice_length, width, distance-1,
+                                    periodic))
+        return list(s1 - s2)
+
 
 def bosonic_constraints(a):
     """Return  a set of constraints that define fermionic ladder operators.
@@ -79,13 +89,14 @@ def bosonic_constraints(a):
     for i, ai in enumerate(a):
         substitutions[ai * Dagger(ai)] = 1.0 + Dagger(ai) * ai
         for aj in a[i+1:]:
-            #substitutions[ai*Dagger(aj)] = -Dagger(ai)*aj
+            # substitutions[ai*Dagger(aj)] = -Dagger(ai)*aj
             substitutions[ai*Dagger(aj)] = Dagger(aj)*ai
             substitutions[Dagger(ai)*aj] = aj*Dagger(ai)
             substitutions[ai*aj] = aj*ai
             substitutions[Dagger(ai) * Dagger(aj)] = Dagger(aj) * Dagger(ai)
 
     return substitutions
+
 
 def fermionic_constraints(a):
     """Return  a set of constraints that define fermionic ladder operators.
@@ -100,13 +111,14 @@ def fermionic_constraints(a):
         substitutions[Dagger(ai) ** 2] = 0
         substitutions[ai * Dagger(ai)] = 1.0 - Dagger(ai) * ai
         for aj in a[i+1:]:
-            #substitutions[ai*Dagger(aj)] = -Dagger(ai)*aj
+            # substitutions[ai*Dagger(aj)] = -Dagger(ai)*aj
             substitutions[ai*Dagger(aj)] = -Dagger(aj)*ai
             substitutions[Dagger(ai)*aj] = -aj*Dagger(ai)
             substitutions[ai*aj] = -aj*ai
             substitutions[Dagger(ai) * Dagger(aj)] = - Dagger(aj) * Dagger(ai)
 
     return substitutions
+
 
 def pauli_constraints(X, Y, Z):
     """Return  a set of constraints that define Pauli spin operators.
@@ -133,9 +145,9 @@ def pauli_constraints(X, Y, Z):
         substitutions[Z[i] * X[i]] = - X[i] * Z[i]
         substitutions[Z[i] * Y[i]] = - Y[i] * Z[i]
         # Commutation relations.
-        #equalities.append(X[i]*Y[i] - 1j*Z[i])
-        #equalities.append(X[i]*Z[i] + 1j*Y[i])
-        #equalities.append(Y[i]*Z[i] - 1j*X[i])
+        # equalities.append(X[i]*Y[i] - 1j*Z[i])
+        # equalities.append(X[i]*Z[i] + 1j*Y[i])
+        # equalities.append(Y[i]*Z[i] - 1j*X[i])
         # They commute between the sites
         for j in range(i + 1, n_vars):
             substitutions[X[j] * X[i]] = X[i] * X[j]
@@ -179,8 +191,8 @@ def projective_measurement_constraints(*parties):
               commutation relations.
     """
     substitutions = {}
-    #Idempotency and orthogonality of projectors
-    if type(parties[0][0][0]) is list:
+    # Idempotency and orthogonality of projectors
+    if isinstance(parties[0][0][0], list):
         parties = parties[0]
     for party in parties:
         for measurement in party:
@@ -191,15 +203,17 @@ def projective_measurement_constraints(*parties):
                     else:
                         substitutions[projector1*projector2] = 0
                         substitutions[projector2*projector1] = 0
-    #Projectors commute between parties in a partition
+    # Projectors commute between parties in a partition
     for n1 in range(len(parties)):
         for n2 in range(n1+1, len(parties)):
             for measurement1 in parties[n1]:
                 for measurement2 in parties[n2]:
                     for projector1 in measurement1:
                         for projector2 in measurement2:
-                            substitutions[projector2*projector1] = projector1*projector2
+                            substitutions[projector2*projector1] = \
+                                projector1*projector2
     return substitutions
+
 
 def define_objective_with_I(I, *args):
     """Define a polynomial using measurements and an I matrix describing a Bell
@@ -300,21 +314,23 @@ def maximum_violation(A_configuration, B_configuration, I, level, extra=None):
     solve_sdp(sdpRelaxation)
     return sdpRelaxation.primal, sdpRelaxation.dual
 
+
 class Probability(object):
-  
+
     def __init__(self, *args, **kwargs):
         """Class for working with quantum probabilities.
-        
+
         :param *args: Input configurations for each parties
         :type *args: tuple of list of lists
-        :param labels: Optional parameter string to define the label of each party.
+        :param labels: Optional parameter string to define the label of each
+                       party.
         :type labels: list of str.
         :Example:
-        
+
         For a CHSH scenario, instantiate the class as
-        
+
             P = Probability([2, 2], [2, 2])
-        
+
         """
 
         self.n_parties = len(args)
@@ -329,14 +345,14 @@ class Probability(object):
             else:
                 raise Exception("Unknown parameter " + name)
         for i, configuration in enumerate(args):
-            self.parties.append(generate_measurements(configuration, 
+            self.parties.append(generate_measurements(configuration,
                                                       self.labels[i]))
         self.substitutions = projective_measurement_constraints(self.parties)
 
     def get_all_operators(self):
         """Return all operators across all parties and measurements to supply
         them to the `ncpol2sdpa.SdpRelaxation` class.
-        
+
         """
         return flatten(self.parties)
 
@@ -344,59 +360,61 @@ class Probability(object):
         if label_indices == []:
             return monomials
         elif monomials == []:
-             return self._monomial_generator(
-                      flatten(self.parties[label_indices[0]]), label_indices[1:])
+            return self._monomial_generator(
+                flatten(self.parties[label_indices[0]]), label_indices[1:])
         else:
-            result = [m1*m2 for m1 in monomials 
+            result = [m1*m2 for m1 in monomials
                       for m2 in flatten(self.parties[label_indices[0]])]
             return self._monomial_generator(result, label_indices[1:])
 
     def get_extra_monomials(self, *args):
         if len(args) == 0:
             return []
-        if type(args[0]) is list:
+        if isinstance(args[0], list):
             args = args[0]
         extra_monomials = []
         for s in args:
             label_indices = [self.labels.index(party) for party in s]
             extra_monomials.extend(self._monomial_generator([], label_indices))
-        return extra_monomials        
-        
+        return extra_monomials
+
     def _convert_marginal_index(self, marginal):
-        if type(marginal) is str:
+        if isinstance(marginal, str):
             return [self.labels.index(marginal)]
         else:
-            return sorted([self.labels.index(m) if type(m) is str else m 
+            return sorted([self.labels.index(m) if isinstance(m, str) else m
                            for m in marginal])
-        
+
     def __call__(self, output_, input_, marginal=None):
         """Obtain your probabilities in the p(ab...|xy...) notation.
-        
+
         :param output_: Conditional output as [a, b, ...]
         :type output_: list of ints.
         :param input_: The input to condition on as [x, y, ...]
         :type input_: list of ints.
-        :param marginal: Optional parameter. If it is a marginal, then you can 
+        :param marginal: Optional parameter. If it is a marginal, then you can
                          define which party or parties it belongs to.
         :type marginal: list of str.
         :returns: polynomial of `sympy.physics.quantum.HermitianOperator`.
-        
+
         :Example:
-        
+
         For the CHSH scenario, to get p(10|01), write
-        
+
             P([1,0], [0,1])
-        
+
         To get the marginal p_A(0|1), write
-        
+
             P([0], [1], ['A'])
-                
+
         """
-        
+
         if len(output_) != len(input_):
-            raise Exception("The number of inputs does not match the number of outputs!")
+            raise Exception("The number of inputs does not match the number of"
+                            "outputs!")
         elif len(input_) > self.n_parties:
-            raise Exception("The number of inputs exceeds the number of parties!")
+            raise Exception("The number of inputs exceeds the number of "
+                            "parties!")
         elif marginal is None and len(input_) < self.n_parties:
             raise Exception("Marginal requested, but without defining which!")
         elif marginal is None:
@@ -404,20 +422,21 @@ class Probability(object):
         else:
             marginal = self._convert_marginal_index(marginal)
             if len(marginal) != len(input_):
-                raise Exception("The number of parties in the marginal does not match the number of inputs!")
+                raise Exception("The number of parties in the marginal does "
+                                "not match the number of inputs!")
         result = S.One
         for party, (proj, meas) in enumerate(zip(output_, input_)):
             if len(self.parties[marginal[party]]) < meas + 1:
-                raise Exception("Invalid measurement index " + str(meas) + 
+                raise Exception("Invalid measurement index " + str(meas) +
                                 " for party " + self.labels[party])
             elif len(self.parties[marginal[party]][meas]) < proj:
-                raise Exception("Invalid projection operator index " + str(proj) + 
-                                " for party " + self.labels[party])
+                raise Exception("Invalid projection operator index " +
+                                str(proj) + " for party " + self.labels[party])
             elif len(self.parties[marginal[party]][meas]) == proj:
                 # We are in the Collins-Gisin picture: the last projector
                 # is not part of the measurement.
-                result *= S.One-sum(op for op in self.parties[marginal[party]][meas])
+                result *= S.One - \
+                    sum(op for op in self.parties[marginal[party]][meas])
             else:
                 result *= self.parties[marginal[party]][meas][proj]
         return result
-

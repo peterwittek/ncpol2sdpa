@@ -34,7 +34,6 @@ hamiltonian = sum(hbar * omega * (Dagger(a[i]) * a[i]) for i in range(N))
 
 time0 = time.time()
 # Obtain SDP relaxation
-print("Obtaining SDP relaxation...")
 sdpRelaxation = SdpRelaxation(a, verbose=1)
 sdpRelaxation.get_relaxation(level, objective=hamiltonian,
                              substitutions=substitutions)

@@ -29,7 +29,7 @@ def flatten(lol):
     for element in lol:
         if element is None:
             continue
-        elif type(element) is not list:
+        elif not isinstance(element, list):
             new_list.append(element)
         elif len(element) > 0:
             new_list.extend(flatten(element))
@@ -59,6 +59,7 @@ def simplify_polynomial(polynomial, monomial_substitutions):
         new_polynomial += coeff * monomial
     return new_polynomial
 
+
 def is_pure_substitution_rule(lhs, rhs):
     if isinstance(rhs, int) or isinstance(rhs, float):
         return True
@@ -74,6 +75,7 @@ def is_pure_substitution_rule(lhs, rhs):
             if not lhs.has(atom):
                 return False
     return True
+
 
 def apply_substitutions(monomial, monomial_substitutions, pure=False):
     """Helper function to remove monomials from the basis."""
@@ -100,7 +102,7 @@ def apply_substitutions(monomial, monomial_substitutions, pure=False):
             # The fast substitution routine still fails on some rare
             # conditions. In production environments, it is safer to use
             # the default substitution routine that comes with SymPy.
-            #monomial = monomial.subs(lhs, rhs)
+            # monomial = monomial.subs(lhs, rhs)
             monomial = fast_substitute(monomial, lhs, rhs)
         if original_monomial == monomial:
             changed = False
@@ -211,7 +213,7 @@ def fast_substitute(monomial, old_sub, new_sub):
     :param new_sub: The replacement.
     """
     if isinstance(monomial, Number) or isinstance(monomial, int) or \
-      isinstance(monomial, float):
+            isinstance(monomial, float):
         return monomial
     if monomial.is_Add:
         return sum([fast_substitute(element, old_sub, new_sub) for element in
@@ -316,7 +318,7 @@ def fast_substitute(monomial, old_sub, new_sub):
         else:
             return monomial
     if not isinstance(new_sub, int) and not isinstance(new_sub, float) and \
-      new_sub.is_Add:
+            new_sub.is_Add:
         return expand(new_monomial)
     else:
         return new_monomial
@@ -347,8 +349,9 @@ def get_ncmonomials(variables, degree):
     """Generates all noncommutative monomials up to a degree
 
     :param variables: The noncommutative variables to generate monomials from
-    :type variables: list of :class:`sympy.physics.quantum.operator.Operator` or
-                     :class:`sympy.physics.quantum.operator`.
+    :type variables: list of :class:`sympy.physics.quantum.operator.Operator`
+                     or
+                     :class:`sympy.physics.quantum.operator.HermitianOperator`.
     :param degree: The maximum degree.
     :type degree: int.
 
@@ -413,6 +416,7 @@ def ncdegree(polynomial):
         if subdegree > degree:
             degree = subdegree
     return degree
+
 
 def iscomplex(polynomial):
     """Returns whether the polynomial has complex coefficients
@@ -479,6 +483,7 @@ def convert_monomial_to_string(monomial):
     monomial_str = monomial_str.replace('**', '^')
     return monomial_str
 
+
 def save_monomial_index(filename, monomial_index):
     """Save a monomial dictionary for debugging purposes.
 
@@ -495,6 +500,7 @@ def save_monomial_index(filename, monomial_index):
     for k in range(len(monomial_translation)):
         file_.write('%s %s\n' % (k, monomial_translation[k]))
     file_.close()
+
 
 def unique(seq):
     """Helper function to include only unique monomials in a basis."""
@@ -519,6 +525,7 @@ def build_permutation_matrix(permutation):
         column += 1
     return matrix
 
+
 def convert_relational(relational):
     rel = relational.rel_op
     if rel in ['==', '>=', '>']:
@@ -526,4 +533,5 @@ def convert_relational(relational):
     elif rel in ['<=', '<']:
         return relational.rhs-relational.lhs
     else:
-        raise Exception('The relational operation ' + rel + ' is not implemented!')
+        raise Exception("The relational operation ' + rel + ' is not "
+                        "implemented!")
