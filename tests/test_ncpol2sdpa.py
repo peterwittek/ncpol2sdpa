@@ -5,8 +5,11 @@ from sympy.physics.quantum.dagger import Dagger
 from ncpol2sdpa import SdpRelaxation, solve_sdp, generate_variables, flatten, \
                        projective_measurement_constraints, Probability, \
                        define_objective_with_I, maximum_violation, \
-                       bosonic_constraints, convert_to_picos_extra_moment_matrix
+                       bosonic_constraints, fermionic_constraints, \
+                       convert_to_picos_extra_moment_matrix, get_neighbors, \
+                       get_xmat_value
 from sympy.core.cache import clear_cache
+
 
 class Chsh(unittest.TestCase):
 
@@ -14,7 +17,7 @@ class Chsh(unittest.TestCase):
         clear_cache()
 
     def test_maximum_violation(self):
-      
+
         def expectation_values(measurement, outcomes):
             exp_values = []
             for k in range(len(measurement)):
@@ -38,7 +41,8 @@ class Chsh(unittest.TestCase):
         sdpRelaxation.get_relaxation(1, objective=chsh,
                                      substitutions=substitutions)
         solve_sdp(sdpRelaxation)
-        self.assertTrue(abs(sdpRelaxation.primal+2*np.sqrt(2))<10e-5)
+        self.assertTrue(abs(sdpRelaxation.primal + 2*np.sqrt(2)) < 10e-5)
+
 
 class ChshMixedLevel(unittest.TestCase):
 
@@ -46,16 +50,16 @@ class ChshMixedLevel(unittest.TestCase):
         clear_cache()
 
     def test_maximum_violation(self):
-        I = [[ 0,   -1,    0 ],
-             [-1,    1,    1 ],
-             [ 0,    1,   -1 ]]
+        I = [[0, -1, 0], [-1, 1, 1], [0, 1, -1]]
         P = Probability([2, 2], [2, 2])
-        sdpRelaxation = SdpRelaxation(P.get_all_operators())
-        sdpRelaxation.get_relaxation(1, objective=define_objective_with_I(I, P),
-                                     substitutions=P.substitutions,
-                                     extramonomials=P.get_extra_monomials('AB'))
-        solve_sdp(sdpRelaxation)
-        self.assertTrue(abs(sdpRelaxation.primal+(np.sqrt(2)-1)/2)<10e-5)
+        relaxation = SdpRelaxation(P.get_all_operators())
+        relaxation.get_relaxation(1,
+                                  objective=define_objective_with_I(I, P),
+                                  substitutions=P.substitutions,
+                                  extramonomials=P.get_extra_monomials('AB'))
+        solve_sdp(relaxation)
+        self.assertTrue(abs(relaxation.primal + (np.sqrt(2)-1)/2) < 10e-5)
+
 
 class ElegantBell(unittest.TestCase):
 
@@ -67,8 +71,8 @@ class ElegantBell(unittest.TestCase):
              [0,    1,    1,   -1,   -1],
              [0,    1,   -1,    1,   -1],
              [0,    1,   -1,   -1,    1]]
-        self.assertTrue(abs(maximum_violation([2, 2, 2], [2, 2, 2, 2], I, 1)[0]
-                            +np.sqrt(3))<10e-5)
+        violation = maximum_violation([2, 2, 2], [2, 2, 2, 2], I, 1)[0]
+        self.assertTrue(abs(violation + np.sqrt(3)) < 10e-5)
 
 
 class ExampleCommutative(unittest.TestCase):
@@ -80,10 +84,11 @@ class ExampleCommutative(unittest.TestCase):
         x = generate_variables(2, commutative=True)
         sdpRelaxation = SdpRelaxation(x)
         sdpRelaxation.get_relaxation(2, objective=x[0]*x[1] + x[1]*x[0],
-                                          inequalities=[-x[1]**2 + x[1] + 0.5],
-                                          substitutions={x[0]**2:x[0]})
+                                     inequalities=[-x[1]**2 + x[1] + 0.5],
+                                     substitutions={x[0]**2: x[0]})
         solve_sdp(sdpRelaxation, solver="sdpa")
-        self.assertTrue(abs(sdpRelaxation.primal+0.7320505301965234)<10e-5)
+        self.assertTrue(abs(sdpRelaxation.primal + 0.7320505301965234) < 10e-5)
+
 
 class ExampleNoncommutative(unittest.TestCase):
 
@@ -92,22 +97,23 @@ class ExampleNoncommutative(unittest.TestCase):
         self.sdpRelaxation = SdpRelaxation(X)
         self.sdpRelaxation.get_relaxation(2, objective=X[0]*X[1] + X[1]*X[0],
                                           inequalities=[-X[1]**2 + X[1] + 0.5],
-                                          substitutions={X[0]**2:X[0]})
+                                          substitutions={X[0]**2: X[0]})
 
     def tearDown(self):
         clear_cache()
 
     def test_solving_with_sdpa(self):
         solve_sdp(self.sdpRelaxation, solver="sdpa")
-        self.assertTrue(abs(self.sdpRelaxation.primal+0.75)<10e-5)
+        self.assertTrue(abs(self.sdpRelaxation.primal + 0.75) < 10e-5)
 
     def test_solving_with_mosek(self):
         solve_sdp(self.sdpRelaxation, solver="mosek")
-        self.assertTrue(abs(self.sdpRelaxation.primal+0.75)<10e-5)
+        self.assertTrue(abs(self.sdpRelaxation.primal + 0.75) < 10e-5)
 
     def test_solving_with_cvxopt(self):
         solve_sdp(self.sdpRelaxation, solver="cvxopt")
-        self.assertTrue(abs(self.sdpRelaxation.primal+0.75)<10e-5)
+        self.assertTrue(abs(self.sdpRelaxation.primal + 0.75) < 10e-5)
+
 
 class Gloptipoly(unittest.TestCase):
 
@@ -121,7 +127,8 @@ class Gloptipoly(unittest.TestCase):
         sdpRelaxation = SdpRelaxation(x)
         sdpRelaxation.get_relaxation(3, objective=g0)
         solve_sdp(sdpRelaxation)
-        self.assertTrue(abs(sdpRelaxation.primal+1.0316282672706911)<10e-5)
+        self.assertTrue(abs(sdpRelaxation.primal + 1.0316282672706911) < 10e-5)
+
 
 class HarmonicOscillator(unittest.TestCase):
 
@@ -137,7 +144,8 @@ class HarmonicOscillator(unittest.TestCase):
         sdpRelaxation.get_relaxation(1, objective=hamiltonian,
                                      substitutions=substitutions)
         solve_sdp(sdpRelaxation)
-        self.assertTrue(abs(sdpRelaxation.primal)<10e-5)
+        self.assertTrue(abs(sdpRelaxation.primal) < 10e-5)
+
 
 class MaxCut(unittest.TestCase):
 
@@ -145,19 +153,60 @@ class MaxCut(unittest.TestCase):
         clear_cache()
 
     def test_max_cut(self):
-        W = np.diag(np.ones(8), 1) + np.diag(np.ones(7), 2) + np.diag([1, 1], 7) + \
-            np.diag([1], 8)
+        W = np.diag(np.ones(8), 1) + np.diag(np.ones(7), 2) + \
+            np.diag([1, 1], 7) + np.diag([1], 8)
         W = W + W.T
         Q = (np.diag(np.dot(np.ones(len(W)).T, W)) - W) / 4
         x = generate_variables(len(W), commutative=True)
         equalities = [xi ** 2 - 1 for xi in x]
         objective = -np.dot(x, np.dot(Q, np.transpose(x)))
         sdpRelaxation = SdpRelaxation(x)
-        sdpRelaxation.get_relaxation(1, objective=objective, 
+        sdpRelaxation.get_relaxation(1, objective=objective,
                                      equalities=equalities,
                                      removeequalities=True)
         solve_sdp(sdpRelaxation)
-        self.assertTrue(abs(sdpRelaxation.primal+4.5)<10e-5)
+        self.assertTrue(abs(sdpRelaxation.primal + 4.5) < 10e-5)
+
+
+class Magnetization(unittest.TestCase):
+
+    def tearDown(self):
+        clear_cache()
+
+    def test_ground_state(self):
+        length, n, h, U, t = 2, 0.8, 3.8, -6, 1
+        fu = generate_variables(length, name='fu')
+        fd = generate_variables(length, name='fd')
+        _b = flatten([fu, fd])
+        monomials = [[ci for ci in _b]]
+        monomials[-1].extend([Dagger(ci) for ci in _b])
+        monomials.append([cj*ci for ci in _b for cj in _b])
+        monomials.append([Dagger(cj)*ci for ci in _b for cj in _b])
+        monomials[-1].extend([cj*Dagger(ci)
+                              for ci in _b for cj in _b])
+        monomials.append([Dagger(cj)*Dagger(ci)
+                          for ci in _b for cj in _b])
+        hamiltonian = 0
+        for j in range(length):
+            hamiltonian += U * (Dagger(fu[j])*Dagger(fd[j]) * fd[j]*fu[j])
+            hamiltonian += -h/2*(Dagger(fu[j])*fu[j] - Dagger(fd[j])*fd[j])
+            for k in get_neighbors(j, len(fu), width=1):
+                hamiltonian += -t*Dagger(fu[j])*fu[k]-t*Dagger(fu[k])*fu[j]
+                hamiltonian += -t*Dagger(fd[j])*fd[k]-t*Dagger(fd[k])*fd[j]
+        bounds = [n-sum(Dagger(br)*br for br in _b),
+                  sum(Dagger(br)*br for br in _b)-n]
+        sdpRelaxation = SdpRelaxation(_b, verbose=0)
+        sdpRelaxation.get_relaxation(-1,
+                                     objective=hamiltonian,
+                                     bounds=bounds,
+                                     substitutions=fermionic_constraints(_b),
+                                     extramonomials=monomials)
+        solve_sdp(sdpRelaxation)
+        s = 0.5*(sum((Dagger(u)*u) for u in fu) -
+                 sum((Dagger(d)*d) for d in fd))
+        magnetization = get_xmat_value(s, sdpRelaxation)
+        self.assertTrue(abs(magnetization-0.021325317328560453) < 10e-5)
+
 
 class Moroder(unittest.TestCase):
 
@@ -165,24 +214,27 @@ class Moroder(unittest.TestCase):
         clear_cache()
 
     def test_violation(self):
-        I = [[ 0,   -1,    0 ],
-             [-1,    1,    1 ], 
-             [ 0,    1,   -1 ]]
+        I = [[0,   -1,    0],
+             [-1,    1,    1],
+             [0,    1,   -1]]
         P = Probability([2, 2], [2, 2])
         objective = define_objective_with_I(I, P)
-        sdpRelaxation = SdpRelaxation([flatten(P.parties[0]), flatten(P.parties[1])], 
-                                       verbose=0, hierarchy="moroder", normalized=False)
+        sdpRelaxation = SdpRelaxation([flatten(P.parties[0]),
+                                       flatten(P.parties[1])],
+                                      verbose=0, hierarchy="moroder",
+                                      normalized=False)
         sdpRelaxation.get_relaxation(1, objective=objective,
                                      substitutions=P.substitutions)
         Problem, X, Y = convert_to_picos_extra_moment_matrix(sdpRelaxation)
         Z = Problem.add_variable('Z', (sdpRelaxation.block_struct[0],
                                  sdpRelaxation.block_struct[0]))
-        Problem.add_constraint(Y.partial_transpose()>>0)
-        Problem.add_constraint(Z.partial_transpose()>>0)
+        Problem.add_constraint(Y.partial_transpose() >> 0)
+        Problem.add_constraint(Z.partial_transpose() >> 0)
         Problem.add_constraint(X - Y + Z == 0)
-        Problem.add_constraint(Z[0,0] == 1)
+        Problem.add_constraint(Z[0, 0] == 1)
         solution = Problem.solve(verbose=0)
-        self.assertTrue(abs(solution["obj"]-0.728)<10e-3)
+        self.assertTrue(abs(solution["obj"] - 0.728) < 10e-3)
+
 
 class NietoSilleras(unittest.TestCase):
 
@@ -190,28 +242,29 @@ class NietoSilleras(unittest.TestCase):
         clear_cache()
 
     def test_guessing_probability(self):
-        p = [0.5, 0.5, 0.5, 0.5, 0.4267766952966368, 0.4267766952966368, 
+        p = [0.5, 0.5, 0.5, 0.5, 0.4267766952966368, 0.4267766952966368,
              0.4267766952966368, 0.07322330470336313]
         P = Probability([2, 2], [2, 2])
         bounds = [
-          P([0],[0],'A')-p[0],
-          P([0],[1],'A')-p[1],
-          P([0],[0],'B')-p[2],
-          P([0],[1],'B')-p[3],
-          P([0,0],[0,0])-p[4],
-          P([0,0],[0,1])-p[5],
-          P([0,0],[1,0])-p[6],
-          P([0,0],[1,1])-p[7]]
+          P([0], [0], 'A')-p[0],
+          P([0], [1], 'A')-p[1],
+          P([0], [0], 'B')-p[2],
+          P([0], [1], 'B')-p[3],
+          P([0, 0], [0, 0])-p[4],
+          P([0, 0], [0, 1])-p[5],
+          P([0, 0], [1, 0])-p[6],
+          P([0, 0], [1, 1])-p[7]]
         bounds.extend([-bound for bound in bounds])
         bounds.append("-0[0,0]+1.0")
-        bounds.append("0[0,0]-1.0")        
-        sdpRelaxation = SdpRelaxation(P.get_all_operators(), 
+        bounds.append("0[0,0]-1.0")
+        sdpRelaxation = SdpRelaxation(P.get_all_operators(),
                                       normalized=False, verbose=0)
-        sdpRelaxation.get_relaxation(1, objective=-P([0],[0],'A'), 
+        sdpRelaxation.get_relaxation(1, objective=-P([0], [0], 'A'),
                                      bounds=bounds,
                                      substitutions=P.substitutions)
         solve_sdp(sdpRelaxation)
-        self.assertTrue(abs(sdpRelaxation.primal+0.5)<10e-5)
+        self.assertTrue(abs(sdpRelaxation.primal + 0.5) < 10e-5)
+
 
 class SparsePop(unittest.TestCase):
 
@@ -222,14 +275,16 @@ class SparsePop(unittest.TestCase):
         X = generate_variables(3, commutative=True)
         inequalities = [1-X[0]**2-X[1]**2, 1-X[1]**2-X[2]**2]
         sdpRelaxation = SdpRelaxation(X, hierarchy="npa_chordal")
-        sdpRelaxation.get_relaxation(2, objective=X[1] - 2*X[0]*X[1] + X[1]*X[2],
+        sdpRelaxation.get_relaxation(2,
+                                     objective=X[1] - 2*X[0]*X[1] + X[1]*X[2],
                                      inequalities=inequalities)
         solve_sdp(sdpRelaxation)
-        self.assertTrue(abs(sdpRelaxation.primal+2.2443690631722637)<10e-5)
+        self.assertTrue(abs(sdpRelaxation.primal + 2.2443690631722637) < 10e-5)
+
 
 def test_main():
-    test_support.run_unittest(Chsh, ChshMixedLevel, ElegantBell, 
-                              ExampleCommutative, ExampleNoncommutative, 
+    test_support.run_unittest(Chsh, ChshMixedLevel, ElegantBell,
+                              ExampleCommutative, ExampleNoncommutative,
                               Gloptipoly, HarmonicOscillator, MaxCut, Moroder,
                               NietoSilleras, SparsePop)
 
