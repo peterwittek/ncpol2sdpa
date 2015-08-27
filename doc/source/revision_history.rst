@@ -1,7 +1,8 @@
 Revision History
 ****************
 
-**Since Version 1.8**
+**Version 1.9 (2015-08-28)** 
+
   - New: Defining the constraints now also allows using for the symbols `<`, `<=`, `>=`, `>`. Additionally, the function `Eq` from SymPy can be used to defined equalities.
   - New: The function `solve_sdp` also accepts `solver="cvxopt"` to use CVXOPT for solving a relaxation (requires PICOS and CVXOPT).
   - New: `convert_to_human_readable` function returns the objective function and the moment matrix as a string and a matrix of strings to give a symbolic representation of the problem.
