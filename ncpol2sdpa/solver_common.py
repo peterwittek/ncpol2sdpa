@@ -53,11 +53,11 @@ def solve_sdp(sdpRelaxation, solver=None, solverparameters=None):
 
                              SDPA:
 
-                               - "executable":
+                               - `"executable"`:
                                  Specify the executable for SDPA. E.g.,
-                                 "executable":"/usr/local/bin/sdpa", or
-                                 "executable":"sdpa_gmp"
-                               - "paramsfile": Specify the parameter file.
+                                 `"executable":"/usr/local/bin/sdpa"`, or
+                                 `"executable":"sdpa_gmp"`
+                               - `"paramsfile"`: Specify the parameter file.
 
                              Mosek:
                              Refer to the Mosek documentation. All arguments
