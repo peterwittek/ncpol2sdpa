@@ -1,3 +1,4 @@
+  - Change to using QR decomposition in numpy.linalg instead of scipy.linalg to make it Pypy compatible.
   - Circular symmetry of trace is not fully exploited for Hermitian variables.
   - Support complex moment matrices in Picos and Mosek exports too.
   - Better support for steering hierarchy. Probably in a derived class.
