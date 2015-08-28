@@ -285,8 +285,8 @@ class SparsePop(unittest.TestCase):
 def test_main():
     test_support.run_unittest(Chsh, ChshMixedLevel, ElegantBell,
                               ExampleCommutative, ExampleNoncommutative,
-                              Gloptipoly, HarmonicOscillator, MaxCut, Moroder,
-                              NietoSilleras, SparsePop)
+                              Gloptipoly, HarmonicOscillator, MaxCut, 
+                              Magnetization, Moroder, NietoSilleras, SparsePop)
 
 if __name__ == '__main__':
     test_main()
