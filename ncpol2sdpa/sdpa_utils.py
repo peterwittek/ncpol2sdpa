@@ -251,7 +251,7 @@ def convert_to_human_readable(sdpRelaxation):
     indices_in_objective = []
     for i, tmp in enumerate(sdpRelaxation.obj_facvar):
         candidates = [key for key, v in
-                      sdpRelaxation.monomial_index.iteritems() if v == i+1]
+                      sdpRelaxation.monomial_index.items() if v == i+1]
         if len(candidates) > 0:
             monomial = convert_monomial_to_string(candidates[0])
         else:
@@ -287,7 +287,7 @@ def convert_to_human_readable(sdpRelaxation):
                 block_index, i, j = convert_row_to_sdpa_index(
                     sdpRelaxation.block_struct, row_offsets, row)
                 candidates = [key for key, v in
-                              sdpRelaxation.monomial_index.iteritems()
+                              sdpRelaxation.monomial_index.items()
                               if v == k]
                 if len(candidates) > 0:
                     monomial = convert_monomial_to_string(candidates[0])
