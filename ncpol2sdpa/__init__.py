@@ -9,8 +9,8 @@ Provides
 """
 from .faacets_relaxation import FaacetsRelaxation
 from .sdp_relaxation import SdpRelaxation
-from .nc_utils import generate_variables, get_ncmonomials, ncdegree, flatten, \
-                      save_monomial_index
+from .nc_utils import generate_variable, generate_variables, get_ncmonomials, \
+                      ncdegree, flatten, save_monomial_index
 from .sdpa_utils import write_to_sdpa, read_sdpa_out, \
                         convert_to_human_readable, write_to_human_readable
 from .solver_common import solve_sdp, find_rank_loop, sos_decomposition, \
@@ -25,6 +25,7 @@ from .picos_utils import convert_to_picos, \
 
 __all__ = ['SdpRelaxation',
            'FaacetsRelaxation',
+           'generate_variable'
            'generate_variables',
            'get_ncmonomials',
            'ncdegree',

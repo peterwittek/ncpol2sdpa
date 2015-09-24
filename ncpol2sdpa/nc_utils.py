@@ -324,6 +324,24 @@ def fast_substitute(monomial, old_sub, new_sub):
         return new_monomial
 
 
+def generate_variable(name, hermitian=False, commutative=False):
+    """Generates a commutative or noncommutative variable
+
+    :param name: The symbolic name of the variable.
+    :type name: str.
+
+    :returns: list of :class:`sympy.physics.quantum.operator.Operator` or
+              :class:`sympy.physics.quantum.operator.HermitianOperator`
+              variables
+    """
+    if hermitian or commutative:
+        variable = HermitianOperator(name)
+    else:
+        variable = Operator(name)
+        variable.is_commutative = commutative
+    return variable
+
+
 def generate_variables(n_vars, hermitian=False, commutative=False, name='x'):
     """Generates a number of commutative or noncommutative variables
 
