@@ -35,7 +35,7 @@ bounds on the variables.
 
 The last step in is to either solve or export the relaxation. The function
 `solve_sdp` or the class method `SdpRelaxation.solve` autodetects the possible 
-solvers: SDPA, MOSEK, and CVXOPT. Alternatively, the method ``write_to_sdpa`` 
+solvers: SDPA, MOSEK, and CVXOPT. Alternatively, the method ``write_to_file`` 
 exports the file to sparse SDPA format, which can be solved externally on a 
 supercomputer, in MATLAB, or by any other means that accepts this input format.
 
@@ -149,7 +149,7 @@ relaxation to SDPA format:
   
 ::
 
-    write_to_sdpa(sdpRelaxation, 'example.dat-s')
+    sdpRelaxation.write_to_file('example.dat-s')
 
 You can also specify a solver if you wish. For instance, if you want to use
 the arbitrary-precision solver that you have available in the path, along with a
@@ -214,7 +214,7 @@ respective monomials. The first line of the file is the objective function.
 
 ::
 
-    write_to_human_readable(sdpRelaxation, "examples.csv")
+    sdpRelaxation.write_to_file("examples.csv")
     
 Furthermore, the library can write out which SDP variable corresponds to which 
 monomial by calling
@@ -258,7 +258,7 @@ problem again:
 
 ::
     
-    write_to_sdpa(sdpRelaxation, 'examplenc.dat-s')
+    sdpRelaxation.write_to_file("examplenc.dat-s")
     
 Solving this with the arbitrary-precision solver, we discover a rank loop:
 

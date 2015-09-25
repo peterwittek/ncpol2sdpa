@@ -8,6 +8,7 @@ Since v1.9:
          value of polynomials in the solved relaxation in such way. Internally,
          it calls `get_xmat_value` with `self`.
   - New: The convenience function `solve()` was added to the class `SdpRelaxation`.
+  - New: The convenience function `write_to_file()` was added to the class `SdpRelaxation`.
          
 **Version 1.9 (2015-08-28)** 
 

@@ -272,7 +272,7 @@ Alternatively, with SeDuMi’s ``fromsdpa`` function (Sturm 1999), we can also 
 
 ::
 
-    write_to_sdpa(sdpRelaxation, "chsh-moroder.dat-s")  
+    sdpRelaxation.write_to_file("chsh-moroder.dat-s")
 
 If all we need is the partial positivity of the moment matrix, that is actually nothing but an extra symmetry. We can request this condition by passing an argument to the constructor, leading to a sparser SDP:
 

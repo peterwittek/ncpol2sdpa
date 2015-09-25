@@ -25,7 +25,7 @@ from .picos_utils import convert_to_picos, \
 
 __all__ = ['SdpRelaxation',
            'FaacetsRelaxation',
-           'generate_variable'
+           'generate_variable',
            'generate_variables',
            'get_ncmonomials',
            'ncdegree',

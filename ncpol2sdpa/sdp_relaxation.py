@@ -25,6 +25,8 @@ from .nc_utils import apply_substitutions, build_monomial, \
     simplify_polynomial, get_monomials, unique, iscomplex, \
     is_pure_substitution_rule, convert_relational
 from .solver_common import get_xmat_value, solve_sdp
+from .mosek_utils import convert_to_mosek
+from .sdpa_utils import write_to_sdpa, write_to_human_readable
 from .chordal_extension import generate_clique, find_clique_index
 
 
@@ -38,12 +40,12 @@ class Relaxation(object):
         self.block_struct = []
         self.obj_facvar = 0
         self.constant_term = 0
+        # Variables related to the solution
         self.primal = None
         self.dual = None
         self.x_mat = None
         self.y_mat = None
         self.solution_time = None
-        # Variables related to the solution
         self.status = "unsolved"
 
 
@@ -1042,6 +1044,41 @@ class SdpRelaxation(Relaxation):
             raise Exception("Relaxation is not generated yet. Call "
                             "'SdpRelaxation.get_relaxation' first")
         return solve_sdp(self, solver, solverparameters)
+
+    def write_to_file(self, filename, filetype=None):
+        """Write the relaxation to a file.
+
+        :param filename: The name of the file to write to. The type can be
+                         autodetected from the extension: .dat-s for SDPA,
+                         .task for mosek or .csv for human readable format.
+        :type filename: str.
+        :param filetype: Optional parameter to define the filetype. It can be
+                         "sdpa" for SDPA , "mosek" for Mosek, or "csv" for
+                         human readable format.
+        :type filetype: str.
+        """
+        if filetype == "sdpa" and not filename.endswith(".dat-s"):
+            raise Exception("SDPA files must have .dat-s extension!")
+        if filetype == "mosek" and not filename.endswith(".task"):
+            raise Exception("Mosek files must have .task extension!")
+        elif filetype is None and filename.endswith(".dat-s"):
+            filetype = "sdpa"
+        elif filetype is None and filename.endswith(".csv"):
+            filetype = "csv"
+        elif filetype is None and filename.endswith(".task"):
+            filetype = "mosek"
+        elif filetype is None:
+            raise Exception("Cannot detect filetype from extension!")
+
+        if filetype == "sdpa":
+            write_to_sdpa(self, filename)
+        elif filetype == "mosek":
+            task = convert_to_mosek(self)
+            task.writedata(filename)
+        elif filetype == "csv":
+            write_to_human_readable(self, filename)
+        else:
+            raise Exception("Unknown filetype")
 
     def get_relaxation(self, level, objective=None, inequalities=None,
                        equalities=None, substitutions=None, bounds=None,
