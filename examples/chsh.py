@@ -6,8 +6,8 @@ Created on Wed May 28 13:35:09 2014
 
 @author: wittek
 """
-from ncpol2sdpa import generate_variables, SdpRelaxation, solve_sdp,\
-    projective_measurement_constraints
+from ncpol2sdpa import generate_variables, SdpRelaxation, \
+                       projective_measurement_constraints
 
 
 def expectation_values(measurement, outcomes):
@@ -46,5 +46,5 @@ chsh = -(C[0] * C[2] + C[0] * C[3] + C[1] * C[2] - C[1] * C[3])
 sdpRelaxation = SdpRelaxation(E, verbose=2)
 sdpRelaxation.get_relaxation(level, objective=chsh,
                              substitutions=substitutions)
-solve_sdp(sdpRelaxation)
-print(sdpRelaxation.primal)
+sdpRelaxation.solve()
+print(sdpRelaxation.primal, sdpRelaxation.status)

@@ -11,7 +11,7 @@ Created on Fri May 10 09:45:11 2013
 
 @author: Peter Wittek
 """
-from ncpol2sdpa import generate_variables, SdpRelaxation, solve_sdp
+from ncpol2sdpa import generate_variables, SdpRelaxation
 # Number of Hermitian variables
 n_vars = 2
 # Level of relaxation
@@ -37,5 +37,5 @@ monomial_substitution[X[0] ** 2] = X[0]
 sdpRelaxation = SdpRelaxation(X, verbose=0)
 sdpRelaxation.get_relaxation(level, objective=obj, inequalities=inequalities,
                              substitutions=monomial_substitution)
-solve_sdp(sdpRelaxation, solver='mosek')
+sdpRelaxation.solve(solver='mosek')
 print(sdpRelaxation.primal, sdpRelaxation.dual)

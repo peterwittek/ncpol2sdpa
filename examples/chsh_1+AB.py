@@ -7,8 +7,7 @@ Created on Mon Dec  1 14:19:08 2014
 
 @author: Peter Wittek
 """
-from ncpol2sdpa import Probability, SdpRelaxation, define_objective_with_I, \
-                       solve_sdp
+from ncpol2sdpa import Probability, SdpRelaxation, define_objective_with_I
 
 level = 1
 I = [[ 0,   -1,    0 ],
@@ -21,5 +20,5 @@ sdpRelaxation = SdpRelaxation(P.get_all_operators())
 sdpRelaxation.get_relaxation(level, objective=objective,
                              substitutions=P.substitutions,
                              extramonomials=P.get_extra_monomials('AB'))
-solve_sdp(sdpRelaxation)
-print(sdpRelaxation.primal)
+sdpRelaxation.solve()
+print(sdpRelaxation.primal, sdpRelaxation.status)

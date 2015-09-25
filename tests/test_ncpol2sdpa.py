@@ -40,7 +40,7 @@ class Chsh(unittest.TestCase):
         sdpRelaxation = SdpRelaxation(E, verbose=0)
         sdpRelaxation.get_relaxation(1, objective=chsh,
                                      substitutions=substitutions)
-        solve_sdp(sdpRelaxation)
+        sdpRelaxation.solve()
         self.assertTrue(abs(sdpRelaxation.primal + 2*np.sqrt(2)) < 10e-5)
 
 
@@ -57,7 +57,7 @@ class ChshMixedLevel(unittest.TestCase):
                                   objective=define_objective_with_I(I, P),
                                   substitutions=P.substitutions,
                                   extramonomials=P.get_extra_monomials('AB'))
-        solve_sdp(relaxation)
+        relaxation.solve()
         self.assertTrue(abs(relaxation.primal + (np.sqrt(2)-1)/2) < 10e-5)
 
 
@@ -86,7 +86,7 @@ class ExampleCommutative(unittest.TestCase):
         sdpRelaxation.get_relaxation(2, objective=x[0]*x[1] + x[1]*x[0],
                                      inequalities=[-x[1]**2 + x[1] + 0.5],
                                      substitutions={x[0]**2: x[0]})
-        solve_sdp(sdpRelaxation, solver="sdpa")
+        sdpRelaxation.solve(solver="sdpa")
         self.assertTrue(abs(sdpRelaxation.primal + 0.7320505301965234) < 10e-5)
 
 
@@ -103,15 +103,15 @@ class ExampleNoncommutative(unittest.TestCase):
         clear_cache()
 
     def test_solving_with_sdpa(self):
-        solve_sdp(self.sdpRelaxation, solver="sdpa")
+        self.sdpRelaxation.solve(solver="sdpa")
         self.assertTrue(abs(self.sdpRelaxation.primal + 0.75) < 10e-5)
 
     def test_solving_with_mosek(self):
-        solve_sdp(self.sdpRelaxation, solver="mosek")
+        self.sdpRelaxation.solve(solver="mosek")
         self.assertTrue(abs(self.sdpRelaxation.primal + 0.75) < 10e-5)
 
     def test_solving_with_cvxopt(self):
-        solve_sdp(self.sdpRelaxation, solver="cvxopt")
+        self.sdpRelaxation.solve(solver="cvxopt")
         self.assertTrue(abs(self.sdpRelaxation.primal + 0.75) < 10e-5)
 
 
@@ -126,7 +126,7 @@ class Gloptipoly(unittest.TestCase):
             2.1 * x[0] ** 4 + 4 * x[1] ** 4 + x[0] ** 6 / 3
         sdpRelaxation = SdpRelaxation(x)
         sdpRelaxation.get_relaxation(3, objective=g0)
-        solve_sdp(sdpRelaxation)
+        sdpRelaxation.solve()
         self.assertTrue(abs(sdpRelaxation.primal + 1.0316282672706911) < 10e-5)
 
 
@@ -143,7 +143,7 @@ class HarmonicOscillator(unittest.TestCase):
         sdpRelaxation = SdpRelaxation(a, verbose=0)
         sdpRelaxation.get_relaxation(1, objective=hamiltonian,
                                      substitutions=substitutions)
-        solve_sdp(sdpRelaxation)
+        sdpRelaxation.solve()
         self.assertTrue(abs(sdpRelaxation.primal) < 10e-5)
 
 
@@ -164,7 +164,7 @@ class MaxCut(unittest.TestCase):
         sdpRelaxation.get_relaxation(1, objective=objective,
                                      equalities=equalities,
                                      removeequalities=True)
-        solve_sdp(sdpRelaxation)
+        sdpRelaxation.solve()
         self.assertTrue(abs(sdpRelaxation.primal + 4.5) < 10e-5)
 
 
@@ -201,7 +201,7 @@ class Magnetization(unittest.TestCase):
                                      bounds=bounds,
                                      substitutions=fermionic_constraints(_b),
                                      extramonomials=monomials)
-        solve_sdp(sdpRelaxation)
+        sdpRelaxation.solve()
         s = 0.5*(sum((Dagger(u)*u) for u in fu) -
                  sum((Dagger(d)*d) for d in fd))
         magnetization = get_xmat_value(s, sdpRelaxation)
@@ -262,7 +262,7 @@ class NietoSilleras(unittest.TestCase):
         sdpRelaxation.get_relaxation(1, objective=-P([0], [0], 'A'),
                                      bounds=bounds,
                                      substitutions=P.substitutions)
-        solve_sdp(sdpRelaxation)
+        sdpRelaxation.solve()
         self.assertTrue(abs(sdpRelaxation.primal + 0.5) < 10e-5)
 
 
@@ -278,7 +278,7 @@ class SparsePop(unittest.TestCase):
         sdpRelaxation.get_relaxation(2,
                                      objective=X[1] - 2*X[0]*X[1] + X[1]*X[2],
                                      inequalities=inequalities)
-        solve_sdp(sdpRelaxation)
+        sdpRelaxation.solve()
         self.assertTrue(abs(sdpRelaxation.primal + 2.2443690631722637) < 10e-5)
 
 
