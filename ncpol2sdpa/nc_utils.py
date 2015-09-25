@@ -329,10 +329,20 @@ def generate_variable(name, hermitian=False, commutative=False):
 
     :param name: The symbolic name of the variable.
     :type name: str.
+    :param hermitian: Optional parameter to request Hermitian variables .
+    :type hermitian: bool.
+    :param commutative: Optional parameter to request commutative variables.
+                        Commutative variables are Hermitian by default.
+    :type commutative: bool.
 
-    :returns: list of :class:`sympy.physics.quantum.operator.Operator` or
+    :returns: :class:`sympy.physics.quantum.operator.Operator` or
               :class:`sympy.physics.quantum.operator.HermitianOperator`
-              variables
+              variable
+
+    :Example:
+
+    >>> generate_variable("c", commutative=True)
+    c
     """
     if hermitian or commutative:
         variable = HermitianOperator(name)
@@ -347,10 +357,25 @@ def generate_variables(n_vars, hermitian=False, commutative=False, name='x'):
 
     :param n_vars: The number of variables.
     :type n_vars: int.
+    :param hermitian: Optional parameter to request Hermitian variables .
+    :type hermitian: bool.
+    :param commutative: Optional parameter to request commutative variables.
+                        Commutative variables are Hermitian by default.
+    :type commutative: bool.
+    :param name: The prefix in the symbolic representation of the noncommuting
+                 variables. This will be suffixed by a number from 0 to
+                 n_vars-1. Default value is "x".
+    :type name: str.
+
 
     :returns: list of :class:`sympy.physics.quantum.operator.Operator` or
               :class:`sympy.physics.quantum.operator.HermitianOperator`
               variables
+
+    :Example:
+
+    >>> generate_variables(2, commutative=True, name='y')
+    ￼[y0, y1]
     """
 
     variables = []
@@ -399,7 +424,8 @@ def get_ncmonomials(variables, degree):
 
 
 def get_variables_of_polynomial(polynomial):
-    """Returns the degree of a noncommutative polynomial."""
+    """Returns the degree of a noncommutative polynomial.
+    """
     if isinstance(polynomial, (int, float, complex)):
         return []
     result = []
@@ -545,6 +571,8 @@ def build_permutation_matrix(permutation):
 
 
 def convert_relational(relational):
+    """Convert all inequalities to >=0 form.
+    """
     rel = relational.rel_op
     if rel in ['==', '>=', '>']:
         return relational.lhs-relational.rhs
