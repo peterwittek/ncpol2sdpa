@@ -221,7 +221,7 @@ monomial by calling
 
 ::
 
-    save_monomial_index("monomials.txt", sdpRelaxation.monomial_index)
+    sdpRelaxation.save_monomial_index("monomials.txt")
 
 Defining and Solving an Optimization Problem of Noncommuting Variables
 ======================================================================

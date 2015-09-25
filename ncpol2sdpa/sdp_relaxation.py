@@ -23,7 +23,7 @@ from .nc_utils import apply_substitutions, build_monomial, \
     pick_monomials_up_to_degree, ncdegree, \
     separate_scalar_factor, flatten, build_permutation_matrix, \
     simplify_polynomial, get_monomials, unique, iscomplex, \
-    is_pure_substitution_rule, convert_relational
+    is_pure_substitution_rule, convert_relational, save_monomial_index
 from .solver_common import get_xmat_value, solve_sdp
 from .mosek_utils import convert_to_mosek
 from .sdpa_utils import write_to_sdpa, write_to_human_readable
@@ -1079,6 +1079,14 @@ class SdpRelaxation(Relaxation):
             write_to_human_readable(self, filename)
         else:
             raise Exception("Unknown filetype")
+
+    def save_monomial_index(self, filename):
+        """Write the monomial index to a file.
+
+        :param filename: The name of the file to write to.
+        :type filename: str.
+        """
+        save_monomial_index(filename, self.monomial_index)
 
     def get_relaxation(self, level, objective=None, inequalities=None,
                        equalities=None, substitutions=None, bounds=None,
