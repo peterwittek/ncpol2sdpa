@@ -10,7 +10,7 @@ Created on Sun May 26 15:06:17 2013
 from __future__ import division, print_function
 from math import floor
 import numpy as np
-from sympy import S, Number
+from sympy import S, Number, Expr
 from sympy.matrices import Matrix, zeros
 from sympy.physics.quantum.dagger import Dagger
 import sys
@@ -24,6 +24,7 @@ from .nc_utils import apply_substitutions, build_monomial, \
     separate_scalar_factor, flatten, build_permutation_matrix, \
     simplify_polynomial, get_monomials, unique, iscomplex, \
     is_pure_substitution_rule, convert_relational
+from .solver_common import get_xmat_value
 from .chordal_extension import generate_clique, find_clique_index
 
 
@@ -985,6 +986,22 @@ class SdpRelaxation(Relaxation):
                         self.obj_facvar[column-1] = \
                             value*self.F_struct[base_row_offset + i*width + j,
                                                 column]
+
+    def __getitem__(self, index):
+        """Obtained the value for a polynomial in a solved relaxation.
+
+        :param index: The polynomial.
+        :type index: `sympy.core.exp.Expr`
+
+        :returns: The value of the polynomial extracted from the solved SDP.
+        :rtype: float
+        """
+        if not isinstance(index, Expr):
+            raise Exception("Not a monomial or polynomial!")
+        elif self.status == "unsolved":
+            raise Exception("SDP relaxation is not solved yet!")
+        else:
+            return get_xmat_value(index, self)
 
     def get_relaxation(self, level, objective=None, inequalities=None,
                        equalities=None, substitutions=None, bounds=None,

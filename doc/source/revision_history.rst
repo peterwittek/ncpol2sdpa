@@ -4,7 +4,10 @@ Revision History
 Since v1.9:
 
   - New: The function `generate_variable` returns a single symbolic variable.
-
+  - New: The `SdpRelaxation` class is now subscriptable. You can retrieve the 
+         value of polynomials in the solved relaxation in such way. Internally,
+         it calls `get_xmat_value` with `self`.
+         
 **Version 1.9 (2015-08-28)** 
 
   - New: Defining the constraints now also allows using for the symbols `<`, `<=`, `>=`, `>`. Additionally, the function `Eq` from SymPy can be used to defined equalities.

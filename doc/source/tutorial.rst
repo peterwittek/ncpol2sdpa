@@ -190,7 +190,7 @@ we are interested in. For example:
 
 ::
   
-    get_xmat_value(X[0]*X[1], sdpRelaxation)
+    sdpRelaxation[X[0]*X[1]]
 
 The sums-of-square (SOS) decomposition is extracted from the dual solution:
 
