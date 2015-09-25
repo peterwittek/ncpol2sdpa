@@ -36,7 +36,7 @@ Documentation is available `online <http://peterwittek.github.io/ncpol2sdpa/>`_.
 
 ::
 
-  from ncpol2sdpa import generate_variables, SdpRelaxation, solve_sdp
+  from ncpol2sdpa import generate_variables, SdpRelaxation
 
   # Number of Hermitian variables
   n_vars = 2
@@ -60,7 +60,7 @@ Documentation is available `online <http://peterwittek.github.io/ncpol2sdpa/>`_.
   sdpRelaxation = SdpRelaxation(X)
   sdpRelaxation.get_relaxation(level, objective=obj, inequalities=inequalities,
                                substitutions=substitutions)
-  solve_sdp(sdpRelaxation)
+  sdpRelaxation.solve()
   print(sdpRelaxation.primal, sdpRelaxation.dual, sdpRelaxation.status)
 
 

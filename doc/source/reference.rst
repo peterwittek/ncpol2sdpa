@@ -5,12 +5,12 @@ Function Reference
 SdpRelaxation Class
 ===================
 .. autoclass:: ncpol2sdpa.SdpRelaxation
-   :members: get_relaxation, set_objective, process_constraints
+   :members: get_relaxation, set_objective, process_constraints, solve, __getitem__, write_to_file, save_monomial_index
 
 FaacetsRelaxation Class
 =======================
 .. autoclass:: ncpol2sdpa.FaacetsRelaxation
-   :members: get_relaxation
+   :members: get_relaxation, solve
 
 Functions to Help Define Polynomial Optimization Problems
 =========================================================
