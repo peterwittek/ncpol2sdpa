@@ -24,7 +24,7 @@ from .nc_utils import apply_substitutions, build_monomial, \
     separate_scalar_factor, flatten, build_permutation_matrix, \
     simplify_polynomial, get_monomials, unique, iscomplex, \
     is_pure_substitution_rule, convert_relational
-from .solver_common import get_xmat_value
+from .solver_common import get_xmat_value, solve_sdp
 from .chordal_extension import generate_clique, find_clique_index
 
 
@@ -1002,6 +1002,46 @@ class SdpRelaxation(Relaxation):
             raise Exception("SDP relaxation is not solved yet!")
         else:
             return get_xmat_value(index, self)
+
+    def solve(self, solver=None, solverparameters=None):
+        """Call a solver on the SDP relaxation. Upon successful solution, it
+        returns the primal and dual objective values along with the solution
+        matrices. It also sets these values in the `sdpRelaxation` object,
+        along with some status information.
+
+        :param sdpRelaxation: The SDP relaxation to be solved.
+        :type sdpRelaxation: :class:`ncpol2sdpa.SdpRelaxation`.
+        :param solver: The solver to be called, either `None`, "sdpa", "mosek",
+                       or "cvxopt". The default is `None`, which triggers
+                       autodetect.
+        :type solver: str.
+        :param solverparameters: Parameters to be passed to the solver. Actual
+                                 options depend on the solver:
+
+                                 SDPA:
+
+                                   - `"executable"`:
+                                     Specify the executable for SDPA. E.g.,
+                                     `"executable":"/usr/local/bin/sdpa"`, or
+                                     `"executable":"sdpa_gmp"`
+                                   - `"paramsfile"`: Specify the parameter file
+
+                                 Mosek:
+                                 Refer to the Mosek documentation. All
+                                 arguments are passed on.
+
+                                 Cvxopt:
+                                 Refer to the PICOS documentation. All
+                                 arguments are passed on.
+        :type solverparameters: dict of str.
+        :returns: tuple of the primal and dual optimum, and the solutions for
+                  the primal and dual.
+        :rtype: (float, float, list of `numpy.array`, list of `numpy.array`)
+        """
+        if self.F_struct is None:
+            raise Exception("Relaxation is not generated yet. Call "
+                            "'SdpRelaxation.get_relaxation' first")
+        return solve_sdp(self, solver, solverparameters)
 
     def get_relaxation(self, level, objective=None, inequalities=None,
                        equalities=None, substitutions=None, bounds=None,

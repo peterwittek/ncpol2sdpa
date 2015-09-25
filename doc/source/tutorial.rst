@@ -34,10 +34,10 @@ problem, such as the objective function, inequalities, equalities, and
 bounds on the variables.
 
 The last step in is to either solve or export the relaxation. The function
-`solve_sdp` autodetects the possible solvers: SDPA, MOSEK, and CVXOPT. 
-Alternatively, the method ``write_to_sdpa`` exports the file to sparse SDPA 
-format, which can be solved externally on a supercomputer, in MATLAB, or by 
-any other means that accepts this input format.
+`solve_sdp` or the class method `SdpRelaxation.solve` autodetects the possible 
+solvers: SDPA, MOSEK, and CVXOPT. Alternatively, the method ``write_to_sdpa`` 
+exports the file to sparse SDPA format, which can be solved externally on a 
+supercomputer, in MATLAB, or by any other means that accepts this input format.
 
 
 Defining a Polynomial Optimization Problem of Commuting Variables
@@ -132,23 +132,16 @@ with the variables, and request generating the relaxation given the constraints:
 For large problems, getting the relaxation can take a long time. Once we have 
 the relaxation, we can try to solve it solve it. Currently three solvers are 
 supported fully: SDPA, MOSEK, and CVXOPT. If any of them are available, we 
-obtain the solution by calling the ``solve_sdp`` function:
+obtain the solution by calling the ``solve`` method:
 
 ::
 
-    primal, dual, x_mat, y_mat = solve_sdp(sdpRelaxation)
-    print(primal, dual)
+    sdpRelaxation.solve()
+    print(sdpRelaxation.primal, sdpRelaxation.dual, sdpRelaxation.status)
 
 This gives a solution close to the optimum around -0.7321. The solution and some
 status information and the time it takes to solve it become part of the 
-relaxation object. For instance, if you are interested in the primal, whether it
-is optimal, and the time it takes for obtaining the solution, you can write:
-
-::
-
-    solve_sdp(sdpRelaxation)
-    print(sdpRelaxation.primal, sdpRelaxation.status, sdpRelaxation.solution_time)
-
+relaxation object. 
 
 If no solver is detected, or you want more control over the parameters 
 of the solver, or you want to solve the problem in MATLAB, you export the 
@@ -164,7 +157,7 @@ matching parameter file, you can call
 
 :: 
 
-    solve_sdp(sdpRelaxation, solver='sdpa', 
+    sdpRelaxation.solve(solver='sdpa', 
       solverparameters={"executable":"sdpa_gmp", "paramsfile"="params.gmp.sdpa"})
 
 If you have multiple solvers available, you might want to specify which exactly
@@ -172,14 +165,14 @@ you want to use. For CVXOPT, call
 
 ::
 
-    solve_sdp(sdpRelaxation, solver='cvxopt')
+    sdpRelaxation.solve(solver='cvxopt')
     print(sdpRelaxation.primal, sdpRelaxation.dual)
 
 This solution also requires PICOS on top of CXOPT. Alternatively, if you have 
 MOSEK installed and it is callable from your Python distribution, you can 
 request to use it:
 
-    solve_sdp(sdpRelaxation, solver='mosek')
+    sdpRelaxation.solve(solver='mosek')
     print(sdpRelaxation.primal, sdpRelaxation.dual)
 
 
@@ -206,7 +199,7 @@ Python, we read the solution file and analyse the ranks:
 ::
 
     primal, dual, x_mat, y_mat = read_sdpa_out("example.out", True)
-    find_rank_loop(sdpRelaxation)
+    find_rank_loop(sdpRelaxation, x_xmat=x_mat)
 
 The output for this problem is ``[2, 3]``, not showing a rank loop at this level
 of relaxation.
@@ -257,7 +250,7 @@ pattern:
     sdpRelaxation_nc.get_relaxation(level, objective=obj_nc, 
                                     inequalities=inequalities_nc,
                                     substitutions=substitutions_nc)
-    primal_nc, dual_nc, x_mat_nc, y_mat_nc = solve_sdp(sdpRelaxation_nc)
+    sdpRelaxation_nc.solve()
 
 
 This gives a solution very close to the analytical -3/4. Let us export the
@@ -272,7 +265,7 @@ Solving this with the arbitrary-precision solver, we discover a rank loop:
 ::
 
     primal_nc, dual_nc, x_mat_nc, y_mat_nc = read_sdpa_out("data/examplenc.out", True)
-    find_rank_loop(sdpRelaxation_nc)
+    find_rank_loop(sdpRelaxation_nc, x_mat=x_mat_nc)
 
 The output is ``[2, 2]``, indicating a rank loop and showing that the 
 noncommutative case of the relaxation converges faster.

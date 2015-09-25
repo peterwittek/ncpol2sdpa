@@ -60,7 +60,7 @@ only need to provide the strings we would like to see -- this time it is AB:
     sdpRelaxation.get_relaxation(level, objective=objective,
                                  substitutions=P.substitutions,
                                  extramonomials=P.get_extra_monomials('AB'))
-    solve_sdp(sdpRelaxation)
+    sdpRelaxation.solve()
     print(sdpRelaxation.primal)
 
 
@@ -139,7 +139,7 @@ interpret.
     sdpRelaxation = SdpRelaxation(a)
     sdpRelaxation.get_relaxation(level, objective=hamiltonian,
                                  substitutions=substitutions)
-    solve_sdp(sdpRelaxation)
+    sdpRelaxation.solve()
 
 The result is very close to two. The result is similarly precise for arbitrary numbers 
 of oscillators.
@@ -212,7 +212,7 @@ From here, the solution follows the usual pathway:
     sdpRelaxation.get_relaxation(level, objective=-P([0],[0],'A'), 
                                  bounds=bounds,
                                  substitutions=P.substitutions)
-    solve_sdp(sdpRelaxation)
+    sdpRelaxation.solve()
     print(sdpRelaxation.primal, sdpRelaxation.dual)
 
 
@@ -301,6 +301,6 @@ simple example:
 
     sdpRelaxation = SdpRelaxation(X, hierarchy="npa_chordal")
     sdpRelaxation.get_relaxation(level, objective=obj, inequalities=inequalities)
-    solve_sdp(sdpRelaxation)
+    sdpRelaxation.solve()
     print(sdpRelaxation.primal, sdpRelaxation.dual)
 
