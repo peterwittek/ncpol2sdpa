@@ -78,6 +78,14 @@ def solve_sdp(sdpRelaxation, solver=None, solverparameters=None):
                         " Mosek, or Picos with Cvxopt")
     elif solver is not None and solver not in solvers:
         print("Available solvers: " + str(solvers))
+        if solver == "cvxopt":
+            try:
+                import cvxopt
+            except ImportError:
+                pass
+            else:
+                raise Exception("Cvxopt is detected, but Picos is not. "
+                                "Please install Picos to use Cvxopt")
         raise Exception("Could not detect requested " + solver)
     elif solver is None:
         solver = solvers[0]
