@@ -38,6 +38,7 @@ THE POSSIBILITY OF SUCH DAMAGE.
 from bisect import bisect_left
 import numpy as np
 
+
 def get_index_dtype(arrays=(), maxval=None, check_contents=False):
     """
     Based on input (integer) arrays `a`, determine a suitable index data
@@ -80,7 +81,8 @@ def get_index_dtype(arrays=(), maxval=None, check_contents=False):
                 elif np.issubdtype(arr.dtype, np.integer):
                     maxval = arr.max()
                     minval = arr.min()
-                    if minval >= np.iinfo(np.int32).min and maxval <= np.iinfo(np.int32).max:
+                    if minval >= np.iinfo(np.int32).min and \
+                            maxval <= np.iinfo(np.int32).max:
                         # a bigger type not needed
                         continue
 
@@ -88,6 +90,7 @@ def get_index_dtype(arrays=(), maxval=None, check_contents=False):
             break
 
     return dtype
+
 
 def _slicetoarange(j, shape):
     """ Given a slice object, use numpy arange to change it to a 1D
@@ -135,10 +138,12 @@ def _check_ellipsis(index):
 
     return index
 
+
 def _boolean_index_to_array(i):
     if i.ndim > 1:
         raise IndexError('invalid index shape')
     return i.nonzero()[0]
+
 
 class IndexMixin(object):
     """
@@ -150,7 +155,7 @@ class IndexMixin(object):
         Where row/col is a integer, slice, or array of integers.
         """
         if (isinstance(index, (spmatrix, np.ndarray)) and
-            index.ndim == 2 and index.dtype.kind == 'b'):
+                index.ndim == 2 and index.dtype.kind == 'b'):
             return index.nonzero()
 
         # Parse any ellipses.
@@ -211,9 +216,11 @@ class IndexMixin(object):
                 raise IndexError('index returns 3-dim structure')
         return i, j
 
+
 def issequence(t):
-    return (isinstance(t, (list, tuple)) and (len(t) == 0 or np.isscalar(t[0]))) \
-           or (isinstance(t, np.ndarray) and (t.ndim == 1))
+    return (isinstance(t, (list, tuple)) and
+            (len(t) == 0 or np.isscalar(t[0]))) or \
+           (isinstance(t, np.ndarray) and (t.ndim == 1))
 
 
 def isdense(x):
@@ -240,13 +247,14 @@ def isintlike(x):
         except TypeError:
             return False
 
+
 def isshape(x):
     """Is x a valid 2-tuple of dimensions?
     """
     try:
         # Assume it's a tuple of matrix dimensions (M, N)
         (M, N) = x
-    except:
+    except TypeError:
         return False
     else:
         if isintlike(M) and isintlike(N):
@@ -301,6 +309,7 @@ class spmatrix(object):
     def get_shape(self):
         return self._shape
 
+
 def lil_get1(M, N, rows, datas, i, j):
     """
     Get a single item from LIL matrix.
@@ -340,6 +349,7 @@ def lil_get1(M, N, rows, datas, i, j):
     else:
         return 0
 
+
 def _lil_fancy_get(M, N, rows, datas, new_rows, new_datas, i_idx, j_idx):
     for x in range(i_idx.shape[0]):
         new_row = []
@@ -357,6 +367,7 @@ def _lil_fancy_get(M, N, rows, datas, new_rows, new_datas, i_idx, j_idx):
 
         new_rows[x] = new_row
         new_datas[x] = new_data
+
 
 def lil_deleteat_nocheck(row, data, j):
     """
@@ -376,6 +387,7 @@ def lil_deleteat_nocheck(row, data, j):
     if pos < len(row) and row[pos] == j:
         del row[pos]
         del data[pos]
+
 
 def lil_insertat_nocheck(row, data, j, x):
     """
@@ -565,8 +577,19 @@ class lil_matrix(spmatrix, IndexMixin):
     shape = property(fget=spmatrix.get_shape, fset=set_shape)
 
     def __iadd__(self, other):
-        self[:, :] = self + other
-        return self
+        if isinstance(other, lil_matrix):
+            if self.shape != other.shape:
+                raise Exception("Shapes don't match!")
+            # Super-retarded solution
+            for i in range(self.shape[0]):
+                for j in range(self.shape[1]):
+                    a = self[i, j]
+                    b = other[i, j]
+                    if a != 0 or b != 0:
+                        self[i, j] = a + b
+            return self
+        else:
+            raise NotImplementedError
 
     def __isub__(self, other):
         self[:, :] = self - other
@@ -585,6 +608,14 @@ class lil_matrix(spmatrix, IndexMixin):
             return self
         else:
             raise NotImplementedError
+
+    def __mul__(self, other):
+        if isscalarlike(other):
+            return self._mul_scalar(other)
+        else:
+            raise NotImplementedError
+
+    __rmul__ = __mul__
 
     # Whenever the dimensions change, empty lists should be created for each
     # row
@@ -624,10 +655,10 @@ class lil_matrix(spmatrix, IndexMixin):
         new = lil_matrix((self.shape[0], 1), dtype=self.dtype)
         for row_index, row in enumerate(self.rows):
             for column_index, column in enumerate(row):
-                if column>i:
+                if column > i:
                     break
                 if column == i:
-                    new[row_index ,0] = self.data[row_index][column_index]
+                    new[row_index, 0] = self.data[row_index][column_index]
         return new
 
     def getrowview(self, i):
@@ -652,6 +683,8 @@ class lil_matrix(spmatrix, IndexMixin):
         Python lists return copies.
         """
         # Utilities found in IndexMixin
+        if isinstance(index, int):
+            return self.getrow(index)
         if isinstance(index[0], int) and isinstance(index[1], int):
             return lil_get1(self.shape[0], self.shape[1], self.rows, self.data,
                             index[0], index[1])
@@ -673,7 +706,7 @@ class lil_matrix(spmatrix, IndexMixin):
             # assignment for other types is handled below together
             # with fancy indexing.
             if ((isinstance(i, int) or isinstance(i, np.integer)) and
-                (isinstance(j, int) or isinstance(j, np.integer))):
+                    (isinstance(j, int) or isinstance(j, np.integer))):
                 x = self.dtype.type(x)
                 if x.size > 1:
                     # Triggered if input was an ndarray
@@ -682,16 +715,20 @@ class lil_matrix(spmatrix, IndexMixin):
                             self.rows, self.data,
                             i, j, x)
                 return
+        elif (isinstance(index, int) or isinstance(index, np.integer)) and \
+                isinstance(x, lil_matrix) and x.shape == (1, self.shape[1]):
+            self.rows[index] = x.rows[0][:]
+            self.data[index] = x.data[0][:]
+            return
+        else:
+            raise NotImplementedError
 
     def _mul_scalar(self, other):
         if other == 0:
             # Multiply by zero: return the zero matrix
             new = lil_matrix(self.shape, dtype=self.dtype)
         else:
-            res_dtype = upcast_scalar(self.dtype, other)
-
             new = self.copy()
-            new = new.astype(res_dtype)
             # Multiply this scalar by every element.
             for j, rowvals in enumerate(new.data):
                 new.data[j] = [val*other for val in rowvals]
@@ -721,8 +758,10 @@ class lil_matrix(spmatrix, IndexMixin):
                 d[i, j] = self.data[i][pos]
         return d
 
+
 def isspmatrix_lil(x):
     return isinstance(x, lil_matrix)
+
 
 def isspmatrix(x):
     return isinstance(x, spmatrix)

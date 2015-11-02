@@ -6,7 +6,7 @@ Created on Fri May 10 09:45:11 2013
 
 @author: Peter Wittek
 """
-from ncpol2sdpa import generate_variables, SdpRelaxation, write_to_sdpa
+from ncpol2sdpa import generate_variables, SdpRelaxation
 import time
 
 # Number of Hermitian variables
@@ -40,5 +40,5 @@ time0 = time.time()
 sdpRelaxation = SdpRelaxation(X)
 sdpRelaxation.get_relaxation(level, objective=obj, equalities=equalities,
                              substitutions=substitutions)
-write_to_sdpa(sdpRelaxation, 'benchmark.dat-s')
+sdpRelaxation.write_to_file('benchmark.dat-s')
 print('%0.2f s' % ((time.time() - time0)))

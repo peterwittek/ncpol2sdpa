@@ -12,7 +12,7 @@ Created on Fri May 10 09:45:11 2013
 @author: Peter Wittek
 """
 
-from ncpol2sdpa import generate_variables, SdpRelaxation, write_to_sdpa
+from ncpol2sdpa import generate_variables, SdpRelaxation
 
 # Number of Hermitian variables
 n_vars = 2
@@ -36,4 +36,4 @@ monomial_substitution[X[0] ** 2] = X[0]
 sdpRelaxation = SdpRelaxation(X)
 sdpRelaxation.get_relaxation(level, objective=obj, inequalities=inequalities,
                              substitutions=monomial_substitution)
-write_to_sdpa(sdpRelaxation, 'example_noncommutative.dat-s')
+sdpRelaxation.write_to_file('example_noncommutative.dat-s')

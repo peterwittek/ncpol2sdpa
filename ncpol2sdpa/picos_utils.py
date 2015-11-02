@@ -9,6 +9,7 @@ Created on Wed Dec 10 18:33:34 2014
 from __future__ import print_function
 import numpy as np
 
+
 def solve_with_cvxopt(sdpRelaxation, solverparameters=None):
     """Helper function to convert the SDP problem to PICOS
     and call CVXOPT solver, and parse the output.
@@ -17,12 +18,21 @@ def solve_with_cvxopt(sdpRelaxation, solverparameters=None):
     :type sdpRelaxation: :class:`ncpol2sdpa.SdpRelaxation`.
     """
     P = convert_to_picos(sdpRelaxation)
-    solution = P.solve(solver="cvxopt", verbose=0)
+    P.set_option("solver", "cvxopt")
+    P.set_option("verbose", sdpRelaxation.verbose)
+    if solverparameters is not None:
+        for key, value in solverparameters.items():
+            P.set_option(key, value)
+    solution = P.solve()
     x_mat = [np.array(P.get_valued_variable('X'))]
-    y_mat = [np.array(P.get_constraint(i).dual) for i in range(len(P.constraints))]
-    return solution["cvxopt_sol"]["primal objective"], \
-           solution["cvxopt_sol"]["dual objective"], \
-           x_mat, y_mat
+    y_mat = [np.array(P.get_constraint(i).dual)
+             for i in range(len(P.constraints))]
+    return -solution["cvxopt_sol"]["primal objective"] + \
+        sdpRelaxation.constant_term, \
+        -solution["cvxopt_sol"]["dual objective"] + \
+        sdpRelaxation.constant_term, \
+        x_mat, y_mat, solution["status"]
+
 
 def convert_to_picos_extra_moment_matrix(sdpRelaxation):
     """Convert an SDP relaxation to a PICOS problem, returning the moment
@@ -48,13 +58,15 @@ def convert_to_picos_extra_moment_matrix(sdpRelaxation):
     for block_size in sdpRelaxation.block_struct:
         x, Ix, Jx = [], [], []
         c, Ic, Jc = [], [], []
-        for i, row in enumerate(sdpRelaxation.F_struct.rows[row_offset:row_offset+block_size**2]):
+        for i, row in enumerate(sdpRelaxation.F_struct.rows[row_offset:
+                                                            row_offset +
+                                                            block_size**2]):
             for j, column in enumerate(row):
                 if column > 0:
                     x.append(sdpRelaxation.F_struct.data[row_offset+i][j])
                     Ix.append(i)
                     Jx.append(column-1)
-                    i0 = (i//block_size)+(i%block_size)*block_size
+                    i0 = (i//block_size)+(i % block_size)*block_size
                     if i != i0:
                         x.append(sdpRelaxation.F_struct.data[row_offset+i][j])
                         Ix.append(i0)
@@ -62,17 +74,17 @@ def convert_to_picos_extra_moment_matrix(sdpRelaxation):
 
                 else:
                     c.append(sdpRelaxation.F_struct.data[row_offset+i][j])
-                    #Note that a constant term can only possibly occur in a
-                    #top-left corner
+                    # Note that a constant term can only possibly occur in a
+                    # top-left corner
                     Ic.append(0)
                     Jc.append(0)
         permutation = cvx.spmatrix(x, Ix, Jx)
         constant = cvx.spmatrix(c, Ic, Jc, (block_size, block_size))
-        constraint = X#.copy()
+        constraint = X  # .copy()
         for k in constraint.factors:
             constraint.factors[k] = permutation
         constraint._size = (block_size, block_size)
-        P.add_constraint(constant + constraint>>0)
+        P.add_constraint(constant + constraint >> 0)
         if block_size == sdpRelaxation.block_struct[0]:
             for k in Y.factors:
                 Y.factors[k] = permutation
@@ -90,6 +102,7 @@ def convert_to_picos_extra_moment_matrix(sdpRelaxation):
     objective._size = (1, 1)
     P.set_objective('min', objective)
     return P, X, Y
+
 
 def convert_to_picos(sdpRelaxation):
     """Convert an SDP relaxation to a PICOS problem such that the exported
@@ -114,13 +127,15 @@ def convert_to_picos(sdpRelaxation):
     for block_size in sdpRelaxation.block_struct:
         x, Ix, Jx = [], [], []
         c, Ic, Jc = [], [], []
-        for i, row in enumerate(sdpRelaxation.F_struct.rows[row_offset:row_offset+block_size**2]):
+        for i, row in enumerate(sdpRelaxation.F_struct.rows[row_offset:
+                                                            row_offset +
+                                                            block_size**2]):
             for j, column in enumerate(row):
                 if column > 0:
                     x.append(sdpRelaxation.F_struct.data[row_offset+i][j])
                     Ix.append(i)
                     Jx.append(column-1)
-                    i0 = (i//block_size)+(i%block_size)*block_size
+                    i0 = (i//block_size)+(i % block_size)*block_size
                     if i != i0:
                         x.append(sdpRelaxation.F_struct.data[row_offset+i][j])
                         Ix.append(i0)
@@ -128,8 +143,8 @@ def convert_to_picos(sdpRelaxation):
 
                 else:
                     c.append(sdpRelaxation.F_struct.data[row_offset+i][j])
-                    #Note that a constant term can only possibly occur in a
-                    #top-left corner
+                    # Note that a constant term can only possibly occur in a
+                    # top-left corner
                     Ic.append(0)
                     Jc.append(0)
         permutation = cvx.spmatrix(x, Ix, Jx)
@@ -138,7 +153,7 @@ def convert_to_picos(sdpRelaxation):
         for k in constraint.factors:
             constraint.factors[k] = permutation
         constraint._size = (block_size, block_size)
-        P.add_constraint(constant + constraint>>0)
+        P.add_constraint(constant + constraint >> 0)
         row_offset += block_size**2
     x, Ix, Jx = [], [], []
     for k, val in enumerate(sdpRelaxation.obj_facvar):

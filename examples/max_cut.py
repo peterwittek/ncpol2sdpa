@@ -11,7 +11,7 @@ Created on Thu May 15 12:12:40 2014
 @author: wittek
 """
 import numpy as np
-from ncpol2sdpa import SdpRelaxation, write_to_sdpa, generate_variables
+from ncpol2sdpa import SdpRelaxation, generate_variables
 
 W = np.diag(np.ones(8), 1) + np.diag(np.ones(7), 2) + np.diag([1, 1], 7) + \
     np.diag([1], 8)
@@ -30,4 +30,4 @@ level = 1
 sdpRelaxation = SdpRelaxation(x)
 sdpRelaxation.get_relaxation(level, objective=objective, equalities=equalities,
                              removeequalities=True)
-write_to_sdpa(sdpRelaxation, 'max_cut.dat-s')
+sdpRelaxation.write_to_file("max_cut.dat-s")

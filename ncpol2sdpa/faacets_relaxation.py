@@ -14,6 +14,7 @@ except ImportError:
     from .sparse_utils import lil_matrix
 from .sdp_relaxation import Relaxation
 
+
 def collinsgisin_to_faacets(I):
     coefficients = []
     for j in range(len(I[0])):
@@ -21,13 +22,18 @@ def collinsgisin_to_faacets(I):
             coefficients.append(I[i][j])
     return np.array(coefficients, dtype='d')
 
+
 def configuration_to_faacets(A_configuration, B_configuration):
-    a = str(A_configuration).replace('[', '(').replace(']', ')').replace(',', '')
-    b = str(B_configuration).replace('[', '(').replace(']', ')').replace(',', '')
-    return '[' + a + ' ' + b +']'
+    a = str(A_configuration).replace('[', '(').replace(']', ')').replace(',',
+                                                                         '')
+    b = str(B_configuration).replace('[', '(').replace(']', ')').replace(',',
+                                                                         '')
+    return '[' + a + ' ' + b + ']'
+
 
 def get_faacets_moment_matrix(A_configuration, B_configuration, coefficients):
-    from jpype import startJVM, shutdownJVM, JPackage, getDefaultJVMPath, JArray, JDouble
+    from jpype import startJVM, shutdownJVM, JPackage, getDefaultJVMPath, \
+        JArray, JDouble
     # find the JAR file and start the JVM
     jarFiles = glob.glob('faacets-*.jar')
     assert len(jarFiles) == 1
@@ -36,7 +42,8 @@ def get_faacets_moment_matrix(A_configuration, B_configuration, coefficients):
     com = JPackage('com')
 
     # main code
-    sc = com.faacets.Core.Scenario(configuration_to_faacets(A_configuration, B_configuration))
+    sc = com.faacets.Core.Scenario(configuration_to_faacets(A_configuration,
+                                                            B_configuration))
     representation = com.faacets.Core.Representation('NCRepresentation')
     ope = com.faacets.SDP.OperatorElements(['', 'A', 'AB'])
     pts = com.faacets.SDP.PartialTransposes([])
@@ -48,14 +55,29 @@ def get_faacets_moment_matrix(A_configuration, B_configuration, coefficients):
     shutdownJVM()
     return M, ncIndices
 
+
 class FaacetsRelaxation(Relaxation):
 
+    """Class for wrapping around a Faacets relaxation.
+
+    """
+
     def get_relaxation(self, A_configuration, B_configuration, I):
+        """Get the sparse SDP relaxation of a Bell inequality.
+
+        :param A_configuration: The definition of measurements of Alice.
+        :type A_configuration: list of list of int.
+        :param B_configuration: The definition of measurements of Bob.
+        :type B_configuration: list of list of int.
+        :param I: The matrix describing the Bell inequality in the
+                  Collins-Gisin picture.
+        :type I: list of list of int.
+        """
         coefficients = collinsgisin_to_faacets(I)
         M, ncIndices = get_faacets_moment_matrix(A_configuration,
                                                  B_configuration, coefficients)
         self.n_vars = M.max() - 1
-        bs = len(M) # The block size
+        bs = len(M)  # The block size
         self.block_struct = [bs]
         self.F_struct = lil_matrix((bs**2, self.n_vars + 1))
         # Constructing the internal representation of the constraint matrices
@@ -64,7 +86,9 @@ class FaacetsRelaxation(Relaxation):
         for i in range(bs):
             for j in range(i, bs):
                 if M[i, j] != 0:
-                    self.F_struct[i*bs+j, abs(M[i, j])-1] = copysign(1, M[i, j])
+                    self.F_struct[i*bs+j, abs(M[i, j])-1] = copysign(1,
+                                                                     M[i, j])
         self.obj_facvar = [0 for _ in range(self.n_vars)]
         for i in range(1, len(ncIndices)):
-            self.obj_facvar[abs(ncIndices[i])-2] += copysign(1, ncIndices[i])*coefficients[i]
+            self.obj_facvar[abs(ncIndices[i])-2] += \
+                copysign(1, ncIndices[i])*coefficients[i]

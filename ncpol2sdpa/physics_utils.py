@@ -6,6 +6,7 @@ Created on Fri May 16 14:27:47 2014
 
 @author: Peter Wittek
 """
+from sympy.core import S
 from sympy.physics.quantum.dagger import Dagger
 from .nc_utils import generate_variables, flatten
 from .solver_common import solve_sdp
@@ -42,8 +43,10 @@ def get_neighbors(index, lattice_length, width=0, periodic=False):
     return neighbors
 
 
-def get_next_neighbors(indices, lattice_length, width=0, distance=1, periodic=False):
-    """Get the forward neighbors at a given distance of a site or set of sites in a lattice.
+def get_next_neighbors(indices, lattice_length, width=0, distance=1,
+                       periodic=False):
+    """Get the forward neighbors at a given distance of a site or set of sites
+    in a lattice.
 
     :param index: Linear index of operator.
     :type index: int.
@@ -59,13 +62,21 @@ def get_next_neighbors(indices, lattice_length, width=0, distance=1, periodic=Fa
 
     :returns: list of int -- the neighbors at given distance in linear index.
     """
-    if not isinstance(indices,list):
+    if not isinstance(indices, list):
         indices = [indices]
     if distance == 1:
-        return flatten(get_neighbors(index, lattice_length, width, periodic) for index in indices)
+        return flatten(get_neighbors(index, lattice_length, width, periodic)
+                       for index in indices)
     else:
-        return list(set(flatten(get_next_neighbors(get_neighbors(index, lattice_length, width, periodic), lattice_length, width, distance-1, periodic) for index in indices)) - set(get_next_neighbors(indices, lattice_length, width, distance-1, periodic)))
-    
+        s1 = set(flatten(get_next_neighbors(get_neighbors(index,
+                                                          lattice_length,
+                                                          width, periodic),
+                                            lattice_length, width, distance-1,
+                                            periodic) for index in indices))
+        s2 = set(get_next_neighbors(indices, lattice_length, width, distance-1,
+                                    periodic))
+        return list(s1 - s2)
+
 
 def bosonic_constraints(a):
     """Return  a set of constraints that define fermionic ladder operators.
@@ -78,13 +89,14 @@ def bosonic_constraints(a):
     for i, ai in enumerate(a):
         substitutions[ai * Dagger(ai)] = 1.0 + Dagger(ai) * ai
         for aj in a[i+1:]:
-            #substitutions[ai*Dagger(aj)] = -Dagger(ai)*aj
+            # substitutions[ai*Dagger(aj)] = -Dagger(ai)*aj
             substitutions[ai*Dagger(aj)] = Dagger(aj)*ai
             substitutions[Dagger(ai)*aj] = aj*Dagger(ai)
             substitutions[ai*aj] = aj*ai
             substitutions[Dagger(ai) * Dagger(aj)] = Dagger(aj) * Dagger(ai)
 
     return substitutions
+
 
 def fermionic_constraints(a):
     """Return  a set of constraints that define fermionic ladder operators.
@@ -99,13 +111,14 @@ def fermionic_constraints(a):
         substitutions[Dagger(ai) ** 2] = 0
         substitutions[ai * Dagger(ai)] = 1.0 - Dagger(ai) * ai
         for aj in a[i+1:]:
-            #substitutions[ai*Dagger(aj)] = -Dagger(ai)*aj
+            # substitutions[ai*Dagger(aj)] = -Dagger(ai)*aj
             substitutions[ai*Dagger(aj)] = -Dagger(aj)*ai
             substitutions[Dagger(ai)*aj] = -aj*Dagger(ai)
             substitutions[ai*aj] = -aj*ai
             substitutions[Dagger(ai) * Dagger(aj)] = - Dagger(aj) * Dagger(ai)
 
     return substitutions
+
 
 def pauli_constraints(X, Y, Z):
     """Return  a set of constraints that define Pauli spin operators.
@@ -132,9 +145,9 @@ def pauli_constraints(X, Y, Z):
         substitutions[Z[i] * X[i]] = - X[i] * Z[i]
         substitutions[Z[i] * Y[i]] = - Y[i] * Z[i]
         # Commutation relations.
-        #equalities.append(X[i]*Y[i] - 1j*Z[i])
-        #equalities.append(X[i]*Z[i] + 1j*Y[i])
-        #equalities.append(Y[i]*Z[i] - 1j*X[i])
+        # equalities.append(X[i]*Y[i] - 1j*Z[i])
+        # equalities.append(X[i]*Z[i] + 1j*Y[i])
+        # equalities.append(Y[i]*Z[i] - 1j*X[i])
         # They commute between the sites
         for j in range(i + 1, n_vars):
             substitutions[X[j] * X[i]] = X[i] * X[j]
@@ -178,7 +191,9 @@ def projective_measurement_constraints(*parties):
               commutation relations.
     """
     substitutions = {}
-    #Idempotency and orthogonality of projectors
+    # Idempotency and orthogonality of projectors
+    if isinstance(parties[0][0][0], list):
+        parties = parties[0]
     for party in parties:
         for measurement in party:
             for projector1 in measurement:
@@ -188,34 +203,44 @@ def projective_measurement_constraints(*parties):
                     else:
                         substitutions[projector1*projector2] = 0
                         substitutions[projector2*projector1] = 0
-    #Projectors commute between parties in a partition
+    # Projectors commute between parties in a partition
     for n1 in range(len(parties)):
         for n2 in range(n1+1, len(parties)):
             for measurement1 in parties[n1]:
                 for measurement2 in parties[n2]:
                     for projector1 in measurement1:
                         for projector2 in measurement2:
-                            substitutions[projector2*projector1] = projector1*projector2
+                            substitutions[projector2*projector1] = \
+                                projector1*projector2
     return substitutions
 
-def define_objective_with_I(I, A, B):
+
+def define_objective_with_I(I, *args):
     """Define a polynomial using measurements and an I matrix describing a Bell
     inequality.
 
     :param I: The I matrix of a Bell inequality in the Collins-Gisin notation.
     :type I: list of list of int.
-    :param A: Measurements of Alice.
-    :type A: list of list of
-             :class:`sympy.physics.quantum.operator.HermitianOperator`.
-    :param B: Measurements of Bob.
-    :type B: list of list of
-             :class:`sympy.physics.quantum.operator.HermitianOperator`.
+    :param args: Either the measurements of Alice and Bob or a `Probability`
+                 class describing their measurement operators.
+    :type A: tuple of list of list of
+             :class:`sympy.physics.quantum.operator.HermitianOperator` or
+             :class:`ncpol2sdpa.Probability`
 
     :returns: :class:`sympy.core.expr.Expr` -- the objective function to be
-              solved by SDPA as minimization problem to find the maximum quantum
-              violation.
+              solved as a minimization problem to find the maximum quantum
+              violation. Note that the sign is flipped compared to the Bell
+              inequality.
     """
     objective = I[0][0]
+    if len(args) > 2 or len(args) == 0:
+        raise Exception("Wrong number of arguments!")
+    elif len(args) == 1:
+        A = args[0].parties[0]
+        B = args[0].parties[1]
+    else:
+        A = args[0]
+        B = args[1]
     i, j = 0, 1  # Row and column index in I
     for m_Bj in B:  # Define first row
         for Bj in m_Bj:
@@ -262,8 +287,8 @@ def correlator(A, B):
     return correlators
 
 
-def maximum_violation(A_configuration, B_configuration, I, level):
-    """Get the maximum violation of a Bell inequality.
+def maximum_violation(A_configuration, B_configuration, I, level, extra=None):
+    """Get the maximum violation of a two-party Bell inequality.
 
     :param A_configuration: Measurement settings of Alice.
     :type A_configuration: list of int.
@@ -276,16 +301,142 @@ def maximum_violation(A_configuration, B_configuration, I, level):
 
     :returns: tuple of primal and dual solutions of the SDP relaxation.
     """
-    A = generate_measurements(A_configuration, 'A')
-    B = generate_measurements(B_configuration, 'B')
-
-    substitutions = projective_measurement_constraints(
-        A, B)
-
-    objective = define_objective_with_I(I, A, B)
-
-    sdpRelaxation = SdpRelaxation(flatten([A, B]), verbose=0)
+    P = Probability(A_configuration, B_configuration)
+    objective = define_objective_with_I(I, P)
+    if extra is None:
+        extramonomials = []
+    else:
+        extramonomials = P.get_extra_monomials(extra)
+    sdpRelaxation = SdpRelaxation(P.get_all_operators(), verbose=0)
     sdpRelaxation.get_relaxation(level, objective=objective,
-                                 substitutions=substitutions)
-    primal, dual, _, _ = solve_sdp(sdpRelaxation)
-    return primal, dual
+                                 substitutions=P.substitutions,
+                                 extramonomials=extramonomials)
+    solve_sdp(sdpRelaxation)
+    return sdpRelaxation.primal, sdpRelaxation.dual
+
+
+class Probability(object):
+
+    def __init__(self, *args, **kwargs):
+        """Class for working with quantum probabilities.
+
+        :param *args: Input configurations for each parties
+        :type *args: tuple of list of lists
+        :param labels: Optional parameter string to define the label of each
+                       party.
+        :type labels: list of str.
+        :Example:
+
+        For a CHSH scenario, instantiate the class as
+
+            P = Probability([2, 2], [2, 2])
+
+        """
+
+        self.n_parties = len(args)
+        self.parties = []
+        self.labels = [chr(ord('A') + i) for i in range(self.n_parties)]
+        for name, value in kwargs.items():
+            if name == "labels":
+                if len(value) != self.n_parties:
+                    raise Exception("Incorrect number of labels!")
+                else:
+                    self.labels = value
+            else:
+                raise Exception("Unknown parameter " + name)
+        for i, configuration in enumerate(args):
+            self.parties.append(generate_measurements(configuration,
+                                                      self.labels[i]))
+        self.substitutions = projective_measurement_constraints(self.parties)
+
+    def get_all_operators(self):
+        """Return all operators across all parties and measurements to supply
+        them to the `ncpol2sdpa.SdpRelaxation` class.
+
+        """
+        return flatten(self.parties)
+
+    def _monomial_generator(self, monomials, label_indices):
+        if label_indices == []:
+            return monomials
+        elif monomials == []:
+            return self._monomial_generator(
+                flatten(self.parties[label_indices[0]]), label_indices[1:])
+        else:
+            result = [m1*m2 for m1 in monomials
+                      for m2 in flatten(self.parties[label_indices[0]])]
+            return self._monomial_generator(result, label_indices[1:])
+
+    def get_extra_monomials(self, *args):
+        if len(args) == 0:
+            return []
+        if isinstance(args[0], list):
+            args = args[0]
+        extra_monomials = []
+        for s in args:
+            label_indices = [self.labels.index(party) for party in s]
+            extra_monomials.extend(self._monomial_generator([], label_indices))
+        return extra_monomials
+
+    def _convert_marginal_index(self, marginal):
+        if isinstance(marginal, str):
+            return [self.labels.index(marginal)]
+        else:
+            return sorted([self.labels.index(m) if isinstance(m, str) else m
+                           for m in marginal])
+
+    def __call__(self, output_, input_, marginal=None):
+        """Obtain your probabilities in the p(ab...|xy...) notation.
+
+        :param output_: Conditional output as [a, b, ...]
+        :type output_: list of ints.
+        :param input_: The input to condition on as [x, y, ...]
+        :type input_: list of ints.
+        :param marginal: Optional parameter. If it is a marginal, then you can
+                         define which party or parties it belongs to.
+        :type marginal: list of str.
+        :returns: polynomial of `sympy.physics.quantum.HermitianOperator`.
+
+        :Example:
+
+        For the CHSH scenario, to get p(10|01), write
+
+            P([1,0], [0,1])
+
+        To get the marginal p_A(0|1), write
+
+            P([0], [1], ['A'])
+
+        """
+
+        if len(output_) != len(input_):
+            raise Exception("The number of inputs does not match the number of"
+                            "outputs!")
+        elif len(input_) > self.n_parties:
+            raise Exception("The number of inputs exceeds the number of "
+                            "parties!")
+        elif marginal is None and len(input_) < self.n_parties:
+            raise Exception("Marginal requested, but without defining which!")
+        elif marginal is None:
+            marginal = self._convert_marginal_index(self.labels)
+        else:
+            marginal = self._convert_marginal_index(marginal)
+            if len(marginal) != len(input_):
+                raise Exception("The number of parties in the marginal does "
+                                "not match the number of inputs!")
+        result = S.One
+        for party, (proj, meas) in enumerate(zip(output_, input_)):
+            if len(self.parties[marginal[party]]) < meas + 1:
+                raise Exception("Invalid measurement index " + str(meas) +
+                                " for party " + self.labels[party])
+            elif len(self.parties[marginal[party]][meas]) < proj:
+                raise Exception("Invalid projection operator index " +
+                                str(proj) + " for party " + self.labels[party])
+            elif len(self.parties[marginal[party]][meas]) == proj:
+                # We are in the Collins-Gisin picture: the last projector
+                # is not part of the measurement.
+                result *= S.One - \
+                    sum(op for op in self.parties[marginal[party]][meas])
+            else:
+                result *= self.parties[marginal[party]][meas][proj]
+        return result

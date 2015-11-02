@@ -1,20 +1,15 @@
 """
 Ncpol2SDPA: A converter from commutative and noncommutative polynomial
 optimization problems to sparse SDP input formats.
-
-Ncpol2SDPA is a set of scripts to convert a polynomial optimization problem of
-either commutative or noncommutative variables to a sparse semidefinite
-programming (SDP) problem that can be processed by the SDPA family of solvers
-or further processed by PICOS to solve the problem by CVXOPT or MOSEK. The
-optimization problem can be unconstrained or constrained by equalities and
-inequalities.
 """
 
-from distutils.core import setup
-
+try:
+    from setuptools import setup
+except ImportError:
+    from distutils.core import setup
 setup(
     name='ncpol2sdpa',
-    version='1.8',
+    version='1.9',
     author='Peter Wittek',
     author_email='peterwittek@users.noreply.github.com',
     packages=['ncpol2sdpa'],
@@ -43,4 +38,5 @@ setup(
         "sympy >= 0.7.2",
         "numpy"
     ],
+    test_suite="tests"
 )

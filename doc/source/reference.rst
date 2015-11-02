@@ -5,15 +5,16 @@ Function Reference
 SdpRelaxation Class
 ===================
 .. autoclass:: ncpol2sdpa.SdpRelaxation
-   :members: get_relaxation, set_objective, process_constraints
+   :members: get_relaxation, set_objective, process_constraints, solve, __getitem__, write_to_file, save_monomial_index
 
 FaacetsRelaxation Class
 =======================
 .. autoclass:: ncpol2sdpa.FaacetsRelaxation
-   :members: get_relaxation
+   :members: get_relaxation, solve
 
 Functions to Help Define Polynomial Optimization Problems
 =========================================================
+.. autofunction:: ncpol2sdpa.generate_variable
 .. autofunction:: ncpol2sdpa.generate_variables
 .. autofunction:: ncpol2sdpa.get_ncmonomials
 .. autofunction:: ncpol2sdpa.ncdegree
@@ -33,8 +34,10 @@ Functions to Export, Solve, and Study Relaxations
 .. autofunction:: ncpol2sdpa.save_monomial_index
 .. autofunction:: ncpol2sdpa.write_to_human_readable
 
-Functions to Define Physics Problems
-====================================
+Functions and Classes to Define Physics Problems
+================================================
+.. autoclass:: ncpol2sdpa.Probability
+   :members: __call__, get_all_operators
 .. autofunction:: ncpol2sdpa.bosonic_constraints
 .. autofunction:: ncpol2sdpa.fermionic_constraints
 .. autofunction:: ncpol2sdpa.pauli_constraints

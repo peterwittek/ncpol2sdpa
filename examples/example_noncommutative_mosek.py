@@ -11,8 +11,7 @@ Created on Fri May 10 09:45:11 2013
 
 @author: Peter Wittek
 """
-import mosek
-from ncpol2sdpa import generate_variables, SdpRelaxation, convert_to_mosek
+from ncpol2sdpa import generate_variables, SdpRelaxation
 # Number of Hermitian variables
 n_vars = 2
 # Level of relaxation
@@ -35,9 +34,8 @@ monomial_substitution = {}
 monomial_substitution[X[0] ** 2] = X[0]
 
 # Obtain SDP relaxation
-sdpRelaxation = SdpRelaxation(X)
+sdpRelaxation = SdpRelaxation(X, verbose=0)
 sdpRelaxation.get_relaxation(level, objective=obj, inequalities=inequalities,
                              substitutions=monomial_substitution)
-task = convert_to_mosek(sdpRelaxation)
-task.optimize()
-task.solutionsummary(mosek.streamtype.msg)
+sdpRelaxation.solve(solver='mosek')
+print(sdpRelaxation.primal, sdpRelaxation.dual)

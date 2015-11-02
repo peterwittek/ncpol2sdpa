@@ -11,7 +11,7 @@ Created on Sun Nov 30 19:18:04 2014
 @author: Peter Wittek
 """
 
-from ncpol2sdpa import generate_variables, SdpRelaxation, solve_sdp
+from ncpol2sdpa import generate_variables, SdpRelaxation
 
 # Number of variables
 n_vars = 3
@@ -30,5 +30,5 @@ inequalities = [1-X[0]**2-X[1]**2, 1-X[1]**2-X[2]**2]
 # Obtain SDP relaxation
 sdpRelaxation = SdpRelaxation(X, hierarchy="npa_chordal")
 sdpRelaxation.get_relaxation(level, objective=obj, inequalities=inequalities)
-primal, dual, _, _ = solve_sdp(sdpRelaxation)
-print(primal, dual)
+sdpRelaxation.solve()
+print(sdpRelaxation.primal, sdpRelaxation.dual, sdpRelaxation.status)

@@ -17,6 +17,7 @@ def streamprinter(text):
     sys.stdout.write(text)
     sys.stdout.flush()
 
+
 def moseksol_to_xmat(vec, block_struct):
     n = int(np.sqrt(1+8*len(vec))-1)/2
     if n*(n+1)/2 != len(vec):
@@ -42,24 +43,42 @@ def moseksol_to_xmat(vec, block_struct):
         column += 1
     return result
 
+
 def parse_mosek_solution(sdpRelaxation, task):
     import mosek
     soltype = mosek.soltype.itr
     primal, dual = task.getprimalobj(soltype), task.getdualobj(soltype)
     x_mat, y_mat = [], []
     size_ = sum(bs for bs in sdpRelaxation.block_struct)
-    primal_solution = np.zeros(size_*(size_+1)/2)
+    primal_solution = np.zeros(int(size_*(size_+1)/2))
     task.getbarxj(soltype, 0, primal_solution)
     y_mat = moseksol_to_xmat(primal_solution, sdpRelaxation.block_struct)
     dual_solution = np.zeros(size_*(size_+1)/2)
     task.getbarsj(soltype, 0, dual_solution)
     x_mat = moseksol_to_xmat(dual_solution, sdpRelaxation.block_struct)
-    return primal, dual, x_mat, y_mat
+    status = repr(task.getsolsta(soltype))
+    return primal, dual, x_mat, y_mat, status
+
 
 def solve_with_mosek(sdpRelaxation, solverparameters=None):
     task = convert_to_mosek(sdpRelaxation)
+    if solverparameters is not None:
+        for par, val in solverparameters.items():
+            try:
+                mskpar = eval('mosek.iparam.' + par)
+                task.putintparam(mskpar, val)
+            except AttributeError:
+                try:
+                    mskpar = eval('mosek.dparam.' + par)
+                    task.putdouparam(mskpar, val)
+                except AttributeError:
+                    raise Exception('Unknown mosek parameter')
     task.optimize()
-    return parse_mosek_solution(sdpRelaxation, task)
+    primal, dual, x_mat, y_mat, status = parse_mosek_solution(sdpRelaxation,
+                                                              task)
+    return -primal+sdpRelaxation.constant_term, \
+           -dual+sdpRelaxation.constant_term, x_mat, y_mat, status
+
 
 def convert_to_mosek_index(block_struct, row_offsets, block_offsets, row):
     """MOSEK requires a specific sparse format to define the lower-triangular
@@ -134,7 +153,8 @@ def convert_to_mosek(sdpRelaxation):
 
     env = mosek.Env()
     task = env.Task(0, 0)
-    task.set_Stream(mosek.streamtype.log, streamprinter)
+    if sdpRelaxation.verbose > 0:
+        task.set_Stream(mosek.streamtype.log, streamprinter)
     numvar = 0
     numcon = len(bkc)
     BARVARDIM = [sum(sdpRelaxation.block_struct)]

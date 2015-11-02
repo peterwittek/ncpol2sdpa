@@ -1,8 +1,0 @@
-  - Improve documentation of solve_sdp, include the dictionary of solverparameters for each solver. Also document return values.
-  - Change return value of solve_sdp to dictionary or named tuple.
-  - Circular symmetry of trace is not fully exploited for Hermitian variables.
-  - Implement logging interface.
-  - Start using unit testing.  
-  - Support complex moment matrices in Picos and Mosek exports too.
-  - Better support for steering hierarchy. Probably in a derived class.
-  - Verify if MOSEK always flip the sign of the solution when the optimization is minimization.
