@@ -63,6 +63,7 @@ def convert_to_picos(sdpRelaxation, duplicate_moment_matrix=False):
         if duplicate_moment_matrix:
             Y = P.add_variable('X', (block_size, block_size), vtype="hermitian")
     row_offset = 0
+    theoretical_n_vars = sdpRelaxation.block_struct[0]**2
     for block_size in sdpRelaxation.block_struct:
         x, Ix, Jx = [], [], []
         c, Ic, Jc = [], [], []
@@ -86,7 +87,8 @@ def convert_to_picos(sdpRelaxation, duplicate_moment_matrix=False):
                     # top-left corner
                     Ic.append(0)
                     Jc.append(0)
-        permutation = cvx.spmatrix(x, Ix, Jx)
+        permutation = cvx.spmatrix(x, Ix, Jx, (block_size**2,
+                                               theoretical_n_vars))
         constant = cvx.spmatrix(c, Ic, Jc, (block_size, block_size))
         if duplicate_moment_matrix:
             constraint = X
@@ -95,6 +97,7 @@ def convert_to_picos(sdpRelaxation, duplicate_moment_matrix=False):
         for k in constraint.factors:
             constraint.factors[k] = permutation
         constraint._size = (block_size, block_size)
+
         P.add_constraint(constant + constraint >> 0)
         if duplicate_moment_matrix and \
                 block_size == sdpRelaxation.block_struct[0]:
