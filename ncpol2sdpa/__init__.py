@@ -9,6 +9,7 @@ Provides
 """
 from .faacets_relaxation import FaacetsRelaxation
 from .sdp_relaxation import SdpRelaxation
+from .steering_hierarchy import SteeringHierarchy
 from .nc_utils import generate_variable, generate_variables, get_ncmonomials, \
                       ncdegree, flatten, save_monomial_index
 from .sdpa_utils import write_to_sdpa, read_sdpa_out, \
@@ -24,6 +25,7 @@ from .picos_utils import convert_to_picos, \
     convert_to_picos_extra_moment_matrix
 
 __all__ = ['SdpRelaxation',
+           'SteeringHierarchy',
            'FaacetsRelaxation',
            'generate_variable',
            'generate_variables',

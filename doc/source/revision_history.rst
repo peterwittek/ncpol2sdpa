@@ -3,6 +3,7 @@ Revision History
 
 Since v1.9:
 
+  - New: Better support for the steering hierarchy in a new class `SteeringHierarchy`.
   - New: The function `generate_variable` returns a single symbolic variable.
   - New: The `SdpRelaxation` class is now subscriptable. You can retrieve the 
          value of polynomials in the solved relaxation in such way. Internally,
