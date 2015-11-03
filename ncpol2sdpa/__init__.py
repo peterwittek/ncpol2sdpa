@@ -21,8 +21,7 @@ from .physics_utils import bosonic_constraints, fermionic_constraints, \
     generate_measurements, projective_measurement_constraints, \
     maximum_violation, define_objective_with_I, Probability
 from .mosek_utils import convert_to_mosek
-from .picos_utils import convert_to_picos, \
-    convert_to_picos_extra_moment_matrix
+from .picos_utils import convert_to_picos
 
 __all__ = ['SdpRelaxation',
            'SteeringHierarchy',
@@ -52,6 +51,5 @@ __all__ = ['SdpRelaxation',
            'convert_to_human_readable',
            'convert_to_mosek',
            'convert_to_picos',
-           'convert_to_picos_extra_moment_matrix',
            'write_to_human_readable',
            'sos_decomposition']

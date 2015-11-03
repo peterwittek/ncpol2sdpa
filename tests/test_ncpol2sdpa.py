@@ -6,8 +6,7 @@ from ncpol2sdpa import SdpRelaxation, solve_sdp, generate_variables, flatten, \
                        projective_measurement_constraints, Probability, \
                        define_objective_with_I, maximum_violation, \
                        bosonic_constraints, fermionic_constraints, \
-                       convert_to_picos_extra_moment_matrix, get_neighbors, \
-                       get_xmat_value
+                       get_neighbors, get_xmat_value, convert_to_picos
 from sympy.core.cache import clear_cache
 
 
@@ -225,7 +224,9 @@ class Moroder(unittest.TestCase):
                                       normalized=False)
         sdpRelaxation.get_relaxation(1, objective=objective,
                                      substitutions=P.substitutions)
-        Problem, X, Y = convert_to_picos_extra_moment_matrix(sdpRelaxation)
+        Problem = convert_to_picos(sdpRelaxation, duplicate_moment_matrix=True)
+        X = Problem.get_variable('X')
+        Y = Problem.get_variable('Y')
         Z = Problem.add_variable('Z', (sdpRelaxation.block_struct[0],
                                  sdpRelaxation.block_struct[0]))
         Problem.add_constraint(Y.partial_transpose() >> 0)

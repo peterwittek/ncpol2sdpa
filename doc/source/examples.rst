@@ -258,7 +258,9 @@ We can further process the moment matrix, for instance, to impose partial positi
 
 ::
 
-    Problem, X, Y = convert_to_picos_extra_moment_matrix(sdpRelaxation)
+    Problem = convert_to_picos(sdpRelaxation, duplicate_moment_matrix=True)
+    X = Problem.get_variable('X')
+    Y = Problem.get_variable('Y')
     Z = Problem.add_variable('Z', (sdpRelaxation.block_struct[0],
                              sdpRelaxation.block_struct[0]))
     Problem.add_constraint(Y.partial_transpose()>>0)
