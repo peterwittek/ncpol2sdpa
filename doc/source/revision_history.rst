@@ -12,7 +12,7 @@ Since v1.9:
   - New: The convenience function `write_to_file()` was added to the class `SdpRelaxation`.
   - New: The convenience function `save_monomial_index()` was added to the class `SdpRelaxation`.
   - Changed: Removed `convert_to_picos_extra_moment_matrix` and added optional parameter `duplicate_moment_matrix` to `convert_to_picos` to achieve the same effect.
-  - Fixed: PICOS conversion works for complex matrices too (issue #10).
+  - Fixed: PICOS and MOSEK conversion works for complex matrices too (issue #10).
          
 **Version 1.9 (2015-08-28)** 
 

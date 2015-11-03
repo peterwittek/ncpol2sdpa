@@ -52,7 +52,7 @@ def convert_to_picos(sdpRelaxation, duplicate_moment_matrix=False):
     """
     import picos as pic
     import cvxopt as cvx
-    P = pic.Problem()
+    P = pic.Problem(verbose=sdpRelaxation.verbose)
     block_size = sdpRelaxation.block_struct[0]
     if sdpRelaxation.F_struct.dtype == np.float64:
         X = P.add_variable('X', (block_size, block_size), vtype="symmetric")
