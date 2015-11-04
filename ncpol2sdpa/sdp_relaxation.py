@@ -311,7 +311,8 @@ class SdpRelaxation(Relaxation):
                         k = self.monomial_index[daggered_monomial]
                     except KeyError:
                         raise RuntimeError("The requested monomial " +
-                                           monomial + "could not be found.")
+                                           str(monomial) +
+                                           " could not be found.")
 
             result.append((k, coeff))
         return result
