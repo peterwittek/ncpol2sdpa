@@ -665,7 +665,7 @@ class SdpRelaxation(Relaxation):
             monomial_sets.append(localizing_monomials)
             self.block_struct.append(len(localizing_monomials))
             if k >= n_inequalities:
-                self.localization_order.append(localization_order)
+                monomial_sets.append(localizing_monomials)
                 self.block_struct.append(len(localizing_monomials))
 
         if degree_warning and self.verbose > 0:
