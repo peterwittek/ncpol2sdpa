@@ -13,6 +13,7 @@ Since v1.9:
   - Changed: The chordal extension is now requested as an optional parameter `chordal_extension=True` passed to the `get_relaxation` method, and not by specifying it as a hierarchy type in the constructor.
   - Changed: The Moroder hierarchy is now a class.
   - Fixed: PICOS and MOSEK conversion works for complex matrices too (issue #10).
+  - Fixed: The moment symmetries are correctly calculated for both Hermitian and non-Hermitian variables (issue #9)
          
 **Version 1.9 (2015-08-28)** 
 

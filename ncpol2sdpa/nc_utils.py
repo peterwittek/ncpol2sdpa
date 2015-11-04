@@ -614,3 +614,29 @@ def find_variable_set(variable_sets, polynomial):
         if len(support-set(variable_set)) == 0:
             return i
     return -1
+
+
+def permute_cyclic(monomial):
+    result = set([])
+    comm_factors, ncomm_factors = split_commutative_parts(monomial)
+    if len(ncomm_factors) == 0:
+        result.add(monomial)
+    else:
+        comm_monomial = 1
+        for comm_factor in comm_factors:
+            comm_monomial *= comm_factor
+        actual_factors = []
+        for factor in ncomm_factors:
+            if isinstance(factor, Pow):
+                actual_factors += [factor.base for _ in range(factor.exp)]
+            else:
+                actual_factors.append(factor)
+        n = len(actual_factors)
+        cyclic_permutations = [[actual_factors[i - j] for i in range(n)]
+                               for j in range(n)]
+        for permutation in cyclic_permutations:
+            monomial = comm_monomial
+            for factor in permutation:
+                monomial *= factor
+            result.add(monomial)
+    return result
