@@ -13,22 +13,13 @@ Created on Sun Nov 30 19:18:04 2014
 
 from ncpol2sdpa import generate_variables, SdpRelaxation
 
-# Number of variables
-n_vars = 3
-# Level of relaxation
 level = 2
-
-# Get commutative variables
-X = generate_variables(n_vars, commutative=True)
-
-# Define the objective function
-obj = X[1] - 2*X[0]*X[1] + X[1]*X[2]
-
-# Inequality constraints
-inequalities = [1-X[0]**2-X[1]**2, 1-X[1]**2-X[2]**2]
-
-# Obtain SDP relaxation
-sdpRelaxation = SdpRelaxation(X, hierarchy="npa_chordal")
-sdpRelaxation.get_relaxation(level, objective=obj, inequalities=inequalities)
+X = generate_variables(3, commutative=True)
+inequalities = [1-X[0]**2-X[1]**2 >= 0,
+                1-X[1]**2-X[2]**2 >= 0]
+sdpRelaxation = SdpRelaxation(X, verbose=2)
+sdpRelaxation.get_relaxation(level, objective=X[1] - 2*X[0]*X[1] + X[1]*X[2],
+                             inequalities=inequalities, chordal_extension=True)
 sdpRelaxation.solve()
+sdpRelaxation.write_to_file("/home/wittek/sparse2.csv")
 print(sdpRelaxation.primal, sdpRelaxation.dual, sdpRelaxation.status)

@@ -301,8 +301,8 @@ simple example:
     obj = X[1] - 2*X[0]*X[1] + X[1]*X[2]
     inequalities = [1-X[0]**2-X[1]**2, 1-X[1]**2-X[2]**2]
 
-    sdpRelaxation = SdpRelaxation(X, hierarchy="npa_chordal")
-    sdpRelaxation.get_relaxation(level, objective=obj, inequalities=inequalities)
+    sdpRelaxation = SdpRelaxation(X)
+    sdpRelaxation.get_relaxation(level, objective=obj, 
+                                 inequalities=inequalities, chordal_extension=True)
     sdpRelaxation.solve()
     print(sdpRelaxation.primal, sdpRelaxation.dual)
-

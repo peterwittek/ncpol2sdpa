@@ -161,6 +161,29 @@ def get_support(variables, polynomial):
     return support
 
 
+def get_support_variables(polynomial):
+    """Gets the support of a polynomial.
+    """
+    support = []
+    if isinstance(polynomial, (int, float, complex)):
+        return support
+    polynomial = polynomial.expand()
+    for monomial in polynomial.as_coefficients_dict():
+        monomial, _ = separate_scalar_factor(monomial)
+        symbolic_support = flatten(split_commutative_parts(monomial))
+        for s in symbolic_support:
+            if isinstance(s, Pow):
+                base = s.base
+                if isinstance(base, Dagger):
+                    base = Dagger(base)
+                support.append(base)
+            elif isinstance(s, Dagger):
+                support.append(Dagger(s))
+            elif isinstance(s, Operator):
+                support.append(s)
+    return support
+
+
 def build_monomial(element):
     """Construct a monomial with the coefficient separated
     from an element in a polynomial.
@@ -489,7 +512,7 @@ def get_monomials(variables, extramonomials, substitutions, degree,
     monomials = get_ncmonomials(variables, degree)
     if extramonomials is not None:
         monomials.extend(extramonomials)
-    if removesubstitutions:
+    if removesubstitutions and substitutions is not None:
         monomials = [monomial for monomial in monomials if monomial not
                      in substitutions]
         monomials = [remove_scalar_factor(apply_substitutions(monomial,
@@ -581,3 +604,13 @@ def convert_relational(relational):
     else:
         raise Exception("The relational operation ' + rel + ' is not "
                         "implemented!")
+
+
+def find_variable_set(variable_sets, polynomial):
+    if not isinstance(variable_sets[0], list):
+        return 0
+    support = set(get_support_variables(polynomial))
+    for i, variable_set in enumerate(variable_sets):
+        if len(support-set(variable_set)) == 0:
+            return i
+    return -1

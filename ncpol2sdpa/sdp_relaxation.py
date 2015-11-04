@@ -23,11 +23,12 @@ from .nc_utils import apply_substitutions, build_monomial, \
     pick_monomials_up_to_degree, ncdegree, \
     separate_scalar_factor, flatten, build_permutation_matrix, \
     simplify_polynomial, get_monomials, unique, iscomplex, \
-    is_pure_substitution_rule, convert_relational, save_monomial_index
+    is_pure_substitution_rule, convert_relational, save_monomial_index, \
+    find_variable_set
 from .solver_common import get_xmat_value, solve_sdp
 from .mosek_utils import convert_to_mosek
 from .sdpa_utils import write_to_sdpa, write_to_human_readable
-from .chordal_extension import generate_clique, find_clique_index
+from .chordal_extension import find_variable_cliques
 
 
 class Relaxation(object):
@@ -115,7 +116,6 @@ class SdpRelaxation(Relaxation):
                        (default: "npa"):
 
                        * "npa": the standard NPA hierarchy (`doi:10.1137/090760155 <http://dx.doi.org/10.1137/090760155>`_). When the variables are commutative, this formulation is identical to the Lasserre hierarchy.
-                       * "npa_chordal": chordal graph extension to improve sparsity (`doi:10.1137/050623802 <http://dx.doi.org/doi:10.1137/050623802>`_)
                        * "moroder": `doi:10.1103/PhysRevLett.111.030501 <http://dx.doi.org/10.1103/PhysRevLett.111.030501>`_
     :type hierarchy: str.
     :param normalized: Optional parameter for changing the normalization of
@@ -127,7 +127,7 @@ class SdpRelaxation(Relaxation):
                 constraint in the Moroder hierarchy.
     :type normalized: bool.
     """
-    hierarchy_types = ["npa", "npa_chordal", "moroder"]
+    hierarchy_types = ["npa", "moroder"]
 
     def __init__(self, variables, nonrelaxed=None, verbose=0, hierarchy="npa",
                  normalized=True, ppt=False):
@@ -206,7 +206,7 @@ class SdpRelaxation(Relaxation):
         return k, coeff
 
     def _push_monomial(self, monomial, n_vars, row_offset, rowA, columnA, N,
-                        rowB, columnB, lenB):
+                       rowB, columnB, lenB):
         monomial = apply_substitutions(monomial, self.substitutions,
                                        self.pure_substitution_rules)
         if isinstance(monomial, Number) or isinstance(monomial, int) or \
@@ -224,8 +224,8 @@ class SdpRelaxation(Relaxation):
         elif monomial.is_Add:
             for element in monomial.as_ordered_terms():
                 n_vars = self._push_monomial(element, n_vars, row_offset,
-                                              rowA, columnA, N,
-                                              rowB, columnB, lenB)
+                                             rowA, columnA, N,
+                                             rowB, columnB, lenB)
         elif monomial != 0:
             k, coeff = self._process_monomial(monomial, n_vars)
             # We push the entry to the moment matrix
@@ -271,9 +271,9 @@ class SdpRelaxation(Relaxation):
                                        monomialsB[rowB]
                         # Apply the substitutions if any
                         n_vars = self._push_monomial(monomial, n_vars,
-                                                      row_offset, rowA,
-                                                      columnA, N, rowB,
-                                                      columnB, len(monomialsB))
+                                                     row_offset, rowA,
+                                                     columnA, N, rowB,
+                                                     columnB, len(monomialsB))
             if self.verbose > 0:
                 percentage = \
                     "{0:.0f}%".format(float(processed_entries-1)/self.n_vars *
@@ -417,7 +417,6 @@ class SdpRelaxation(Relaxation):
         block_index -- the current block index in constraint matrices of the
                        SDP relaxation
         """
-        all_monomials = flatten(self.monomial_sets)
         initial_block_index = block_index
         row_offsets = [0]
         for block, block_size in enumerate(self.block_struct):
@@ -435,17 +434,11 @@ class SdpRelaxation(Relaxation):
                     k < len(localizing_monomial_sets) and\
                     localizing_monomial_sets[k] is not None:
                 monomials = localizing_monomial_sets[k]
-            elif self.hierarchy == "npa_chordal":
-                index = find_clique_index(self.variables, ineq,
-                                          self.clique_set)
+            else:
+                index = find_variable_set(self.variables, ineq)
                 monomials = \
                     pick_monomials_up_to_degree(self.monomial_sets[index],
                                                 localization_order)
-
-            else:
-                monomials = \
-                  pick_monomials_up_to_degree(all_monomials,
-                                              localization_order)
             monomials = unique(monomials)
             # Process M_y(gy)(u,w) entries
             for row in range(len(monomials)):
@@ -661,8 +654,8 @@ class SdpRelaxation(Relaxation):
     ########################################################################
 
     def _calculate_block_structure(self, inequalities, equalities, bounds,
-                                    psd, extramomentmatrix, removeequalities,
-                                    localizing_monomial_sets):
+                                   psd, extramomentmatrix, removeequalities,
+                                   localizing_monomial_sets):
         """Calculates the block_struct array for the output file.
         """
         self.block_struct = []
@@ -721,15 +714,10 @@ class SdpRelaxation(Relaxation):
             if localizing_monomial_sets is not None and \
                     localizing_monomial_sets[k] is not None:
                 localizing_monomials = localizing_monomial_sets[k]
-            elif self.hierarchy == "npa_chordal":
-                index = find_clique_index(self.variables, constraint,
-                                          self.clique_set)
+            else:
+                index = find_variable_set(self.variables, constraint)
                 localizing_monomials = \
                     pick_monomials_up_to_degree(self.monomial_sets[index],
-                                                localization_order)
-            else:
-                localizing_monomials = \
-                    pick_monomials_up_to_degree(flatten(self.monomial_sets),
                                                 localization_order)
             if len(localizing_monomials) == 0:
                 localizing_monomials = [1]
@@ -770,17 +758,6 @@ class SdpRelaxation(Relaxation):
                                   self.substitutions, self.level,
                                   removesubstitutions=self.is_hermitian_variables))
                 k += 1
-        elif self.hierarchy == "npa_chordal":
-            self.clique_set = generate_clique(self.variables, objective,
-                                              inequalities, equalities)
-            if self.verbose > 1:
-                print(self.clique_set)
-            for clique in self.clique_set:
-                variables = [self.variables[i] for i in np.nonzero(clique)[0]]
-                self.monomial_sets.append(
-                    get_monomials(variables, extramonomials,
-                                  self.substitutions, self.level,
-                                  removesubstitutions=self.is_hermitian_variables))
         else:
             self.monomial_sets.append(
                 get_monomials(self.variables, extramonomials,
@@ -985,7 +962,7 @@ class SdpRelaxation(Relaxation):
                        equalities=None, substitutions=None, bounds=None,
                        psd=None, removeequalities=False, extramonomials=None,
                        extramomentmatrices=None, extraobjexpr=None,
-                       localizing_monomials=None):
+                       localizing_monomials=None, chordal_extension=False):
         """Get the SDP relaxation of a noncommutative polynomial optimization
         problem.
 
@@ -1037,6 +1014,10 @@ class SdpRelaxation(Relaxation):
                                      localization is requested, leave None in
                                      its place in this parameter.
         :type localizing_monomials: list of list of `sympy.core.exp.Expr`.
+        :param chordal_extension: Optional parameter to request a sparse
+                                  chordal extension.
+        :type chordal_extension: bool.
+
         """
         if self.level < -1:
             raise Exception("Invalid level of relaxation")
@@ -1050,13 +1031,16 @@ class SdpRelaxation(Relaxation):
                     self.pure_substitution_rules = False
                 if iscomplex(lhs) or iscomplex(rhs):
                     self.complex_matrix = True
-        # Generate monomials and remove substituted ones
+        if chordal_extension:
+            self.variables = find_variable_cliques(self.variables, level,
+                                                   objective, substitutions,
+                                                   inequalities, equalities)
         self.__generate_monomial_sets(objective, inequalities, equalities,
                                       extramonomials)
         # Figure out basic structure of the SDP
         self._calculate_block_structure(inequalities, equalities, bounds, psd,
-                                         extramomentmatrices, removeequalities,
-                                         localizing_monomials)
+                                        extramomentmatrices, removeequalities,
+                                        localizing_monomials)
         self._estimate_n_vars()
         if extramomentmatrices is not None:
             for parameters in extramomentmatrices:

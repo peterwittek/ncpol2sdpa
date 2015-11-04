@@ -10,6 +10,7 @@ Provides
 from .faacets_relaxation import FaacetsRelaxation
 from .sdp_relaxation import SdpRelaxation
 from .steering_hierarchy import SteeringHierarchy
+from .chordal_extension import find_variable_cliques
 from .nc_utils import generate_variable, generate_variables, get_ncmonomials, \
                       ncdegree, flatten, save_monomial_index
 from .sdpa_utils import write_to_sdpa, read_sdpa_out, \
@@ -29,6 +30,7 @@ __all__ = ['SdpRelaxation',
            'generate_variable',
            'generate_variables',
            'get_ncmonomials',
+           'find_variable_cliques',
            'ncdegree',
            'save_monomial_index',
            'bosonic_constraints',

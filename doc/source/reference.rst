@@ -24,6 +24,7 @@ Functions to Help Define Polynomial Optimization Problems
 .. autofunction:: ncpol2sdpa.get_ncmonomials
 .. autofunction:: ncpol2sdpa.ncdegree
 .. autofunction:: ncpol2sdpa.flatten
+.. autofunction:: ncpol2sdpa.find_variable_cliques
 
 Functions to Export, Solve, and Study Relaxations
 =================================================
