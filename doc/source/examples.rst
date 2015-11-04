@@ -248,8 +248,8 @@ this constraint set a priori. Hence we write:
 ::
     
     level = 1
-    sdpRelaxation = SdpRelaxation([flatten(P.parties[0]), flatten(P.parties[1])], 
-                                   verbose=1, hierarchy="moroder", normalized=False)
+    sdpRelaxation = MoroderHierarchy([flatten(P.parties[0]), flatten(P.parties[1])], 
+                                     verbose=1, normalized=False)
     sdpRelaxation.get_relaxation(level, objective=objective,
                                  substitutions=P.substitutions)
 
@@ -280,8 +280,8 @@ If all we need is the partial positivity of the moment matrix, that is actually 
 
 ::
 
-    sdpRelaxation = SdpRelaxation([flatten(P.parties[0]), flatten(P.parties[1])], 
-                                   verbose=1, hierarchy="moroder", ppt=True)
+    sdpRelaxation = MoroderHierarchy([flatten(P.parties[0]), flatten(P.parties[1])], 
+                                     verbose=1, ppt=True)
     sdpRelaxation.get_relaxation(level, objective=objective,
                                  substitutions=P.substitutions)
 

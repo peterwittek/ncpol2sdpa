@@ -112,25 +112,13 @@ class SdpRelaxation(Relaxation):
                        * 1: verbose
                        * 2: debug level
     :type verbose: int.
-    :param hierarchy:  Optional parameter for defining the type of hierarchy
-                       (default: "npa"):
-
-                       * "npa": the standard NPA hierarchy (`doi:10.1137/090760155 <http://dx.doi.org/10.1137/090760155>`_). When the variables are commutative, this formulation is identical to the Lasserre hierarchy.
-                       * "moroder": `doi:10.1103/PhysRevLett.111.030501 <http://dx.doi.org/10.1103/PhysRevLett.111.030501>`_
-    :type hierarchy: str.
     :param normalized: Optional parameter for changing the normalization of
                        states over which the optimization happens. Turn it off
                        if further processing is done on the SDP matrix before
                        solving it.
     :type normalized: bool.
-    :param ppt: Optional parameter for imposing the partial positivity
-                constraint in the Moroder hierarchy.
-    :type normalized: bool.
     """
-    hierarchy_types = ["npa", "moroder"]
-
-    def __init__(self, variables, nonrelaxed=None, verbose=0, hierarchy="npa",
-                 normalized=True, ppt=False):
+    def __init__(self, variables, nonrelaxed=None, verbose=0, normalized=True):
         """Constructor for the class.
         """
         super(SdpRelaxation, self).__init__()
@@ -147,14 +135,6 @@ class SdpRelaxation(Relaxation):
         self.monomial_sets = []
         self.pure_substitution_rules = True
         self.complex_matrix = False
-        if hierarchy in self.hierarchy_types:
-            self.hierarchy = hierarchy
-        else:
-            raise Exception('Not allowed hierarchy type:', hierarchy)
-        self.ppt = ppt
-        if hierarchy != "moroder" and ppt:
-            raise Exception('PPT condition only makes sense with the Moroder \
-                             hierarchy')
         if isinstance(variables, list):
             if len(variables) > 0 and isinstance(variables[0], list):
                 self.variables = [unique(vs) for vs in variables]
@@ -236,8 +216,8 @@ class SdpRelaxation(Relaxation):
                 n_vars = k
         return n_vars
 
-    def __generate_moment_matrix(self, n_vars, block_index, processed_entries,
-                                 monomialsA, monomialsB):
+    def _generate_moment_matrix(self, n_vars, block_index, processed_entries,
+                                monomialsA, monomialsB, ppt=False):
         """Generate the moment matrix of monomials.
 
         Arguments:
@@ -259,7 +239,7 @@ class SdpRelaxation(Relaxation):
                         start_columnB = rowB
                     for columnB in range(start_columnB, len(monomialsB)):
                         processed_entries += 1
-                        if (not self.ppt) or (columnB >= rowB):
+                        if (not ppt) or (columnB >= rowB):
                             monomial = Dagger(monomialsA[rowA]) * \
                                        monomialsA[columnA] * \
                                        Dagger(monomialsB[rowB]) * \
@@ -284,6 +264,18 @@ class SdpRelaxation(Relaxation):
         if self.verbose > 0:
             sys.stdout.write("\r")
         return n_vars, block_index + 1, processed_entries
+
+    def _generate_all_moment_matrix_blocks(self, n_vars, block_index):
+        processed_entries = 0
+        for monomials in self.monomial_sets:
+            n_vars, block_index, processed_entries = \
+                self._generate_moment_matrix(
+                    n_vars,
+                    block_index,
+                    processed_entries,
+                    monomials, [S.One])
+            self.var_offsets.append(n_vars)
+        return n_vars, block_index
 
     ########################################################################
     # ROUTINES RELATED TO GENERATING THE LOCALIZING MATRICES AND PROCESSING#
@@ -655,28 +647,24 @@ class SdpRelaxation(Relaxation):
 
     def _calculate_block_structure(self, inequalities, equalities, bounds,
                                    psd, extramomentmatrix, removeequalities,
-                                   localizing_monomial_sets):
+                                   localizing_monomial_sets,
+                                   block_struct=None):
         """Calculates the block_struct array for the output file.
         """
-        self.block_struct = []
-        if self.verbose > 0:
-            print("Calculating block structure...")
-        if self.nonrelaxed is not None:
-            self.block_struct.append(-len(self.nonrelaxed))
-        if self.hierarchy == "moroder":
-            self.block_struct.append(len(self.monomial_sets[0]) *
-                                     len(self.monomial_sets[1]))
-        else:
+        if block_struct is None:
+            if self.verbose > 0:
+                print("Calculating block structure...")
+            self.block_struct = []
             for monomials in self.monomial_sets:
                 self.block_struct.append(len(monomials))
-        if extramomentmatrix is not None:
-            for _ in extramomentmatrix:
-                if self.hierarchy == "moroder":
-                    self.block_struct.append(len(self.monomial_sets[0]) *
-                                             len(self.monomial_sets[1]))
-                else:
+            if extramomentmatrix is not None:
+                for _ in extramomentmatrix:
                     for monomials in self.monomial_sets:
                         self.block_struct.append(len(monomials))
+        else:
+            self.block_struct = block_struct
+        if self.nonrelaxed is not None:
+            self.block_struct.append(-len(self.nonrelaxed))
         if psd is not None:
             for matrix in psd:
                 if isinstance(matrix, list):
@@ -768,18 +756,14 @@ class SdpRelaxation(Relaxation):
         self.n_vars = 0
         if self.nonrelaxed is not None:
             self.n_vars = len(self.nonrelaxed)
-        if not self.hierarchy == "moroder":
-            for monomials in self.monomial_sets:
-                n_monomials = len(monomials)
+        for monomials in self.monomial_sets:
+            n_monomials = len(monomials)
 
-                # The minus one compensates for the constant term in the
-                # top left corner of the moment matrix
-                self.n_vars += int(n_monomials * (n_monomials + 1) / 2)
-                if self.hierarchy == "npa" and self.normalized:
-                    self.n_vars -= 1
-        else:
-            n_monomials = len(self.monomial_sets[0])*len(self.monomial_sets[1])
+            # The minus one compensates for the constant term in the
+            # top left corner of the moment matrix
             self.n_vars += int(n_monomials * (n_monomials + 1) / 2)
+            if self.normalized:
+                self.n_vars -= 1
 
     def __add_non_relaxed(self):
         new_n_vars, block_index = 0, 0
@@ -1065,22 +1049,8 @@ class SdpRelaxation(Relaxation):
 
         # Generate moment matrices
         new_n_vars, block_index = self.__add_non_relaxed()
-        processed_entries = 0
-        if self.hierarchy == "moroder":
-            new_n_vars, block_index, _ = \
-                self.__generate_moment_matrix(new_n_vars, block_index,
-                                              processed_entries,
-                                              self.monomial_sets[0],
-                                              self.monomial_sets[1])
-        else:
-            for monomials in self.monomial_sets:
-                new_n_vars, block_index, processed_entries = \
-                    self.__generate_moment_matrix(
-                        new_n_vars,
-                        block_index,
-                        processed_entries,
-                        monomials, [S.One])
-                self.var_offsets.append(new_n_vars)
+        new_n_vars, block_index = \
+            self._generate_all_moment_matrix_blocks(new_n_vars, block_index)
         if extramomentmatrices is not None:
             new_n_vars, block_index = \
                 self.__add_extra_momentmatrices(extramomentmatrices,
