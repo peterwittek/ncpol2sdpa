@@ -2,12 +2,12 @@ import unittest
 from test import test_support
 import numpy as np
 from sympy.physics.quantum.dagger import Dagger
-from ncpol2sdpa import SdpRelaxation, solve_sdp, generate_variables, flatten, \
+from ncpol2sdpa import SdpRelaxation, generate_variables, flatten, \
                        projective_measurement_constraints, Probability, \
                        define_objective_with_I, maximum_violation, \
                        bosonic_constraints, fermionic_constraints, \
-                       convert_to_picos_extra_moment_matrix, get_neighbors, \
-                       get_xmat_value
+                       get_neighbors, get_xmat_value, convert_to_picos, \
+                       MoroderHierarchy
 from sympy.core.cache import clear_cache
 
 
@@ -219,13 +219,14 @@ class Moroder(unittest.TestCase):
              [0,    1,   -1]]
         P = Probability([2, 2], [2, 2])
         objective = define_objective_with_I(I, P)
-        sdpRelaxation = SdpRelaxation([flatten(P.parties[0]),
-                                       flatten(P.parties[1])],
-                                      verbose=0, hierarchy="moroder",
-                                      normalized=False)
+        sdpRelaxation = MoroderHierarchy([flatten(P.parties[0]),
+                                          flatten(P.parties[1])],
+                                         verbose=0, normalized=False)
         sdpRelaxation.get_relaxation(1, objective=objective,
                                      substitutions=P.substitutions)
-        Problem, X, Y = convert_to_picos_extra_moment_matrix(sdpRelaxation)
+        Problem = convert_to_picos(sdpRelaxation, duplicate_moment_matrix=True)
+        X = Problem.get_variable('X')
+        Y = Problem.get_variable('Y')
         Z = Problem.add_variable('Z', (sdpRelaxation.block_struct[0],
                                  sdpRelaxation.block_struct[0]))
         Problem.add_constraint(Y.partial_transpose() >> 0)
@@ -233,7 +234,7 @@ class Moroder(unittest.TestCase):
         Problem.add_constraint(X - Y + Z == 0)
         Problem.add_constraint(Z[0, 0] == 1)
         solution = Problem.solve(verbose=0)
-        self.assertTrue(abs(solution["obj"] - 0.728) < 10e-3)
+        self.assertTrue(abs(solution["obj"] - 0.139) < 10e-3)
 
 
 class NietoSilleras(unittest.TestCase):
@@ -274,10 +275,11 @@ class SparsePop(unittest.TestCase):
     def test_chordal_extension(self):
         X = generate_variables(3, commutative=True)
         inequalities = [1-X[0]**2-X[1]**2, 1-X[1]**2-X[2]**2]
-        sdpRelaxation = SdpRelaxation(X, hierarchy="npa_chordal")
+        sdpRelaxation = SdpRelaxation(X)
         sdpRelaxation.get_relaxation(2,
                                      objective=X[1] - 2*X[0]*X[1] + X[1]*X[2],
-                                     inequalities=inequalities)
+                                     inequalities=inequalities,
+                                     chordal_extension=True)
         sdpRelaxation.solve()
         self.assertTrue(abs(sdpRelaxation.primal + 2.2443690631722637) < 10e-5)
 
@@ -285,7 +287,7 @@ class SparsePop(unittest.TestCase):
 def test_main():
     test_support.run_unittest(Chsh, ChshMixedLevel, ElegantBell,
                               ExampleCommutative, ExampleNoncommutative,
-                              Gloptipoly, HarmonicOscillator, MaxCut, 
+                              Gloptipoly, HarmonicOscillator, MaxCut,
                               Magnetization, Moroder, NietoSilleras, SparsePop)
 
 if __name__ == '__main__':

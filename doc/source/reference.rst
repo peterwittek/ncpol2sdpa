@@ -7,6 +7,16 @@ SdpRelaxation Class
 .. autoclass:: ncpol2sdpa.SdpRelaxation
    :members: get_relaxation, set_objective, process_constraints, solve, __getitem__, write_to_file, save_monomial_index
 
+MoroderHierarchy Class
+=======================
+.. autoclass:: ncpol2sdpa.SteeringHierarchy
+   :members: get_relaxation, set_objective, process_constraints, solve, __getitem__, write_to_file, save_monomial_index
+
+SteeringHierarchy Class
+=======================
+.. autoclass:: ncpol2sdpa.SteeringHierarchy
+   :members: get_relaxation, set_objective, process_constraints, solve, __getitem__, write_to_file, save_monomial_index
+
 FaacetsRelaxation Class
 =======================
 .. autoclass:: ncpol2sdpa.FaacetsRelaxation
@@ -19,6 +29,7 @@ Functions to Help Define Polynomial Optimization Problems
 .. autofunction:: ncpol2sdpa.get_ncmonomials
 .. autofunction:: ncpol2sdpa.ncdegree
 .. autofunction:: ncpol2sdpa.flatten
+.. autofunction:: ncpol2sdpa.find_variable_cliques
 
 Functions to Export, Solve, and Study Relaxations
 =================================================

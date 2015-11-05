@@ -10,7 +10,7 @@ Created on Sun Nov 30 15:01:13 2014
 """
 import random
 import numpy as np
-from .nc_utils import get_support, flatten
+from .nc_utils import get_support, get_monomials, flatten
 
 
 def sliding_cliques(k, n):
@@ -106,6 +106,20 @@ def find_clique_index(variables, polynomial, clique_set):
         if np.dot(support, clique) == len(np.nonzero(support)[0]):
             return i
     return -1
+
+
+def find_variable_cliques(variables, level, objective=0, substitutions=None,
+                          inequalities=None, equalities=None):
+    if objective == 0 and inequalities is None and equalities is None:
+        raise Exception("There is nothing to extract the chordal structure " +
+                        "from!")
+    clique_set = generate_clique(variables, objective, inequalities,
+                                 equalities)
+    variable_sets = []
+    for clique in clique_set:
+        variable_sets.append([variables[i] for i in np.nonzero(clique)[0]])
+    return variable_sets
+
 
 try:
     from cvxopt import spmatrix, amd

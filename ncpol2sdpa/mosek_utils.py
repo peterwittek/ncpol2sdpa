@@ -10,7 +10,6 @@ import sys
 import numpy as np
 from .sdpa_utils import convert_row_to_sdpa_index
 
-
 def streamprinter(text):
     """Helper function for printing MOSEK messages in the Python console.
     """
@@ -145,6 +144,16 @@ def convert_to_mosek(sdpRelaxation):
     :returns: :class:`mosek.Task`.
     """
     import mosek
+    # Cheat when variables are complex and convert with PICOS
+    if sdpRelaxation.complex_matrix:
+        from .picos_utils import convert_to_picos
+        Problem = convert_to_picos(sdpRelaxation).to_real()
+        Problem._make_mosek_instance()
+        task = Problem.msk_task
+        if sdpRelaxation.verbose > 0:
+            task.set_Stream(mosek.streamtype.log, streamprinter)
+        return task
+
     barci, barcj, barcval, barai, baraj, baraval = \
         convert_to_mosek_matrix(sdpRelaxation)
     bkc = [mosek.boundkey.fx] * sdpRelaxation.n_vars

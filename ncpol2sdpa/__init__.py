@@ -9,6 +9,9 @@ Provides
 """
 from .faacets_relaxation import FaacetsRelaxation
 from .sdp_relaxation import SdpRelaxation
+from .steering_hierarchy import SteeringHierarchy
+from .moroder_hierarchy import MoroderHierarchy
+from .chordal_extension import find_variable_cliques
 from .nc_utils import generate_variable, generate_variables, get_ncmonomials, \
                       ncdegree, flatten, save_monomial_index
 from .sdpa_utils import write_to_sdpa, read_sdpa_out, \
@@ -20,14 +23,16 @@ from .physics_utils import bosonic_constraints, fermionic_constraints, \
     generate_measurements, projective_measurement_constraints, \
     maximum_violation, define_objective_with_I, Probability
 from .mosek_utils import convert_to_mosek
-from .picos_utils import convert_to_picos, \
-    convert_to_picos_extra_moment_matrix
+from .picos_utils import convert_to_picos
 
 __all__ = ['SdpRelaxation',
+           'SteeringHierarchy',
+           'MoroderHierarchy',
            'FaacetsRelaxation',
            'generate_variable',
            'generate_variables',
            'get_ncmonomials',
+           'find_variable_cliques',
            'ncdegree',
            'save_monomial_index',
            'bosonic_constraints',
@@ -50,6 +55,5 @@ __all__ = ['SdpRelaxation',
            'convert_to_human_readable',
            'convert_to_mosek',
            'convert_to_picos',
-           'convert_to_picos_extra_moment_matrix',
            'write_to_human_readable',
            'sos_decomposition']

@@ -248,8 +248,8 @@ this constraint set a priori. Hence we write:
 ::
     
     level = 1
-    sdpRelaxation = SdpRelaxation([flatten(P.parties[0]), flatten(P.parties[1])], 
-                                   verbose=1, hierarchy="moroder", normalized=False)
+    sdpRelaxation = MoroderHierarchy([flatten(P.parties[0]), flatten(P.parties[1])], 
+                                     verbose=1, normalized=False)
     sdpRelaxation.get_relaxation(level, objective=objective,
                                  substitutions=P.substitutions)
 
@@ -258,7 +258,9 @@ We can further process the moment matrix, for instance, to impose partial positi
 
 ::
 
-    Problem, X, Y = convert_to_picos_extra_moment_matrix(sdpRelaxation)
+    Problem = convert_to_picos(sdpRelaxation, duplicate_moment_matrix=True)
+    X = Problem.get_variable('X')
+    Y = Problem.get_variable('Y')
     Z = Problem.add_variable('Z', (sdpRelaxation.block_struct[0],
                              sdpRelaxation.block_struct[0]))
     Problem.add_constraint(Y.partial_transpose()>>0)
@@ -278,8 +280,8 @@ If all we need is the partial positivity of the moment matrix, that is actually 
 
 ::
 
-    sdpRelaxation = SdpRelaxation([flatten(P.parties[0]), flatten(P.parties[1])], 
-                                   verbose=1, hierarchy="moroder", ppt=True)
+    sdpRelaxation = MoroderHierarchy([flatten(P.parties[0]), flatten(P.parties[1])], 
+                                     verbose=1, ppt=True)
     sdpRelaxation.get_relaxation(level, objective=objective,
                                  substitutions=P.substitutions)
 
@@ -299,8 +301,8 @@ simple example:
     obj = X[1] - 2*X[0]*X[1] + X[1]*X[2]
     inequalities = [1-X[0]**2-X[1]**2, 1-X[1]**2-X[2]**2]
 
-    sdpRelaxation = SdpRelaxation(X, hierarchy="npa_chordal")
-    sdpRelaxation.get_relaxation(level, objective=obj, inequalities=inequalities)
+    sdpRelaxation = SdpRelaxation(X)
+    sdpRelaxation.get_relaxation(level, objective=obj, 
+                                 inequalities=inequalities, chordal_extension=True)
     sdpRelaxation.solve()
     print(sdpRelaxation.primal, sdpRelaxation.dual)
-
