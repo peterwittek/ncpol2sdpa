@@ -371,7 +371,7 @@ def generate_variable(name, hermitian=False, commutative=False):
         variable = HermitianOperator(name)
     else:
         variable = Operator(name)
-        variable.is_commutative = commutative
+    variable.is_commutative = commutative
     return variable
 
 
