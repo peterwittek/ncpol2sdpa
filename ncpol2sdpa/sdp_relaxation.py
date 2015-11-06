@@ -166,8 +166,9 @@ class SdpRelaxation(Relaxation):
         return k, coeff
 
     def _push_monomial(self, monomial, n_vars, row_offset, rowA, columnA, N,
-                       rowB, columnB, lenB):
-        monomial = apply_substitutions(monomial, self.substitutions,
+                       rowB, columnB, lenB, prevent_substitutions=False):
+        if not prevent_substitutions:
+            monomial = apply_substitutions(monomial, self.substitutions,
                                        self.pure_substitution_rules)
         if isinstance(monomial, Number) or isinstance(monomial, int) or \
                 isinstance(monomial, float):
@@ -185,7 +186,7 @@ class SdpRelaxation(Relaxation):
             for element in monomial.as_ordered_terms():
                 n_vars = self._push_monomial(element, n_vars, row_offset,
                                              rowA, columnA, N,
-                                             rowB, columnB, lenB)
+                                             rowB, columnB, lenB, True)
         elif monomial != 0:
             k, coeff = self._process_monomial(monomial, n_vars)
             # We push the entry to the moment matrix
