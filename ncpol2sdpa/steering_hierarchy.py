@@ -13,7 +13,7 @@ import os
 from sympy import S, Number
 from sympy.matrices import zeros
 from sympy.physics.quantum.dagger import Dagger
-from .nc_utils import apply_substitutions, ncdegree
+from .nc_utils import apply_substitutions
 from .sdp_relaxation import SdpRelaxation
 from .sdpa_utils import write_to_sdpa
 
@@ -71,20 +71,13 @@ class SteeringHierarchy(SdpRelaxation):
         except KeyError:
             # An extra round of substitutions is granted on the conjugate of
             # the monomial if all the variables are Hermitian
-            need_new_variable = True
-            if self.is_hermitian_variables and \
-                    (self.matrix_var_dim is not None or
-                     ncdegree(monomial) > 2):
-                daggered_monomial = \
-                    apply_substitutions(Dagger(monomial), self.substitutions,
-                                        self.pure_substitution_rules)
-                try:
-                    k = self.monomial_index[daggered_monomial]
-                    conjugate = True
-                    need_new_variable = False
-                except KeyError:
-                    need_new_variable = True
-            if need_new_variable:
+            daggered_monomial = \
+                apply_substitutions(Dagger(monomial), self.substitutions,
+                                    self.pure_substitution_rules)
+            try:
+                k = self.monomial_index[daggered_monomial]
+                conjugate = True
+            except KeyError:
                 # Otherwise we define a new entry in the associated
                 # array recording the monomials, and add an entry in
                 # the moment matrix
@@ -234,14 +227,12 @@ class SteeringHierarchy(SdpRelaxation):
               set_objective(objective, extraobjexpr=extraobjexpr)
 
     def _calculate_block_structure(self, inequalities, equalities, bounds,
-                                   psd, extramomentmatrix, removeequalities,
-                                   localizing_monomial_sets):
+                                   psd, extramomentmatrix, removeequalities):
         """Calculates the block_struct array for the output file.
         """
         super(SteeringHierarchy, self).\
           _calculate_block_structure(inequalities, equalities, bounds,
-                                     psd, extramomentmatrix, removeequalities,
-                                     localizing_monomial_sets)
+                                     psd, extramomentmatrix, removeequalities)
         if self.matrix_var_dim is not None:
             self.block_struct = [self.matrix_var_dim*bs
                                  for bs in self.block_struct]
