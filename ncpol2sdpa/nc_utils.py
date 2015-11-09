@@ -77,39 +77,6 @@ def is_pure_substitution_rule(lhs, rhs):
     return True
 
 
-def apply_substitutions(monomial, monomial_substitutions, pure=False):
-    """Helper function to remove monomials from the basis."""
-    if isinstance(monomial, int) or isinstance(monomial, float):
-        return monomial
-    original_monomial = monomial
-    changed = True
-    if not pure:
-        substitutions = monomial_substitutions
-    else:
-        substitutions = {}
-        for lhs, rhs in monomial_substitutions.items():
-            irrelevant = False
-            for atom in lhs.atoms():
-                if atom.is_Number:
-                    continue
-                if not monomial.has(atom):
-                    irrelevant = True
-                    break
-            if not irrelevant:
-                substitutions[lhs] = rhs
-    while changed:
-        for lhs, rhs in substitutions.items():
-            # The fast substitution routine still fails on some rare
-            # conditions. In production environments, it is safer to use
-            # the default substitution routine that comes with SymPy.
-            # monomial = monomial.subs(lhs, rhs)
-            monomial = fast_substitute(monomial, lhs, rhs)
-        if original_monomial == monomial:
-            changed = False
-        original_monomial = monomial
-    return monomial
-
-
 def separate_scalar_factor(monomial):
     """Separate the constant factor from a monomial.
     """
@@ -226,6 +193,35 @@ def count_ncmonomials(monomials, degree):
     return ncmoncount
 
 
+def apply_substitutions(monomial, monomial_substitutions, pure=False):
+    """Helper function to remove monomials from the basis."""
+    if isinstance(monomial, int) or isinstance(monomial, float):
+        return monomial
+    original_monomial = monomial
+    changed = True
+    if not pure:
+        substitutions = monomial_substitutions
+    else:
+        substitutions = {}
+        for lhs, rhs in monomial_substitutions.items():
+            irrelevant = False
+            for atom in lhs.atoms():
+                if atom.is_Number:
+                    continue
+                if not monomial.has(atom):
+                    irrelevant = True
+                    break
+            if not irrelevant:
+                substitutions[lhs] = rhs
+    while changed:
+        for lhs, rhs in substitutions.items():
+            monomial = fast_substitute(monomial, lhs, rhs)
+        if original_monomial == monomial:
+            changed = False
+        original_monomial = monomial
+    return monomial
+
+
 def fast_substitute(monomial, old_sub, new_sub):
     """Experimental fast substitution routine that considers only restricted
     cases of noncommutative algebras. In rare cases, it fails to find a
@@ -296,13 +292,12 @@ def fast_substitute(monomial, old_sub, new_sub):
                     isinstance(old_ncomm_factors[j], Dagger):
                 break
             if isinstance(ncomm_factors[i + j], Pow):
-                old_degree = 1
-                old_base = 1
                 if isinstance(old_ncomm_factors[j], Pow):
                     old_base = old_ncomm_factors[j].base
                     old_degree = old_ncomm_factors[j].exp
                 else:
                     old_base = old_ncomm_factors[j]
+                    old_degree = 1
                 if old_base != ncomm_factors[i + j].base:
                     break
                 if old_degree > ncomm_factors[i + j].exp:

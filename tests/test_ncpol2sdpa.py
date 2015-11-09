@@ -1,6 +1,7 @@
 import unittest
 from test import test_support
 import numpy as np
+from sympy import S, expand
 from sympy.physics.quantum.dagger import Dagger
 from ncpol2sdpa import SdpRelaxation, generate_variables, flatten, \
                        projective_measurement_constraints, Probability, \
@@ -8,7 +9,50 @@ from ncpol2sdpa import SdpRelaxation, generate_variables, flatten, \
                        bosonic_constraints, fermionic_constraints, \
                        get_neighbors, get_xmat_value, convert_to_picos, \
                        MoroderHierarchy
+from ncpol2sdpa.nc_utils import fast_substitute, apply_substitutions
 from sympy.core.cache import clear_cache
+
+
+class ApplySubstitutions(unittest.TestCase):
+
+    def tearDown(self):
+        clear_cache()
+
+    def test_apply_substitutions(self):
+
+        def apply_correct_substitutions(monomial, substitutions):
+            if isinstance(monomial, int) or isinstance(monomial, float):
+                return monomial
+            original_monomial = monomial
+            changed = True
+            while changed:
+                for lhs, rhs in substitutions.items():
+                    monomial = monomial.subs(lhs, rhs)
+                if original_monomial == monomial:
+                    changed = False
+                original_monomial = monomial
+            return monomial
+
+        length, h, U, t = 2, 3.8, -6, 1
+        fu = generate_variables(length, name='fu')
+        fd = generate_variables(length, name='fd')
+        _b = flatten([fu, fd])
+        hamiltonian = 0
+        for j in range(length):
+            hamiltonian += U * (Dagger(fu[j])*Dagger(fd[j]) * fd[j]*fu[j])
+            hamiltonian += -h/2*(Dagger(fu[j])*fu[j] - Dagger(fd[j])*fd[j])
+            for k in get_neighbors(j, len(fu), width=1):
+                hamiltonian += -t*Dagger(fu[j])*fu[k]-t*Dagger(fu[k])*fu[j]
+                hamiltonian += -t*Dagger(fd[j])*fd[k]-t*Dagger(fd[k])*fd[j]
+        substitutions = fermionic_constraints(_b)
+        monomials = expand(hamiltonian).as_coeff_mul()[1][0].as_coeff_add()[1]
+        substituted_hamiltonian = sum([apply_substitutions(monomial,
+                                                           substitutions)
+                                       for monomial in monomials])
+        correct_hamiltonian = sum([apply_correct_substitutions(monomial,
+                                                               substitutions)
+                                   for monomial in monomials])
+        self.assertTrue(substituted_hamiltonian == expand(correct_hamiltonian))
 
 
 class Chsh(unittest.TestCase):
@@ -115,6 +159,54 @@ class ExampleNoncommutative(unittest.TestCase):
         self.assertTrue(abs(self.sdpRelaxation.primal + 0.75) < 10e-5)
 
 
+class FastSubstitute(unittest.TestCase):
+
+    def tearDown(self):
+        clear_cache()
+
+    def test_fast_substitute(self):
+        f = generate_variables(2, name='f')
+        substitutions = {}
+        substitutions[Dagger(f[0])*f[0]] = -f[0]*Dagger(f[0])
+        monomial = Dagger(f[0])*f[0]
+        lhs = Dagger(f[0])*f[0]
+        rhs = -f[0]*Dagger(f[0])
+        self.assertTrue(fast_substitute(monomial, lhs, rhs) ==
+                        monomial.subs(lhs, rhs))
+        monomial = Dagger(f[0])*f[0]**2
+        self.assertTrue(fast_substitute(monomial, lhs, rhs) ==
+                        monomial.subs(lhs, rhs))
+        monomial = Dagger(f[0])**2*f[0]
+        self.assertTrue(fast_substitute(monomial, lhs, rhs) ==
+                        monomial.subs(lhs, rhs))
+        monomial = Dagger(f[0])**2*f[0]
+        lhs = Dagger(f[0])**2
+        rhs = -f[0]*Dagger(f[0])
+        self.assertTrue(fast_substitute(monomial, lhs, rhs) ==
+                        monomial.subs(lhs, rhs))
+        g = generate_variables(2, name='g')
+        monomial = 2*g[0]**3*g[1]*Dagger(f[0])**2*f[0]
+        self.assertTrue(fast_substitute(monomial, lhs, rhs) ==
+                        monomial.subs(lhs, rhs))
+        monomial = S.One
+        self.assertTrue(fast_substitute(monomial, lhs, rhs) ==
+                        monomial.subs(lhs, rhs))
+        monomial = 5
+        self.assertTrue(fast_substitute(monomial, lhs, rhs) ==
+                        monomial)
+        monomial = 2*g[0]**3*g[1]*Dagger(f[0])**2*f[0] + f[1]
+        self.assertTrue(fast_substitute(monomial, lhs, rhs) ==
+                        monomial.subs(lhs, rhs))
+        monomial = f[1]*Dagger(f[0])**2*f[0]
+        lhs = f[1]
+        rhs = 1.0 + f[0]
+        self.assertTrue(fast_substitute(monomial, lhs, rhs) ==
+                        expand(monomial.subs(lhs, rhs)))
+        monomial = f[1]**2*Dagger(f[0])**2*f[0]
+        result = fast_substitute(fast_substitute(monomial, lhs, rhs), lhs, rhs)
+        self.assertTrue(result == expand(monomial.subs(lhs, rhs)))
+
+
 class Gloptipoly(unittest.TestCase):
 
     def tearDown(self):
@@ -145,27 +237,6 @@ class HarmonicOscillator(unittest.TestCase):
                                      substitutions=substitutions)
         sdpRelaxation.solve()
         self.assertTrue(abs(sdpRelaxation.primal) < 10e-5)
-
-
-class MaxCut(unittest.TestCase):
-
-    def tearDown(self):
-        clear_cache()
-
-    def test_max_cut(self):
-        W = np.diag(np.ones(8), 1) + np.diag(np.ones(7), 2) + \
-            np.diag([1, 1], 7) + np.diag([1], 8)
-        W = W + W.T
-        Q = (np.diag(np.dot(np.ones(len(W)).T, W)) - W) / 4
-        x = generate_variables(len(W), commutative=True)
-        equalities = [xi ** 2 - 1 for xi in x]
-        objective = -np.dot(x, np.dot(Q, np.transpose(x)))
-        sdpRelaxation = SdpRelaxation(x)
-        sdpRelaxation.get_relaxation(1, objective=objective,
-                                     equalities=equalities,
-                                     removeequalities=True)
-        sdpRelaxation.solve()
-        self.assertTrue(abs(sdpRelaxation.primal + 4.5) < 10e-5)
 
 
 class Magnetization(unittest.TestCase):
@@ -206,6 +277,27 @@ class Magnetization(unittest.TestCase):
                  sum((Dagger(d)*d) for d in fd))
         magnetization = get_xmat_value(s, sdpRelaxation)
         self.assertTrue(abs(magnetization-0.021325317328560453) < 10e-5)
+
+
+class MaxCut(unittest.TestCase):
+
+    def tearDown(self):
+        clear_cache()
+
+    def test_max_cut(self):
+        W = np.diag(np.ones(8), 1) + np.diag(np.ones(7), 2) + \
+            np.diag([1, 1], 7) + np.diag([1], 8)
+        W = W + W.T
+        Q = (np.diag(np.dot(np.ones(len(W)).T, W)) - W) / 4
+        x = generate_variables(len(W), commutative=True)
+        equalities = [xi ** 2 - 1 for xi in x]
+        objective = -np.dot(x, np.dot(Q, np.transpose(x)))
+        sdpRelaxation = SdpRelaxation(x)
+        sdpRelaxation.get_relaxation(1, objective=objective,
+                                     equalities=equalities,
+                                     removeequalities=True)
+        sdpRelaxation.solve()
+        self.assertTrue(abs(sdpRelaxation.primal + 4.5) < 10e-5)
 
 
 class Moroder(unittest.TestCase):
@@ -285,10 +377,11 @@ class SparsePop(unittest.TestCase):
 
 
 def test_main():
-    test_support.run_unittest(Chsh, ChshMixedLevel, ElegantBell,
-                              ExampleCommutative, ExampleNoncommutative,
-                              Gloptipoly, HarmonicOscillator, MaxCut,
-                              Magnetization, Moroder, NietoSilleras, SparsePop)
+    test_support.run_unittest(ApplySubstitutions, Chsh, ChshMixedLevel,
+                              ElegantBell, ExampleCommutative, FastSubstitute,
+                              ExampleNoncommutative, Gloptipoly,
+                              HarmonicOscillator, MaxCut, Magnetization,
+                              Moroder, NietoSilleras, SparsePop)
 
 if __name__ == '__main__':
     test_main()

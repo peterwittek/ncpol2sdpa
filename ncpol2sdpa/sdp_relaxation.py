@@ -169,7 +169,7 @@ class SdpRelaxation(Relaxation):
                        rowB, columnB, lenB, prevent_substitutions=False):
         if not prevent_substitutions:
             monomial = apply_substitutions(monomial, self.substitutions,
-                                       self.pure_substitution_rules)
+                                           self.pure_substitution_rules)
         if isinstance(monomial, Number) or isinstance(monomial, int) or \
                 isinstance(monomial, float):
             if rowA == 0 and columnA == 0 and rowB == 0 and columnB == 0 and \
@@ -1001,7 +1001,6 @@ class SdpRelaxation(Relaxation):
         if self.verbose > 0:
             print(('Estimated number of SDP variables: %d' % self.n_vars))
             print('Generating moment matrix...')
-
         # Generate moment matrices
         new_n_vars, block_index = self.__add_non_relaxed()
         new_n_vars, block_index = \
@@ -1020,7 +1019,6 @@ class SdpRelaxation(Relaxation):
             print(('Reduced number of SDP variables: %d' % self.n_vars))
         # Objective function
         self.set_objective(objective, extraobjexpr)
-
         # Process constraints
         self.constraint_starting_block = block_index
         self.process_constraints(inequalities, equalities, bounds, psd,
