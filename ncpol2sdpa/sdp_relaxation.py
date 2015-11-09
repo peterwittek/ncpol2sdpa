@@ -80,14 +80,11 @@ class Relaxation(object):
                                  Refer to the PICOS documentation. All
                                  arguments are passed on.
         :type solverparameters: dict of str.
-        :returns: tuple of the primal and dual optimum, and the solutions for
-                  the primal and dual.
-        :rtype: (float, float, list of `numpy.array`, list of `numpy.array`)
         """
         if self.F_struct is None:
             raise Exception("Relaxation is not generated yet. Call "
                             "'SdpRelaxation.get_relaxation' first")
-        return solve_sdp(self, solver, solverparameters)
+        solve_sdp(self, solver, solverparameters)
 
 
 class SdpRelaxation(Relaxation):
