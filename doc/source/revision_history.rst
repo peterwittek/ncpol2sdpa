@@ -12,6 +12,7 @@ Since v1.9:
   - Changed: Removed `convert_to_picos_extra_moment_matrix` and added optional parameter `duplicate_moment_matrix` to `convert_to_picos` to achieve the same effect.
   - Changed: The chordal extension is now requested as an optional parameter `chordal_extension=True` passed to the `get_relaxation` method, and not by specifying it as a hierarchy type in the constructor.
   - Changed: The Moroder hierarchy is now a class.
+  - Changed: Small improvements in speed in the substitution routines; unit tests for the substitution routines.
   - Fixed: PICOS and MOSEK conversion works for complex matrices too (issue #10).
   - Fixed: The moment symmetries are correctly calculated for both Hermitian and non-Hermitian variables (issue #9)
          
