@@ -39,13 +39,13 @@ def flatten(lol):
 def simplify_polynomial(polynomial, monomial_substitutions):
     """Simplify a polynomial for uniform handling later.
     """
-    if isinstance(polynomial, int) or isinstance(polynomial, float):
+    if isinstance(polynomial, (int, float, complex)):
         return polynomial
     polynomial = (1.0 * polynomial).expand(basic=False, log=False,
                                            power_base=False, power_exp=False,
                                            deep=False, mul=True,
                                            multinomial=True)
-    if isinstance(polynomial, Number):
+    if is_number_type(polynomial):
         return polynomial
     if polynomial.is_Mul:
         elements = [polynomial]
@@ -61,7 +61,7 @@ def simplify_polynomial(polynomial, monomial_substitutions):
 
 
 def is_pure_substitution_rule(lhs, rhs):
-    if isinstance(rhs, int) or isinstance(rhs, float):
+    if is_number_type(rhs):
         return True
     if rhs.is_Mul:
         elements = [rhs]
@@ -81,7 +81,7 @@ def separate_scalar_factor(monomial):
     """Separate the constant factor from a monomial.
     """
     scalar_factor = 1
-    if isinstance(monomial, int) or isinstance(monomial, float):
+    if is_number_type(monomial):
         return S.One, monomial
     if monomial == 0:
         return S.One, 0
@@ -106,7 +106,7 @@ def get_support(variables, polynomial):
     """Gets the support of a polynomial.
     """
     support = []
-    if isinstance(polynomial, (int, float, complex)):
+    if is_number_type(polynomial):
         support.append([0] * len(variables))
         return support
     polynomial = polynomial.expand()
@@ -132,7 +132,7 @@ def get_support_variables(polynomial):
     """Gets the support of a polynomial.
     """
     support = []
-    if isinstance(polynomial, (int, float, complex)):
+    if is_number_type(polynomial):
         return support
     polynomial = polynomial.expand()
     for monomial in polynomial.as_coefficients_dict():
@@ -157,7 +157,7 @@ def build_monomial(element):
     """
     coeff = 1.0
     monomial = S.One
-    if isinstance(element, float):
+    if isinstance(element, (int, float, complex)):
         coeff *= element
         return monomial, coeff
     for var in element.as_coeff_mul()[1]:
@@ -195,7 +195,7 @@ def count_ncmonomials(monomials, degree):
 
 def apply_substitutions(monomial, monomial_substitutions, pure=False):
     """Helper function to remove monomials from the basis."""
-    if isinstance(monomial, int) or isinstance(monomial, float):
+    if is_number_type(monomial):
         return monomial
     original_monomial = monomial
     changed = True
@@ -231,8 +231,7 @@ def fast_substitute(monomial, old_sub, new_sub):
     :param old_sub: The part to be replaced.
     :param new_sub: The replacement.
     """
-    if isinstance(monomial, Number) or isinstance(monomial, int) or \
-            isinstance(monomial, float):
+    if is_number_type(monomial):
         return monomial
     if monomial.is_Add:
         return sum([fast_substitute(element, old_sub, new_sub) for element in
@@ -335,8 +334,7 @@ def fast_substitute(monomial, old_sub, new_sub):
                 new_monomial *= factor
         else:
             return monomial
-    if not isinstance(new_sub, int) and not isinstance(new_sub, float) and \
-            new_sub.is_Add:
+    if not isinstance(new_sub, (float, int, complex)) and new_sub.is_Add:
         return expand(new_monomial)
     else:
         return new_monomial
@@ -444,7 +442,7 @@ def get_ncmonomials(variables, degree):
 def get_variables_of_polynomial(polynomial):
     """Returns the degree of a noncommutative polynomial.
     """
-    if isinstance(polynomial, (int, float, complex)):
+    if is_number_type(polynomial):
         return []
     result = []
     for monomial in polynomial.as_coefficients_dict():
@@ -465,7 +463,7 @@ def ncdegree(polynomial):
     :returns: int -- the degree of the polynomial.
     """
     degree = 0
-    if isinstance(polynomial, (int, float, complex)):
+    if is_number_type(polynomial):
         return degree
     polynomial = polynomial.expand()
     for monomial in polynomial.as_coefficients_dict():
@@ -635,3 +633,10 @@ def permute_cyclic(monomial):
                 monomial *= factor
             result.add(monomial)
     return result
+
+
+def is_number_type(exp):
+    if isinstance(exp, (int, float, complex, Number)):
+        return True
+    else:
+        return False

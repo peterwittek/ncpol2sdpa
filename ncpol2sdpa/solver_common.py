@@ -254,7 +254,7 @@ def get_xmat_value(monomial, sdpRelaxation, x_mat=None):
         element, coeff = build_monomial(element)
         element = apply_substitutions(element, sdpRelaxation.substitutions)
         if isinstance(element, Number):
-            result += coeff*float(element)
+            result += coeff*element
         else:
             row, k, block, i, j = get_index_of_monomial(element, row_offsets,
                                                         sdpRelaxation)

@@ -13,7 +13,7 @@ import os
 from sympy import S, Number
 from sympy.matrices import zeros
 from sympy.physics.quantum.dagger import Dagger
-from .nc_utils import apply_substitutions
+from .nc_utils import apply_substitutions, is_number_type
 from .sdp_relaxation import SdpRelaxation
 from .sdpa_utils import write_to_sdpa
 
@@ -91,8 +91,7 @@ class SteeringHierarchy(SdpRelaxation):
                        rowB, columnB, lenB):
         monomial = apply_substitutions(monomial, self.substitutions,
                                        self.pure_substitution_rules)
-        if isinstance(monomial, Number) or isinstance(monomial, int) or \
-                isinstance(monomial, float):
+        if is_number_type(monomial):
             if rowA == 0 and columnA == 0 and rowB == 0 and columnB == 0 and \
               monomial == 1.0 and not self.normalized:
                 if self.matrix_var_dim is None:

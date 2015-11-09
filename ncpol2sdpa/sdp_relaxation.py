@@ -24,7 +24,7 @@ from .nc_utils import apply_substitutions, build_monomial, \
     separate_scalar_factor, flatten, build_permutation_matrix, \
     simplify_polynomial, get_monomials, unique, iscomplex, \
     is_pure_substitution_rule, convert_relational, save_monomial_index, \
-    find_variable_set
+    find_variable_set, is_number_type
 from .solver_common import get_xmat_value, solve_sdp
 from .mosek_utils import convert_to_mosek
 from .sdpa_utils import write_to_sdpa, write_to_human_readable
@@ -170,8 +170,7 @@ class SdpRelaxation(Relaxation):
         if not prevent_substitutions:
             monomial = apply_substitutions(monomial, self.substitutions,
                                            self.pure_substitution_rules)
-        if isinstance(monomial, Number) or isinstance(monomial, int) or \
-                isinstance(monomial, float):
+        if is_number_type(monomial):
             if rowA == 0 and columnA == 0 and rowB == 0 and columnB == 0 and \
               monomial == 1.0 and not self.normalized:
                 n_vars += 1
@@ -329,8 +328,7 @@ class SdpRelaxation(Relaxation):
         # Simplifying here will trigger a bug in SymPy related to
         # the powers of daggered variables.
         # polynomial = polynomial.expand()
-        if isinstance(polynomial, float) or polynomial == 0 or\
-           polynomial.is_Mul:
+        if is_number_type(polynomial) or polynomial.is_Mul:
             elements = [polynomial]
         else:
             elements = polynomial.as_coeff_mul()[1][0].as_coeff_add()[1]
@@ -350,8 +348,7 @@ class SdpRelaxation(Relaxation):
         """
         facvar = [0] * (self.n_vars + 1)
         # Preprocess the polynomial for uniform handling later
-        if isinstance(polynomial, Number) or isinstance(polynomial, float) or\
-           isinstance(polynomial, int):
+        if is_number_type(polynomial):
             facvar[0] = polynomial
             return facvar
         polynomial = polynomial.expand()
