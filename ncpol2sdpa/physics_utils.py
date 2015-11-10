@@ -34,7 +34,7 @@ def get_neighbors(index, lattice_length, width=0, periodic=False):
     coords = divmod(index, width)
     if coords[1] < width - 1:
         neighbors.append(index + 1)
-    elif periodic:
+    elif periodic and width > 1:
         neighbors.append(index - width + 1)
     if coords[0] < lattice_length - 1:
         neighbors.append(index + width)
