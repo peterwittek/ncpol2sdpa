@@ -49,10 +49,10 @@ def parse_mosek_solution(sdpRelaxation, task):
     primal, dual = task.getprimalobj(soltype), task.getdualobj(soltype)
     x_mat, y_mat = [], []
     size_ = sum(bs for bs in sdpRelaxation.block_struct)
-    primal_solution = np.zeros(int(size_*(size_+1)/2))
+    primal_solution = np.zeros(size_*(size_+1) // 2)
     task.getbarxj(soltype, 0, primal_solution)
     y_mat = moseksol_to_xmat(primal_solution, sdpRelaxation.block_struct)
-    dual_solution = np.zeros(size_*(size_+1)/2)
+    dual_solution = np.zeros(size_*(size_+1) // 2)
     task.getbarsj(soltype, 0, dual_solution)
     x_mat = moseksol_to_xmat(dual_solution, sdpRelaxation.block_struct)
     status = repr(task.getsolsta(soltype))
