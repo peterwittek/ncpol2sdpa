@@ -259,7 +259,8 @@ class SdpRelaxation(Relaxation):
     # CONSTRAINTS                                                          #
     ########################################################################
 
-    def _get_index_of_monomial(self, element, enablesubstitution=True):
+    def _get_index_of_monomial(self, element, enablesubstitution=True,
+                               daggered=False):
         """Returns the index of a monomial.
         """
         processed_element, coeff1 = build_monomial(element)
@@ -290,20 +291,15 @@ class SdpRelaxation(Relaxation):
                     coeff = -1.0 * coeff
             try:
                 k = self.monomial_index[monomial]
+                result.append((k, coeff))
             except KeyError:
-                monomial, coeff = build_monomial(element)
-                monomial, scalar_factor = separate_scalar_factor(
-                    apply_substitutions(Dagger(monomial),
-                                        self.substitutions,
-                                        self.pure_substitution_rules))
-                coeff *= scalar_factor
-                try:
-                    k = self.monomial_index[monomial]
-                except KeyError:
+                if not daggered:
+                    dag_result = self._get_index_of_monomial(Dagger(monomial),
+                                                             daggered=True)
+                    result += [(k, coeff0*coeff) for k, coeff0 in dag_result]
+                else:
                     raise RuntimeError("The requested monomial " +
                                        str(monomial) + " could not be found.")
-
-            result.append((k, coeff))
         return result
 
     def __push_facvar_sparse(self, polynomial, block_index, row_offset, i, j):
