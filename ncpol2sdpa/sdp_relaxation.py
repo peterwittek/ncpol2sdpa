@@ -10,7 +10,7 @@ Created on Sun May 26 15:06:17 2013
 from __future__ import division, print_function
 from math import floor
 import numpy as np
-from sympy import S, Number, Expr
+from sympy import S, Expr
 from sympy.matrices import Matrix
 from sympy.physics.quantum.dagger import Dagger
 import sys
@@ -259,7 +259,7 @@ class SdpRelaxation(Relaxation):
     # CONSTRAINTS                                                          #
     ########################################################################
 
-    def __get_index_of_monomial(self, element, enablesubstitution=True):
+    def _get_index_of_monomial(self, element, enablesubstitution=True):
         """Returns the index of a monomial.
         """
         processed_element, coeff1 = build_monomial(element)
@@ -331,13 +331,13 @@ class SdpRelaxation(Relaxation):
             elements = polynomial.as_coeff_mul()[1][0].as_coeff_add()[1]
         # Identify its constituent monomials
         for element in elements:
-            results = self.__get_index_of_monomial(element)
+            results = self._get_index_of_monomial(element)
             # k identifies the mapped value of a word (monomial) w
             for (k, coeff) in results:
                 if k > -1 and coeff != 0:
                     self.F_struct[row_offset + i * width + j, k] += coeff
 
-    def __get_facvar(self, polynomial):
+    def _get_facvar(self, polynomial):
         """Return dense vector representation of a polynomial. This function is
         nearly identical to __push_facvar_sparse, but instead of pushing
         sparse entries to the constraint matrices, it returns a dense
@@ -354,8 +354,7 @@ class SdpRelaxation(Relaxation):
         else:
             elements = polynomial.as_coeff_mul()[1][0].as_coeff_add()[1]
         for element in elements:
-            results = self.__get_index_of_monomial(
-                element)
+            results = self._get_index_of_monomial(element)
             for (k, coeff) in results:
                 facvar[k] += coeff
         return facvar
@@ -460,7 +459,7 @@ class SdpRelaxation(Relaxation):
                         simplify_polynomial(Dagger(monomials[row]) *
                                             equality * monomials[column],
                                             self.substitutions)
-                    A[n_rows] = self.__get_facvar(polynomial)
+                    A[n_rows] = self._get_facvar(polynomial)
                     # This is something really weird: we want the constant
                     # terms in equalities to be positive. Otherwise funny
                     # things happen in the QR decomposition and the basis
@@ -796,7 +795,7 @@ class SdpRelaxation(Relaxation):
         """
         if objective is not None:
             facvar = \
-                self.__get_facvar(simplify_polynomial(objective,
+                self._get_facvar(simplify_polynomial(objective,
                                                       self.substitutions))
 
             self.obj_facvar = facvar[1:]
@@ -806,7 +805,7 @@ class SdpRelaxation(Relaxation):
                       "constant term. It is not included in the SDP objective."
                       % facvar[0])
         else:
-            self.obj_facvar = self.__get_facvar(0)
+            self.obj_facvar = self._get_facvar(0)
         if extraobjexpr is not None:
             for sub_expr in extraobjexpr.split(']'):
                 startindex = 0

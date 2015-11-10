@@ -11,6 +11,7 @@ from .faacets_relaxation import FaacetsRelaxation
 from .sdp_relaxation import SdpRelaxation
 from .steering_hierarchy import SteeringHierarchy
 from .moroder_hierarchy import MoroderHierarchy
+from .rdm_hierarchy import RdmHierarchy
 from .chordal_extension import find_variable_cliques
 from .nc_utils import generate_variable, generate_variables, get_ncmonomials, \
                       ncdegree, flatten, save_monomial_index
@@ -29,6 +30,7 @@ __all__ = ['SdpRelaxation',
            'SteeringHierarchy',
            'MoroderHierarchy',
            'FaacetsRelaxation',
+           'RdmHierarchy',
            'generate_variable',
            'generate_variables',
            'get_ncmonomials',
