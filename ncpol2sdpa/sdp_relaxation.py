@@ -291,25 +291,17 @@ class SdpRelaxation(Relaxation):
             try:
                 k = self.monomial_index[monomial]
             except KeyError:
+                monomial, coeff = build_monomial(element)
+                monomial, scalar_factor = separate_scalar_factor(
+                    apply_substitutions(Dagger(monomial),
+                                        self.substitutions,
+                                        self.pure_substitution_rules))
+                coeff *= scalar_factor
                 try:
-                    monomial, coeff = build_monomial(element)
-                    monomial, scalar_factor = separate_scalar_factor(
-                        apply_substitutions(Dagger(monomial),
-                                            self.substitutions,
-                                            self.pure_substitution_rules))
-                    coeff *= scalar_factor
                     k = self.monomial_index[monomial]
                 except KeyError:
-                    daggered_monomial = \
-                      apply_substitutions(Dagger(monomial),
-                                          self.substitutions,
-                                          self.pure_substitution_rules)
-                    try:
-                        k = self.monomial_index[daggered_monomial]
-                    except KeyError:
-                        raise RuntimeError("The requested monomial " +
-                                           str(monomial) +
-                                           " could not be found.")
+                    raise RuntimeError("The requested monomial " +
+                                       str(monomial) + " could not be found.")
 
             result.append((k, coeff))
         return result
