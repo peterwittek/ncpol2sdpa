@@ -131,7 +131,7 @@ class RdmHierarchy(SdpRelaxation):
                     _generate_moment_matrix(n_vars, block_index,
                                             processed_entries,
                                             monomialsA, monomialsB)
-'''
+
     def _get_index_of_monomial(self, element, enablesubstitution=True,
                                daggered=False):
         """Returns the index of a monomial.
@@ -172,7 +172,9 @@ class RdmHierarchy(SdpRelaxation):
                 else:
                     elements = match.as_coeff_mul()[1][0].as_coeff_add()[1]
                 for el in elements:
-                    result += self._get_index_of_monomial(el)
+                    sub_result = self._get_index_of_monomial(el)
+                for (ki, coeffi) in sub_result:
+                    result.append((ki, coeffi*coeff))
                 continue
             try:
                 k = self.monomial_index[monomial]
@@ -211,4 +213,3 @@ class RdmHierarchy(SdpRelaxation):
                     for ki in k:
                         facvar[ki] += coeff
         return facvar
-'''
