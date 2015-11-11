@@ -12,7 +12,7 @@ try:
 except ImportError:
     from .sparse_utils import lil_matrix
 from .nc_utils import pick_monomials_up_to_degree, simplify_polynomial, \
-                      apply_substitutions, build_monomial
+                      apply_substitutions, separate_scalar_factor
 from .sdpa_utils import solve_with_sdpa, convert_row_to_sdpa_index, detect_sdpa
 from .mosek_utils import solve_with_mosek
 from .picos_utils import solve_with_cvxopt
@@ -251,7 +251,7 @@ def get_xmat_value(monomial, sdpRelaxation, x_mat=None):
         row_offsets.append(cumulative_sum)
     result = 0
     for element in elements:
-        element, coeff = build_monomial(element)
+        element, coeff = separate_scalar_factor(element)
         element = apply_substitutions(element, sdpRelaxation.substitutions)
         if isinstance(element, Number):
             result += coeff*element

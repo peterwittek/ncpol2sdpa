@@ -7,7 +7,8 @@ Created on Wed Nov  10 11:24:48 2015
 from sympy import expand
 from sympy.physics.quantum.dagger import Dagger
 from .sdp_relaxation import SdpRelaxation
-from .nc_utils import apply_substitutions, is_number_type, build_monomial
+from .nc_utils import apply_substitutions, is_number_type, \
+                      separate_scalar_factor
 
 
 class RdmHierarchy(SdpRelaxation):
@@ -84,12 +85,12 @@ class RdmHierarchy(SdpRelaxation):
                     if is_number_type(element):
                         continue
                     else:
-                        element, coeff = build_monomial(element)
-                        remainder = monomial - element
+                        element, coeff = separate_scalar_factor(element)
+                        remainder = monomial - coeff*element
                         self.correspondence[element] = expand((monomial0 -
                                                               remainder)/coeff)
             elif monomial != 0:
-                monomial, coeff = build_monomial(monomial)
+                monomial, coeff = separate_scalar_factor(monomial)
                 self.correspondence[monomial] = monomial0/coeff
         if max(k) > n_vars:
             n_vars = max(k)
@@ -130,6 +131,61 @@ class RdmHierarchy(SdpRelaxation):
                     _generate_moment_matrix(n_vars, block_index,
                                             processed_entries,
                                             monomialsA, monomialsB)
+'''
+    def _get_index_of_monomial(self, element, enablesubstitution=True,
+                               daggered=False):
+        """Returns the index of a monomial.
+        """
+        processed_element, coeff1 = separate_scalar_factor(element)
+        if enablesubstitution:
+            processed_element = \
+                apply_substitutions(processed_element, self.substitutions,
+                                    self.pure_substitution_rules)
+        # Given the monomial, we need its mapping L_y(w) to push it into
+        # a corresponding constraint matrix
+        if processed_element.is_Number:
+            return [(0, coeff1)]
+        elif processed_element.is_Add:
+            monomials = \
+                processed_element.as_coeff_mul()[1][0].as_coeff_add()[1]
+        else:
+            monomials = [processed_element]
+        result = []
+        for monomial in monomials:
+            monomial, coeff2 = separate_scalar_factor(monomial)
+            coeff = coeff1*coeff2
+            if monomial.is_Number:
+                result.append((0, coeff))
+                continue
+            k = -1
+            if monomial != 0:
+                if monomial.as_coeff_Mul()[0] < 0:
+                    monomial = -monomial
+                    coeff = -1.0 * coeff
+            if monomial in self.correspondence:
+                match = self.correspondence[monomial]
+                if is_number_type(match):
+                    result.append((0, coeff))
+                    continue
+                elif match.is_Mul:
+                    elements = [match]
+                else:
+                    elements = match.as_coeff_mul()[1][0].as_coeff_add()[1]
+                for el in elements:
+                    result += self._get_index_of_monomial(el)
+                continue
+            try:
+                k = self.monomial_index[monomial]
+                result.append((k, coeff))
+            except KeyError:
+                if not daggered:
+                    dag_result = self._get_index_of_monomial(Dagger(monomial),
+                                                             daggered=True)
+                    result += [(k, coeff0*coeff) for k, coeff0 in dag_result]
+                else:
+                    raise RuntimeError("The requested monomial " +
+                                       str(monomial) + " could not be found.")
+        return result
 
     def _get_facvar(self, polynomial):
         """Return dense vector representation of a polynomial. This function is
@@ -148,25 +204,11 @@ class RdmHierarchy(SdpRelaxation):
         else:
             elements = polynomial.as_coeff_mul()[1][0].as_coeff_add()[1]
         for element in elements:
-            print("BEFORE", element)
-            element, coeff0 = build_monomial(element)
-            element = apply_substitutions(element, self.substitutions,
-                                          self.pure_substitution_rules)
-            if element != 0 and element.as_coeff_Mul()[0] < 0:
-                    element = -element
-                    coeff0 = -1.0 * coeff0
-            print("AFTER", element)
-            if element in self.correspondence:
-                element = self.correspondence[element]
-            if element.is_Mul or is_number_type(element):
-                sub_elements = [element]
-            else:
-                sub_elements = element.as_coeff_mul()[1][0].as_coeff_add()[1]
-            for sub_element in sub_elements:
-                results = self._get_index_of_monomial(sub_element)
-                for (k, coeff) in results:
-                    if not isinstance(k, list):
-                        k = [k]
-                        for ki in k:
-                            facvar[ki] += coeff * coeff0
+            results = self._get_index_of_monomial(element)
+            for (k, coeff) in results:
+                if not isinstance(k, list):
+                    k = [k]
+                    for ki in k:
+                        facvar[ki] += coeff
         return facvar
+'''

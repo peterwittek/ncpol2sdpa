@@ -10,7 +10,7 @@ Created on Sun Nov 30 15:01:13 2014
 """
 import random
 import numpy as np
-from .nc_utils import get_support, get_monomials, flatten
+from .nc_utils import get_support, flatten
 
 
 def sliding_cliques(k, n):

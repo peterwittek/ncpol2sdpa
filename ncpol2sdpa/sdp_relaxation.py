@@ -19,9 +19,8 @@ try:
     from scipy.sparse import lil_matrix, hstack
 except ImportError:
     from .sparse_utils import lil_matrix
-from .nc_utils import apply_substitutions, build_monomial, \
-    pick_monomials_up_to_degree, ncdegree, \
-    separate_scalar_factor, flatten, build_permutation_matrix, \
+from .nc_utils import apply_substitutions, pick_monomials_up_to_degree, \
+    ncdegree, separate_scalar_factor, flatten, build_permutation_matrix, \
     simplify_polynomial, get_monomials, unique, iscomplex, \
     is_pure_substitution_rule, convert_relational, save_monomial_index, \
     find_variable_set, is_number_type
@@ -263,7 +262,7 @@ class SdpRelaxation(Relaxation):
                                daggered=False):
         """Returns the index of a monomial.
         """
-        processed_element, coeff1 = build_monomial(element)
+        processed_element, coeff1 = separate_scalar_factor(element)
         if enablesubstitution:
             processed_element = \
                 apply_substitutions(processed_element, self.substitutions,
@@ -279,7 +278,7 @@ class SdpRelaxation(Relaxation):
             monomials = [processed_element]
         result = []
         for monomial in monomials:
-            monomial, coeff2 = build_monomial(monomial)
+            monomial, coeff2 = separate_scalar_factor(monomial)
             coeff = coeff1*coeff2
             if monomial.is_Number:
                 result.append((0, coeff))

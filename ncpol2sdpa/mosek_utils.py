@@ -10,6 +10,7 @@ import sys
 import numpy as np
 from .sdpa_utils import convert_row_to_sdpa_index
 
+
 def streamprinter(text):
     """Helper function for printing MOSEK messages in the Python console.
     """

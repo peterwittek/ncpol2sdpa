@@ -54,7 +54,7 @@ def simplify_polynomial(polynomial, monomial_substitutions):
     new_polynomial = 0
     # Identify its constituent monomials
     for element in elements:
-        monomial, coeff = build_monomial(element)
+        monomial, coeff = separate_scalar_factor(element)
         monomial = apply_substitutions(monomial, monomial_substitutions)
         new_polynomial += coeff * monomial
     return new_polynomial
@@ -68,7 +68,7 @@ def is_pure_substitution_rule(lhs, rhs):
     else:
         elements = rhs.as_coeff_mul()[1][0].as_coeff_add()[1]
     for element in elements:
-        monomial, _ = build_monomial(element)
+        monomial, _ = separate_scalar_factor(element)
         for atom in monomial.atoms():
             if atom.is_Number:
                 continue
@@ -77,7 +77,13 @@ def is_pure_substitution_rule(lhs, rhs):
     return True
 
 
-def separate_scalar_factor(monomial):
+def remove_scalar_factor(monomial):
+    """Return monomial without constant factor.
+    """
+    monomial, _ = separate_scalar_factor(monomial)
+    return monomial
+
+def __separate_scalar_factor(monomial):
     """Separate the constant factor from a monomial.
     """
     scalar_factor = 1
@@ -95,13 +101,6 @@ def separate_scalar_factor(monomial):
         return monomial, scalar_factor
 
 
-def remove_scalar_factor(monomial):
-    """Return monomial without constant factor.
-    """
-    monomial, dummy = separate_scalar_factor(monomial)
-    return monomial
-
-
 def get_support(variables, polynomial):
     """Gets the support of a polynomial.
     """
@@ -112,7 +111,7 @@ def get_support(variables, polynomial):
     polynomial = polynomial.expand()
     for monomial in polynomial.as_coefficients_dict():
         tmp_support = [0] * len(variables)
-        monomial, _ = separate_scalar_factor(monomial)
+        monomial, _ = __separate_scalar_factor(monomial)
         symbolic_support = flatten(split_commutative_parts(monomial))
         for s in symbolic_support:
             if isinstance(s, Pow):
@@ -136,7 +135,7 @@ def get_support_variables(polynomial):
         return support
     polynomial = polynomial.expand()
     for monomial in polynomial.as_coefficients_dict():
-        monomial, _ = separate_scalar_factor(monomial)
+        monomial, _ = __separate_scalar_factor(monomial)
         symbolic_support = flatten(split_commutative_parts(monomial))
         for s in symbolic_support:
             if isinstance(s, Pow):
@@ -151,7 +150,7 @@ def get_support_variables(polynomial):
     return support
 
 
-def build_monomial(element):
+def separate_scalar_factor(element):
     """Construct a monomial with the coefficient separated
     from an element in a polynomial.
     """
@@ -439,21 +438,6 @@ def get_ncmonomials(variables, degree):
         return ncmonomials
 
 
-def get_variables_of_polynomial(polynomial):
-    """Returns the degree of a noncommutative polynomial.
-    """
-    if is_number_type(polynomial):
-        return []
-    result = []
-    for monomial in polynomial.as_coefficients_dict():
-        for variable in monomial.as_coeff_mul()[1]:
-            if isinstance(variable, Pow):
-                result.append(variable.base)
-            else:
-                result.append(variable)
-    return result
-
-
 def ncdegree(polynomial):
     """Returns the degree of a noncommutative polynomial.
 
@@ -607,32 +591,6 @@ def find_variable_set(variable_sets, polynomial):
         if len(support-set(variable_set)) == 0:
             return i
     return -1
-
-
-def permute_cyclic(monomial):
-    result = set([])
-    comm_factors, ncomm_factors = split_commutative_parts(monomial)
-    if len(ncomm_factors) == 0:
-        result.add(monomial)
-    else:
-        comm_monomial = 1
-        for comm_factor in comm_factors:
-            comm_monomial *= comm_factor
-        actual_factors = []
-        for factor in ncomm_factors:
-            if isinstance(factor, Pow):
-                actual_factors += [factor.base for _ in range(factor.exp)]
-            else:
-                actual_factors.append(factor)
-        n = len(actual_factors)
-        cyclic_permutations = [[actual_factors[i - j] for i in range(n)]
-                               for j in range(n)]
-        for permutation in cyclic_permutations:
-            monomial = comm_monomial
-            for factor in permutation:
-                monomial *= factor
-            result.add(monomial)
-    return result
 
 
 def is_number_type(exp):
