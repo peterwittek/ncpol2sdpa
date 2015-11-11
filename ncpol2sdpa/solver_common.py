@@ -12,7 +12,8 @@ try:
 except ImportError:
     from .sparse_utils import lil_matrix
 from .nc_utils import pick_monomials_up_to_degree, simplify_polynomial, \
-                      apply_substitutions, separate_scalar_factor
+                      apply_substitutions, separate_scalar_factor, \
+                      is_number_type
 from .sdpa_utils import solve_with_sdpa, convert_row_to_sdpa_index, detect_sdpa
 from .mosek_utils import solve_with_mosek
 from .picos_utils import solve_with_cvxopt
@@ -192,7 +193,7 @@ def sos_decomposition(sdpRelaxation, y_mat=None, threshold=0.0):
 
 
 def get_index_of_monomial(monomial, row_offsets, sdpRelaxation):
-    k = sdpRelaxation.monomial_index[monomial]
+    k = sdpRelaxation._get_index_of_monomial(monomial)[0][0]
     Fk = sdpRelaxation.F_struct.getcol(k)
     if not isinstance(Fk, lil_matrix):
         Fk = Fk.tolil()
@@ -253,7 +254,7 @@ def get_xmat_value(monomial, sdpRelaxation, x_mat=None):
     for element in elements:
         element, coeff = separate_scalar_factor(element)
         element = apply_substitutions(element, sdpRelaxation.substitutions)
-        if isinstance(element, Number):
+        if is_number_type(element):
             result += coeff*element
         else:
             row, k, block, i, j = get_index_of_monomial(element, row_offsets,
