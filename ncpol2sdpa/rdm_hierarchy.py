@@ -87,11 +87,13 @@ class RdmHierarchy(SdpRelaxation):
                     else:
                         element, coeff = separate_scalar_factor(element)
                         remainder = monomial - coeff*element
-                        self.correspondence[element] = expand((monomial0 -
+                        if element not in self.correspondence:
+                            self.correspondence[element] = expand((monomial0 -
                                                               remainder)/coeff)
             elif monomial != 0:
                 monomial, coeff = separate_scalar_factor(monomial)
-                self.correspondence[monomial] = monomial0/coeff
+                if monomial not in self.correspondence:
+                    self.correspondence[monomial] = monomial0/coeff
         if max(k) > n_vars:
             n_vars = max(k)
         return n_vars, k, coeff
@@ -117,6 +119,13 @@ class RdmHierarchy(SdpRelaxation):
                                if column + row < N])
                 mons.append([Dagger(monomialsA[row]) * monomialsA[col]
                              for row, col in coords[-1]])
+                lower_triangular = [(col - N // 2, N // 2 + row)
+                                    for row, col in coords[-1]
+                                    if row != col - N // 2]
+                lower_mons = [-mon for mon in mons[-1]]
+                if lower_triangular != []:
+                    coords.append([lower_triangular[0]] + lower_triangular)
+                    mons.append([-mons[-1][0]] + lower_mons)
                 coords.append([(row, column + row - N // 2)
                                for row in range(N // 2, N)
                                if column + row - N // 2 < N])
@@ -125,6 +134,7 @@ class RdmHierarchy(SdpRelaxation):
             for mon, coord in zip(mons, coords):
                 n_vars, _, _ = self._push_monomials(mon, n_vars, row_offset,
                                                     coord, len(monomialsA))
+            self.correspondence = {}
             return n_vars, block_index + 1, processed_entries
         else:
             return super(RdmHierarchy, self).\
@@ -133,7 +143,7 @@ class RdmHierarchy(SdpRelaxation):
                                             monomialsA, monomialsB)
 
     def _get_index_of_monomial(self, element, enablesubstitution=True,
-                               daggered=False):
+                               daggered=False, recursed=0):
         """Returns the index of a monomial.
         """
         processed_element, coeff1 = separate_scalar_factor(element)
@@ -141,8 +151,6 @@ class RdmHierarchy(SdpRelaxation):
             processed_element = \
                 apply_substitutions(processed_element, self.substitutions,
                                     self.pure_substitution_rules)
-        # Given the monomial, we need its mapping L_y(w) to push it into
-        # a corresponding constraint matrix
         if processed_element.is_Number:
             return [(0, coeff1)]
         elif processed_element.is_Add:
@@ -171,8 +179,11 @@ class RdmHierarchy(SdpRelaxation):
                     elements = [match]
                 else:
                     elements = match.as_coeff_mul()[1][0].as_coeff_add()[1]
+                print(elements)
+                if recursed == 5:
+                    raise Exception
                 for el in elements:
-                    sub_result = self._get_index_of_monomial(el)
+                    sub_result = self._get_index_of_monomial(el, recursed=recursed+1)
                 for (ki, coeffi) in sub_result:
                     result.append((ki, coeffi*coeff))
                 continue
