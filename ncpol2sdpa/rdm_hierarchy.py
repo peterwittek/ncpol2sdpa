@@ -74,7 +74,7 @@ class RdmHierarchy(SdpRelaxation):
         for rowA, columnA in coords:
             for ki, coeffi in zip(k, coeff):
                 self.F_struct[row_offset + rowA * N + columnA, ki] = coeffi
-
+        '''
         for monomial in monomials[1:]:
             monomial = apply_substitutions(monomial, self.substitutions,
                                            self.pure_substitution_rules)
@@ -94,6 +94,7 @@ class RdmHierarchy(SdpRelaxation):
                 monomial, coeff = separate_scalar_factor(monomial)
                 if monomial not in self.correspondence:
                     self.correspondence[monomial] = monomial0/coeff
+        '''
         if max(k) > n_vars:
             n_vars = max(k)
         return n_vars, k, coeff
@@ -179,11 +180,8 @@ class RdmHierarchy(SdpRelaxation):
                     elements = [match]
                 else:
                     elements = match.as_coeff_mul()[1][0].as_coeff_add()[1]
-                print(elements)
-                if recursed == 5:
-                    raise Exception
                 for el in elements:
-                    sub_result = self._get_index_of_monomial(el, recursed=recursed+1)
+                    sub_result = self._get_index_of_monomial(el)
                 for (ki, coeffi) in sub_result:
                     result.append((ki, coeffi*coeff))
                 continue
