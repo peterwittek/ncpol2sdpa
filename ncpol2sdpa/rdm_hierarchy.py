@@ -137,8 +137,8 @@ class RdmHierarchy(SdpRelaxation):
                 for block_size in self.block_struct[0:block_index]:
                     row_offset += block_size ** 2
             for block_row in range(N):
+                monsA = monomialsA[N*block_row:N*(block_row+1)]
                 for block_col in range(block_row, N):
-                    monsA = monomialsA[N*block_row:N*(block_row+1)]
                     monsB = monomialsA[N*block_col:N*(block_col+1)]
                     coords, mons = \
                         generate_block_coords(monsA, monsB, 0, N, 0, N,
@@ -150,12 +150,55 @@ class RdmHierarchy(SdpRelaxation):
             self.correspondence = {}
             return n_vars, block_index + 1, processed_entries
         elif self.m_block == 2:
+            N = int(sqrt(len(monomialsA)//2))
+            row_offset = 0
+            if block_index > 0:
+                for block_size in self.block_struct[0:block_index]:
+                    row_offset += block_size ** 2
+            for block_row in range(N):
+                monsA = monomialsA[N*block_row:N*(block_row+1)]
+                for block_col in range(block_row, N):
+                    monsB = monomialsA[N*block_col:N*(block_col+1)]
+                    coords, mons = \
+                        generate_block_coords(monsA, monsB, 0, N, 0, N,
+                                              N*block_row, N*block_col, N)
+                    for mon, coord in zip(mons, coords):
+                        n_vars, _, _ = self._push_monomials(mon, n_vars,
+                                                            row_offset,
+                                                            coord, 2*N**2)
+
+            for block_row in range(N):
+                monsA = monomialsA[N*block_row:N*(block_row+1)]
+                for block_col in range(N):
+                    monsB = monomialsA[N**2+N*block_col:N**2+N*(block_col+1)]
+                    coords, mons = \
+                        generate_block_coords(monsA, monsB, 0, N, 0, N,
+                                              N*block_row,
+                                              N**2 + N*block_col, N)
+                    for mon, coord in zip(mons, coords):
+                        n_vars, _, _ = self._push_monomials(mon, n_vars,
+                                                            row_offset,
+                                                            coord, 2*N**2)
+
+            for block_row in range(N):
+                monsA = monomialsA[N**2+N*block_row:N**2+N*(block_row+1)]
+                for block_col in range(block_row, N):
+                    monsB = monomialsA[N**2+N*block_col:N**2+N*(block_col+1)]
+                    coords, mons = \
+                        generate_block_coords(monsA, monsB, 0, N, 0, N,
+                                              N**2 + N*block_row,
+                                              N**2 + N*block_col, N)
+                    for mon, coord in zip(mons, coords):
+                        n_vars, _, _ = self._push_monomials(mon, n_vars,
+                                                            row_offset,
+                                                            coord, 2*N**2)
+            self.correspondence = {}
+            return n_vars, block_index + 1, processed_entries
+        else:
             return super(RdmHierarchy, self).\
                     _generate_moment_matrix(n_vars, block_index,
                                             processed_entries,
                                             monomialsA, [S.One])
-        else:
-            raise Exception("WTF???????")
 
     def _generate_moment_matrix(self, n_vars, block_index, processed_entries,
                                 monomialsA, monomialsB):
@@ -268,16 +311,16 @@ def generate_block_coords(monomialsA, monomialsB, col0, colN, row0, rowN,
         mons.append([Dagger(monomialsA[row-row_offset-row0]) *
                      monomialsB[col-col_offset-col0]
                      for row, col in coords[-1]])
-        if row_offset < col_offset or row0 < col0:
+        if row_offset != col_offset or row0 < col0:
             lower_triangular = [(col - col0 - col_offset + row_offset + row0,
                                  row - row0 - row_offset + col_offset + col0)
                                 for row, col in coords[-1]
                                 if row - row0 - row_offset !=
                                 col - col0 - col_offset]
-            lower_mons = [Dagger(monomialsA[row-row_offset-row0]) *
-                          monomialsB[col-col_offset-col0]
-                          for row, col in lower_triangular]
             if lower_triangular != []:
+                lower_mons = [Dagger(monomialsA[row-row_offset-row0]) *
+                              monomialsB[col-col_offset-col0]
+                              for row, col in lower_triangular]
                 coords.append(lower_triangular)
                 mons.append(lower_mons)
     return coords, mons
