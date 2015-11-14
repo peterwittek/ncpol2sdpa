@@ -4,11 +4,12 @@ Created on Wed Nov  10 11:24:48 2015
 
 @author: Peter Wittek
 """
-from sympy import expand
+from math import sqrt
+from sympy import expand, S
 from sympy.physics.quantum.dagger import Dagger
 from .sdp_relaxation import SdpRelaxation
 from .nc_utils import apply_substitutions, is_number_type, \
-                      separate_scalar_factor
+                      separate_scalar_factor, ncdegree
 
 
 class RdmHierarchy(SdpRelaxation):
@@ -47,6 +48,7 @@ class RdmHierarchy(SdpRelaxation):
                                            False)
         self.circulant = circulant
         self.correspondence = {}
+        self.m_block = 0
 
     def _push_monomials(self, monomials, n_vars, row_offset, coords, N):
         monomial0 = apply_substitutions(monomials[0], self.substitutions,
@@ -99,44 +101,76 @@ class RdmHierarchy(SdpRelaxation):
             n_vars = max(k)
         return n_vars, k, coeff
 
-    def _generate_moment_matrix(self, n_vars, block_index, processed_entries,
-                                monomialsA, monomialsB):
-        if self.circulant:
-            N = len(monomialsA)
+    def __second_moments(self, n_vars, monomialsA, block_index,
+                         processed_entries):
+        N = len(monomialsA)
+        row_offset = 0
+        if block_index > 0:
+            for block_size in self.block_struct[0:block_index]:
+                row_offset += block_size ** 2
+        coords, mons =  \
+            generate_block_coords(monomialsA[:N // 2], monomialsA[:N // 2],
+                                  0, N // 2, 0, N // 2, 0, 0, N // 2)
+        coords_, mons_ = \
+            generate_block_coords(monomialsA[:N // 2], monomialsA[N // 2:],
+                                  N // 2, N, 0, N // 2, 0, 0, N)
+        coords += coords_
+        mons += mons_
+        coords_, mons_ = \
+            generate_block_coords(monomialsA[N // 2:], monomialsA[N // 2:],
+                                  N // 2, N, N // 2, N, 0, 0, N)
+        coords += coords_
+        mons += mons_
+        for mon, coord in zip(mons, coords):
+            n_vars, _, _ = self._push_monomials(mon, n_vars, row_offset,
+                                                coord, len(monomialsA))
+        self.correspondence = {}
+        return n_vars, block_index + 1, processed_entries
+
+    def __fourth_moments(self, n_vars, monomialsA, block_index,
+                         processed_entries):
+        self.m_block += 1
+        if self.m_block == 1 or self.m_block == 3:
+            N = int(sqrt(len(monomialsA)))
             row_offset = 0
             if block_index > 0:
                 for block_size in self.block_struct[0:block_index]:
                     row_offset += block_size ** 2
-            coords, mons = [], []
-            for column in range(N // 2):
-                coords.append([(row, column + row)
-                               for row in range(N // 2)
-                               if column + row < N // 2])
-                mons.append([Dagger(monomialsA[row]) * monomialsA[col]
-                             for row, col in coords[-1]])
-            for column in range(N // 2, N):
-                coords.append([(row, column + row)
-                               for row in range(N // 2)
-                               if column + row < N])
-                mons.append([Dagger(monomialsA[row]) * monomialsA[col]
-                             for row, col in coords[-1]])
-                lower_triangular = [(col - N // 2, N // 2 + row)
-                                    for row, col in coords[-1]
-                                    if row != col - N // 2]
-                lower_mons = [-mon for mon in mons[-1]]
-                if lower_triangular != []:
-                    coords.append([lower_triangular[0]] + lower_triangular)
-                    mons.append([-mons[-1][0]] + lower_mons)
-                coords.append([(row, column + row - N // 2)
-                               for row in range(N // 2, N)
-                               if column + row - N // 2 < N])
-                mons.append([Dagger(monomialsA[row]) * monomialsA[col]
-                             for row, col in coords[-1]])
-            for mon, coord in zip(mons, coords):
-                n_vars, _, _ = self._push_monomials(mon, n_vars, row_offset,
-                                                    coord, len(monomialsA))
+            for block_row in range(N):
+                for block_col in range(block_row, N):
+                    monsA = monomialsA[N*block_row:N*(block_row+1)]
+                    monsB = monomialsA[N*block_col:N*(block_col+1)]
+                    coords, mons = \
+                        generate_block_coords(monsA, monsB, 0, N, 0, N,
+                                              N*block_row, N*block_col, N)
+                    for mon, coord in zip(mons, coords):
+                        n_vars, _, _ = self._push_monomials(mon, n_vars,
+                                                            row_offset,
+                                                            coord, N**2)
             self.correspondence = {}
             return n_vars, block_index + 1, processed_entries
+        elif self.m_block == 2:
+            return super(RdmHierarchy, self).\
+                    _generate_moment_matrix(n_vars, block_index,
+                                            processed_entries,
+                                            monomialsA, [S.One])
+        else:
+            raise Exception("WTF???????")
+
+    def _generate_moment_matrix(self, n_vars, block_index, processed_entries,
+                                monomialsA, monomialsB):
+        if self.circulant:
+            if ncdegree(monomialsA[0]) == 1:
+                return self.__second_moments(n_vars, monomialsA, block_index,
+                                             processed_entries)
+            elif ncdegree(monomialsA[0]) == 2:
+                return self.__fourth_moments(n_vars, monomialsA, block_index,
+                                             processed_entries)
+            else:
+                raise Exception("Cannot generate circulant moment matrix with "
+                                "degree-" + str(ncdegree(monomialsA[0])) +
+                                " terms.")
+
         else:
             return super(RdmHierarchy, self).\
                     _generate_moment_matrix(n_vars, block_index,
@@ -144,7 +178,7 @@ class RdmHierarchy(SdpRelaxation):
                                             monomialsA, monomialsB)
 
     def _get_index_of_monomial(self, element, enablesubstitution=True,
-                               daggered=False, recursed=0):
+                               daggered=False):
         """Returns the index of a monomial.
         """
         processed_element, coeff1 = separate_scalar_factor(element)
@@ -222,3 +256,28 @@ class RdmHierarchy(SdpRelaxation):
                     for ki in k:
                         facvar[ki] += coeff
         return facvar
+
+
+def generate_block_coords(monomialsA, monomialsB, col0, colN, row0, rowN,
+                          row_offset, col_offset, row_length):
+    coords, mons = [], []
+    for column in range(col0, colN):
+        coords.append([(row_offset + row, col_offset + column + row - row0)
+                       for row in range(row0, rowN)
+                       if column + row - row0 < row_length])
+        mons.append([Dagger(monomialsA[row-row_offset-row0]) *
+                     monomialsB[col-col_offset-col0]
+                     for row, col in coords[-1]])
+        if row_offset < col_offset or row0 < col0:
+            lower_triangular = [(col - col0 - col_offset + row_offset + row0,
+                                 row - row0 - row_offset + col_offset + col0)
+                                for row, col in coords[-1]
+                                if row - row0 - row_offset !=
+                                col - col0 - col_offset]
+            lower_mons = [Dagger(monomialsA[row-row_offset-row0]) *
+                          monomialsB[col-col_offset-col0]
+                          for row, col in lower_triangular]
+            if lower_triangular != []:
+                coords.append(lower_triangular)
+                mons.append(lower_mons)
+    return coords, mons
