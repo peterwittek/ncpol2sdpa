@@ -56,6 +56,7 @@ class MoroderHierarchy(SdpRelaxation):
         return n_vars, block_index
 
     def _calculate_block_structure(self, inequalities, equalities, bounds,
+                                   momentinequalities, momentequalities,
                                    psd, extramomentmatrix, removeequalities):
         """Calculates the block_struct array for the output file.
         """
@@ -70,6 +71,7 @@ class MoroderHierarchy(SdpRelaxation):
                                     len(self.monomial_sets[1]))
         super(MoroderHierarchy, self).\
             _calculate_block_structure(inequalities, equalities, bounds,
+                                       momentinequalities, momentequalities,
                                        psd, extramomentmatrix,
                                        removeequalities,
                                        block_struct=block_struct)

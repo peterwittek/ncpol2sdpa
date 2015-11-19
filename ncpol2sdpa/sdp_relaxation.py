@@ -582,6 +582,7 @@ class SdpRelaxation(Relaxation):
     ########################################################################
 
     def _calculate_block_structure(self, inequalities, equalities, bounds,
+                                   momentinequalities, momentequalities,
                                    psd, extramomentmatrix, removeequalities,
                                    block_struct=None):
         """Calculates the block_struct array for the output file.
@@ -659,6 +660,14 @@ class SdpRelaxation(Relaxation):
             for _ in bounds:
                 monomial_sets.append([S.One])
                 self.block_struct.append(1)
+        if momentinequalities is not None:
+            for _ in momentinequalities:
+                monomial_sets.append([S.One])
+                self.block_struct.append(1)
+        if momentequalities is not None:
+            for _ in momentequalities:
+                monomial_sets += [[S.One], [S.One]]
+                self.block_struct += [1, 1]
         self.localizing_monomial_sets = monomial_sets
 
     def __generate_monomial_sets(self, objective, inequalities, equalities,
@@ -723,7 +732,8 @@ class SdpRelaxation(Relaxation):
     ########################################################################
 
     def process_constraints(self, inequalities=None, equalities=None,
-                            bounds=None, psd=None, block_index=0,
+                            bounds=None, momentinequalities=None,
+                            momentequalities=None, psd=None, block_index=0,
                             removeequalities=False,
                             localizing_monomial_sets=None):
         """Process the constraints and generate localizing matrices. Useful
@@ -763,6 +773,19 @@ class SdpRelaxation(Relaxation):
         if bounds is not None:
             for bound in bounds:
                 constraints.append(bound)
+        if momentinequalities is not None:
+            for mineq in momentinequalities:
+                constraints.append(mineq)
+        if momentequalities is not None:
+            for meq in momentequalities:
+                constraints.append(meq)
+                if isinstance(meq, str):
+                    tmp = meq.replace("+", "p")
+                    tmp = tmp.replace("-", "+")
+                    tmp = tmp.replace("p", "-")
+                    constraints.append(tmp)
+                else:
+                    constraints.append(-meq)
         self.__process_inequalities(constraints, block_index)
         if removeequalities and equalities is not None:
             A = self.__process_equalities(equalities,
@@ -783,8 +806,7 @@ class SdpRelaxation(Relaxation):
         if objective is not None:
             facvar = \
                 self._get_facvar(simplify_polynomial(objective,
-                                                      self.substitutions))
-
+                                                     self.substitutions))
             self.obj_facvar = facvar[1:]
             self.constant_term = facvar[0]
             if self.verbose > 0 and facvar[0] != 0:
@@ -878,6 +900,7 @@ class SdpRelaxation(Relaxation):
 
     def get_relaxation(self, level, objective=None, inequalities=None,
                        equalities=None, substitutions=None, bounds=None,
+                       momentinequalities=None, momentequalities=None,
                        psd=None, removeequalities=False, extramonomials=None,
                        extramomentmatrices=None, extraobjexpr=None,
                        localizing_monomials=None, chordal_extension=False):
@@ -897,9 +920,12 @@ class SdpRelaxation(Relaxation):
         :param substitutions: Optional parameter containing monomials that can
                               be replaced (e.g., idempotent variables).
         :type substitutions: dict of :class:`sympy.core.exp.Expr`.
-        :param bounds: Optional parameter of bounds on variables which will not
-                       be relaxed by localizing matrices.
-        :type bounds: list of :class:`sympy.core.exp.Expr`.
+        :param momentinequalities: Optional parameter of inequalities defined
+                                   on moments.
+        :type momentinequalities: list of :class:`sympy.core.exp.Expr`.
+        :param momentequalities: Optional parameter of equalities defined
+                                 on moments.
+        :type momentequalities: list of :class:`sympy.core.exp.Expr`.
         :param psd: Optional parameter of list of matrices that should be
                     positive semidefinite.
         :type psd: list of lists or of :class:`sympy.matrices.Matrix`.
@@ -957,9 +983,14 @@ class SdpRelaxation(Relaxation):
                                       extramonomials)
         self.localizing_monomial_sets = localizing_monomials
 
+        if bounds is not None:
+            print("The optional parameter `bounds' is deprecated. Please use"
+                  " the parameter `momentinequalities' or `momentequalities'")
         # Figure out basic structure of the SDP
-        self._calculate_block_structure(inequalities, equalities, bounds, psd,
-                                        extramomentmatrices, removeequalities)
+        self._calculate_block_structure(inequalities, equalities, bounds,
+                                        momentinequalities, momentequalities,
+                                        psd, extramomentmatrices,
+                                        removeequalities)
         self._estimate_n_vars()
         if extramomentmatrices is not None:
             for parameters in extramomentmatrices:
@@ -1001,5 +1032,6 @@ class SdpRelaxation(Relaxation):
         self.set_objective(objective, extraobjexpr)
         # Process constraints
         self.constraint_starting_block = block_index
-        self.process_constraints(inequalities, equalities, bounds, psd,
+        self.process_constraints(inequalities, equalities, bounds,
+                                 momentinequalities, momentequalities, psd,
                                  block_index, removeequalities)

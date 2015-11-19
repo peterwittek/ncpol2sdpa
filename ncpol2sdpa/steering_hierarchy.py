@@ -225,11 +225,13 @@ class SteeringHierarchy(SdpRelaxation):
               set_objective(objective, extraobjexpr=extraobjexpr)
 
     def _calculate_block_structure(self, inequalities, equalities, bounds,
-                                   psd, extramomentmatrix, removeequalities):
+                                   momentinequalities, momentequalities, psd,
+                                   extramomentmatrix, removeequalities):
         """Calculates the block_struct array for the output file.
         """
         super(SteeringHierarchy, self).\
           _calculate_block_structure(inequalities, equalities, bounds,
+                                     momentinequalities, momentequalities,
                                      psd, extramomentmatrix, removeequalities)
         if self.matrix_var_dim is not None:
             self.block_struct = [self.matrix_var_dim*bs

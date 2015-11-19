@@ -264,12 +264,11 @@ class Magnetization(unittest.TestCase):
             for k in get_neighbors(j, len(fu), width=1):
                 hamiltonian += -t*Dagger(fu[j])*fu[k]-t*Dagger(fu[k])*fu[j]
                 hamiltonian += -t*Dagger(fd[j])*fd[k]-t*Dagger(fd[k])*fd[j]
-        bounds = [n-sum(Dagger(br)*br for br in _b),
-                  sum(Dagger(br)*br for br in _b)-n]
+        momentequalities = [n-sum(Dagger(br)*br for br in _b)]
         sdpRelaxation = SdpRelaxation(_b, verbose=0)
         sdpRelaxation.get_relaxation(-1,
                                      objective=hamiltonian,
-                                     bounds=bounds,
+                                     momentequalities=momentequalities,
                                      substitutions=fermionic_constraints(_b),
                                      extramonomials=monomials)
         sdpRelaxation.solve()
@@ -338,7 +337,7 @@ class NietoSilleras(unittest.TestCase):
         p = [0.5, 0.5, 0.5, 0.5, 0.4267766952966368, 0.4267766952966368,
              0.4267766952966368, 0.07322330470336313]
         P = Probability([2, 2], [2, 2])
-        bounds = [
+        behaviour_constraint = [
           P([0], [0], 'A')-p[0],
           P([0], [1], 'A')-p[1],
           P([0], [0], 'B')-p[2],
@@ -347,13 +346,11 @@ class NietoSilleras(unittest.TestCase):
           P([0, 0], [0, 1])-p[5],
           P([0, 0], [1, 0])-p[6],
           P([0, 0], [1, 1])-p[7]]
-        bounds.extend([-bound for bound in bounds])
-        bounds.append("-0[0,0]+1.0")
-        bounds.append("0[0,0]-1.0")
+        behaviour_constraint.append("-0[0,0]+1.0")
         sdpRelaxation = SdpRelaxation(P.get_all_operators(),
                                       normalized=False, verbose=0)
         sdpRelaxation.get_relaxation(1, objective=-P([0], [0], 'A'),
-                                     bounds=bounds,
+                                     momentequalities=behaviour_constraint,
                                      substitutions=P.substitutions)
         sdpRelaxation.solve()
         self.assertTrue(abs(sdpRelaxation.primal + 0.5) < 10e-5)

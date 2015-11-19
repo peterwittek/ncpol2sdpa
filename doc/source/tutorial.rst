@@ -31,7 +31,7 @@ Getting the relaxation requires at least the level of relaxation:
 
 This will generate the moment matrix. Additional elements of the
 problem, such as the objective function, inequalities, equalities, and
-bounds on the variables.
+constraints on the moments.
 
 The last step in is to either solve or export the relaxation. The function
 `solve_sdp` or the class method `SdpRelaxation.solve` autodetects the possible 

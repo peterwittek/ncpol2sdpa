@@ -184,7 +184,7 @@ match the observed distribution.
 ::
 
     P = Probability([2, 2], [2, 2])
-    bounds = [
+    behaviour_constraints = [
       P([0],[0],'A')-expect(tensor(A[0], qeye(2)), psi),
       P([0],[1],'A')-expect(tensor(A[1], qeye(2)), psi),
       P([0],[0],'B')-expect(tensor(qeye(2), B[0]), psi),
@@ -193,14 +193,12 @@ match the observed distribution.
       P([0,0],[0,1])-expect(tensor(A[0], B[1]), psi),
       P([0,0],[1,0])-expect(tensor(A[1], B[0]), psi),
       P([0,0],[1,1])-expect(tensor(A[1], B[1]), psi)]
-    bounds.extend([-bound for bound in bounds])
 
 We also have to define normalization of the subalgebras, in this case, only one:
 
 ::
 
-    bounds.append("-0[0,0]+1.0")
-    bounds.append("0[0,0]-1.0")
+    behaviour_constraints.append("-0[0,0]+1.0")
     
 From here, the solution follows the usual pathway:
 
@@ -210,7 +208,7 @@ From here, the solution follows the usual pathway:
     sdpRelaxation = SdpRelaxation(P.get_all_operators(), 
                                   normalized=False, verbose=1)
     sdpRelaxation.get_relaxation(level, objective=-P([0],[0],'A'), 
-                                 bounds=bounds,
+                                 momentequalities=behaviour_constraints,
                                  substitutions=P.substitutions)
     sdpRelaxation.solve()
     print(sdpRelaxation.primal, sdpRelaxation.dual)
