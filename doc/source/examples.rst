@@ -4,6 +4,36 @@ Examples
 
 Example 1: Mixed-Level Relaxation of a Bell Inequality
 ======================================================
+This is a polynomial optimization problem of commutative variables mentioned in
+Section 5.12 of the following paper:
+
+Henrion, D.; Lasserre, J. & Löfberg, J. GloptiPoly 3: moments, optimization and
+semidefinite programming. Optimization Methods & Software, 2009, 24, 761-779
+
+We rely on NumPy and SciPy to remove the equality constraints from the problem
+
+::
+
+    import numpy as np
+    W = np.diag(np.ones(8), 1) + np.diag(np.ones(7), 2) + np.diag([1, 1], 7) + \
+        np.diag([1], 8)
+    W = W + W.T
+    n = len(W)
+    e = np.ones(n)
+    Q = (np.diag(np.dot(e.T, W)) - W) / 4
+
+    x = generate_variables(n, commutative=True)
+    equalities = [xi ** 2 - 1 for xi in x]
+
+    objective = -np.dot(x, np.dot(Q, np.transpose(x)))
+
+    sdpRelaxation = SdpRelaxation(x)
+    sdpRelaxation.get_relaxation(1, objective=objective, equalities=equalities,
+                                 removeequalities=True)
+    sdpRelaxation.solve()
+
+Example 2: Mixed-Level Relaxation of a Bell Inequality
+======================================================
 
 It is often the case that moving to a higher-order relaxation is
 computationally prohibitive. For these cases, it is possible to inject
@@ -63,8 +93,7 @@ only need to provide the strings we would like to see -- this time it is AB:
     sdpRelaxation.solve()
     print(sdpRelaxation.primal)
 
-
-Example 2: Additional manipulation of the generated SDPs with PICOS
+Example 3: Additional manipulation of the generated SDPs with PICOS
 ===================================================================
 A compatibility layer with PICOS allows additional manipulations of the 
 optimization problem and also calling a wider ranger of solvers. 
@@ -91,7 +120,7 @@ Finally we can solve the SDP with any of solvers that PICOS supports:
 
     P.solve()
 
-Example 3: Bosonic System
+Example 4: Bosonic System
 ==================================================
 
 The system Hamiltonian describes :math:`N` harmonic oscillators with a
@@ -148,7 +177,7 @@ It is remarkable that we get the correct value at the first level of
 relaxation, but this property is typical for bosonic systems (Navascués
 et al. 2013).
 
-Example 4: Using the Nieto-Silleras Hierarchy
+Example 5: Using the Nieto-Silleras Hierarchy
 ==================================================
 
 One of the newer approaches to the SDP relaxations takes all joint
@@ -214,7 +243,7 @@ From here, the solution follows the usual pathway:
     print(sdpRelaxation.primal, sdpRelaxation.dual)
 
 
-Example 5: Using the Moroder Hierarchy
+Example 6: Using the Moroder Hierarchy
 ==================================================
 
 This type of hierarchy allows for a wider range of constraints of the
@@ -285,10 +314,9 @@ If all we need is the partial positivity of the moment matrix, that is actually 
 
 
 
-Example 6: Sparse Relaxation with Chordal Extension
+Example 7: Sparse Relaxation with Chordal Extension
 ===================================================
-This method replicates the behaviour of SparsePOP (Waki et. al, 2008). It is 
-invoked by defining the hierarchy as ``"npa_chordal"``. The following is a 
+This method replicates the behaviour of SparsePOP (Waki et. al, 2008). The following is a 
 simple example:
 
 ::
