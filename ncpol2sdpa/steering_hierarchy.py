@@ -40,6 +40,26 @@ class SteeringHierarchy(SdpRelaxation):
     :param mark_conjugate: Use this optional parameter to generate a symbolic
                            representation of the steering hierarchy for export.
     :type mark_conjugate: bool.
+
+    Attributes:
+      - `monomial_sets`: The monomial sets that generate the moment matrix blocks.
+
+      - `monomial_index`: Dictionary that maps monomials to SDP variables.
+
+      - `constraints`: The complete set of constraints after preprocesssing.
+
+      - `primal`: The primal optimal value.
+
+      - `dual`: The dual optimal value.
+
+      - `x_mat`: The primal solution matrix.
+
+      - `y_mat`: The dual solution matrix.
+
+      - `solution_time`: The amount of time taken to solve the relaxation.
+
+      - `status`: The solution status of the relaxation.
+
     """
     hierarchy_types = ["npa", "npa_chordal", "moroder"]
 

@@ -115,13 +115,36 @@ class SdpRelaxation(Relaxation):
                        if further processing is done on the SDP matrix before
                        solving it.
     :type normalized: bool.
+
+    Attributes:
+      - `monomial_sets`: The monomial sets that generate the moment matrix blocks.
+
+      - `monomial_index`: Dictionary that maps monomials to SDP variables.
+
+      - `constraints`: The complete set of constraints after preprocesssing.
+
+      - `primal`: The primal optimal value.
+
+      - `dual`: The dual optimal value.
+
+      - `x_mat`: The primal solution matrix.
+
+      - `y_mat`: The dual solution matrix.
+
+      - `solution_time`: The amount of time taken to solve the relaxation.
+
+      - `status`: The solution status of the relaxation.
+
     """
     def __init__(self, variables, parameters=None, verbose=0, normalized=True):
         """Constructor for the class.
         """
         super(SdpRelaxation, self).__init__()
         self.substitutions = {}
+
+        #: Dictionary that maps monomials to SDP variables.
         self.monomial_index = {}
+
         self.var_offsets = [0]
         self.variables = []
         self.verbose = verbose
