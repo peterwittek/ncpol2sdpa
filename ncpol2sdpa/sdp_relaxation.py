@@ -148,7 +148,6 @@ class SdpRelaxation(Relaxation):
             if not isinstance(vs, list):
                 vs = [vs]
             for v in vs:
-                print(v.is_commutative, v.is_hermitian)
                 if v.is_commutative and (v.is_hermitian is None or
                                          v.is_hermitian):
                     n_commutative_hermitian += 1
