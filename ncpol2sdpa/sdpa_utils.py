@@ -43,7 +43,8 @@ def parse_solution_matrix(iterator):
     return solution_matrix
 
 
-def read_sdpa_out(filename, solutionmatrix=False, status=False):
+def read_sdpa_out(filename, solutionmatrix=False, status=False,
+                  sdpRelaxation=None):
     """Helper function to parse the output file of SDPA.
 
     :param filename: The name of the SDPA output file.
@@ -52,6 +53,9 @@ def read_sdpa_out(filename, solutionmatrix=False, status=False):
     :type solutionmatrix: bool.
     :param status: Optional parameter for retrieving the status.
     :type status: bool.
+    :param sdpRelaxation: Optional parameter to add the solution to a
+                          relaxation.
+    :type sdpRelaxation: SdpRelaxation.
     :returns: tuple of two floats and optionally two lists of `numpy.array` and
               a status string
     """
@@ -76,6 +80,12 @@ def read_sdpa_out(filename, solutionmatrix=False, status=False):
             else:
                 status_string = 'unknown'
     file_.close()
+    if sdpRelaxation is not None:
+        sdpRelaxation.primal = primal
+        sdpRelaxation.dual = dual
+        sdpRelaxation.x_mat = x_mat
+        sdpRelaxation.y_mat = y_mat
+        sdpRelaxation.status = status_string
     if solutionmatrix and status:
         return primal, dual, x_mat, y_mat, status_string
     elif solutionmatrix:

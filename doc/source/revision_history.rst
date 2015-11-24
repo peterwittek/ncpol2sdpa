@@ -17,6 +17,7 @@ Since v1.9:
   - Changed: The chordal extension is now requested as an optional parameter `chordal_extension=True` passed to the `get_relaxation` method, and not by specifying it as a hierarchy type in the constructor.
   - Changed: The Moroder hierarchy is now a class.
   - Changed: Small improvements in speed in the substitution routines; unit tests for the substitution routines.
+  - Changed: The `read_sdpa_out` routine takes an optional argument for a relaxation, and adds the solution to this object if requested.
   - Fixed: PICOS and MOSEK conversion works for complex matrices too (issue #10).
   - Fixed: The moment symmetries are correctly calculated for both Hermitian and non-Hermitian variables (issue #9)
          
