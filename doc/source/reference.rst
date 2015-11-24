@@ -5,7 +5,7 @@ Function Reference
 SdpRelaxation Class
 ===================
 .. autoclass:: ncpol2sdpa.SdpRelaxation
-   :members: get_relaxation, set_objective, process_constraints, solve, __getitem__, write_to_file, save_monomial_index
+   :members: get_relaxation, set_objective, process_constraints, solve, __getitem__, write_to_file, save_monomial_index, get_sos_decomposition, find_solution_ranks
 
 MoroderHierarchy Class
 =======================
@@ -26,24 +26,15 @@ Functions to Help Define Polynomial Optimization Problems
 =========================================================
 .. autofunction:: ncpol2sdpa.generate_variable
 .. autofunction:: ncpol2sdpa.generate_variables
-.. autofunction:: ncpol2sdpa.get_ncmonomials
-.. autofunction:: ncpol2sdpa.ncdegree
 .. autofunction:: ncpol2sdpa.flatten
-.. autofunction:: ncpol2sdpa.find_variable_cliques
 
-Functions to Export, Solve, and Study Relaxations
+Functions to Convert or Study Relaxations
 =================================================
-.. autofunction:: ncpol2sdpa.solve_sdp
-.. autofunction:: ncpol2sdpa.find_rank_loop
-.. autofunction:: ncpol2sdpa.sos_decomposition
-.. autofunction:: ncpol2sdpa.get_xmat_value
-.. autofunction:: ncpol2sdpa.write_to_sdpa
 .. autofunction:: ncpol2sdpa.read_sdpa_out
 .. autofunction:: ncpol2sdpa.convert_to_human_readable
 .. autofunction:: ncpol2sdpa.convert_to_mosek
 .. autofunction:: ncpol2sdpa.convert_to_picos
 .. autofunction:: ncpol2sdpa.save_monomial_index
-.. autofunction:: ncpol2sdpa.write_to_human_readable
 
 Functions and Classes to Define Physics Problems
 ================================================

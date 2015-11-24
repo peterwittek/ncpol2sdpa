@@ -12,13 +12,9 @@ from .sdp_relaxation import SdpRelaxation
 from .steering_hierarchy import SteeringHierarchy
 from .moroder_hierarchy import MoroderHierarchy
 from .rdm_hierarchy import RdmHierarchy
-from .chordal_extension import find_variable_cliques
-from .nc_utils import generate_variable, generate_variables, get_ncmonomials, \
-                      ncdegree, flatten, save_monomial_index
-from .sdpa_utils import write_to_sdpa, read_sdpa_out, \
-                        convert_to_human_readable, write_to_human_readable
-from .solver_common import solve_sdp, find_rank_loop, sos_decomposition, \
-                           get_xmat_value
+from .nc_utils import generate_variable, generate_variables, flatten, \
+                      save_monomial_index
+from .sdpa_utils import read_sdpa_out, convert_to_human_readable
 from .physics_utils import bosonic_constraints, fermionic_constraints, \
     pauli_constraints, get_neighbors, get_next_neighbors, correlator, \
     generate_measurements, projective_measurement_constraints, \
@@ -33,9 +29,6 @@ __all__ = ['SdpRelaxation',
            'RdmHierarchy',
            'generate_variable',
            'generate_variables',
-           'get_ncmonomials',
-           'find_variable_cliques',
-           'ncdegree',
            'save_monomial_index',
            'bosonic_constraints',
            'fermionic_constraints',
@@ -48,14 +41,8 @@ __all__ = ['SdpRelaxation',
            'flatten',
            'get_neighbors',
            'get_next_neighbors',
-           'solve_sdp',
-           'get_xmat_value',
-           'write_to_sdpa',
-           'find_rank_loop',
            'read_sdpa_out',
            'pauli_constraints',
            'convert_to_human_readable',
            'convert_to_mosek',
-           'convert_to_picos',
-           'write_to_human_readable',
-           'sos_decomposition']
+           'convert_to_picos']

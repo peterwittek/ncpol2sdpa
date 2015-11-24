@@ -9,6 +9,9 @@ Since v1.9:
   - New: The convenience function `solve()` was added to the class `SdpRelaxation`.
   - New: The convenience function `write_to_file()` was added to the class `SdpRelaxation`.
   - New: The convenience function `save_monomial_index()` was added to the class `SdpRelaxation`.
+  - New: The convenience function `find_solution_ranks()` was added to the class `SdpRelaxation`. It replaces the previous stand-alone `find_rank_loop()` function.
+  - Changed: Many unnecessary user-facing functions were removed. 
+  - Changed: The SOS decomposition is now requested with `get_sos_decomposition` from the class `SdpRelaxation`, and it returns a list of the sigma_i polynomials.
   - Changed: The optional parameter `bounds` for `get_relaxation` is deprececated, use the optional parameters `momentinequalities` and `momentequalities` instead.
   - Changed: Removed `convert_to_picos_extra_moment_matrix` and added optional parameter `duplicate_moment_matrix` to `convert_to_picos` to achieve the same effect.
   - Changed: The chordal extension is now requested as an optional parameter `chordal_extension=True` passed to the `get_relaxation` method, and not by specifying it as a hierarchy type in the constructor.

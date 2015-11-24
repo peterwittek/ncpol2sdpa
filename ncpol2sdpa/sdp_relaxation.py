@@ -24,7 +24,8 @@ from .nc_utils import apply_substitutions, pick_monomials_up_to_degree, \
     simplify_polynomial, get_monomials, unique, iscomplex, \
     is_pure_substitution_rule, convert_relational, save_monomial_index, \
     find_variable_set, is_number_type
-from .solver_common import get_xmat_value, solve_sdp
+from .solver_common import get_xmat_value, solve_sdp, get_sos_decomposition, \
+                           find_solution_ranks
 from .mosek_utils import convert_to_mosek
 from .sdpa_utils import write_to_sdpa, write_to_human_readable
 from .chordal_extension import find_variable_cliques
@@ -129,6 +130,7 @@ class SdpRelaxation(Relaxation):
         self.level = 0
         self.monomial_sets = []
         self.pure_substitution_rules = True
+        self.constraints = []
         self.complex_matrix = False
         if isinstance(variables, list):
             if len(variables) > 0 and isinstance(variables[0], list):
@@ -346,7 +348,7 @@ class SdpRelaxation(Relaxation):
                 facvar[k] += coeff
         return facvar
 
-    def __process_inequalities(self, inequalities, block_index):
+    def __process_inequalities(self, block_index):
         """Generate localizing matrices
 
         Arguments:
@@ -359,7 +361,7 @@ class SdpRelaxation(Relaxation):
         row_offsets = [0]
         for block, block_size in enumerate(self.block_struct):
             row_offsets.append(row_offsets[block] + block_size ** 2)
-        for k, ineq in enumerate(inequalities):
+        for k, ineq in enumerate(self.constraints):
             block_index += 1
             if isinstance(ineq, str):
                 self.__parse_expression(ineq, row_offsets[block_index-1])
@@ -381,7 +383,7 @@ class SdpRelaxation(Relaxation):
                                               row, column)
             if self.verbose > 0:
                 sys.stdout.write("\r\x1b[KProcessing %d/%d constraints..." %
-                                 (k+1, len(inequalities)))
+                                 (k+1, len(self.constraints)))
                 sys.stdout.flush()
         if self.verbose > 0:
             sys.stdout.write("\n")
@@ -762,31 +764,31 @@ class SdpRelaxation(Relaxation):
             self.__wipe_F_struct_from_constraints()
         if psd is not None:
             block_index = self.__process_psd(psd, block_index)
-        constraints = flatten([inequalities])
+        self.constraints = flatten([inequalities])
         if not (removeequalities or equalities is None):
             # Equalities are converted to pairs of inequalities
             for equality in equalities:
                 if equality.is_Relational:
                     equality = convert_relational(equality)
-                constraints.append(equality)
-                constraints.append(-equality)
+                self.constraints.append(equality)
+                self.constraints.append(-equality)
         if bounds is not None:
             for bound in bounds:
-                constraints.append(bound)
+                self.constraints.append(bound)
         if momentinequalities is not None:
             for mineq in momentinequalities:
-                constraints.append(mineq)
+                self.constraints.append(mineq)
         if momentequalities is not None:
             for meq in momentequalities:
-                constraints.append(meq)
+                self.constraints.append(meq)
                 if isinstance(meq, str):
                     tmp = meq.replace("+", "p")
                     tmp = tmp.replace("-", "+")
                     tmp = tmp.replace("p", "-")
-                    constraints.append(tmp)
+                    self.constraints.append(tmp)
                 else:
-                    constraints.append(-meq)
-        self.__process_inequalities(constraints, block_index)
+                    self.constraints.append(-meq)
+        self.__process_inequalities(block_index)
         if removeequalities and equalities is not None:
             A = self.__process_equalities(equalities,
                                           flatten(self.monomial_sets))
@@ -854,6 +856,39 @@ class SdpRelaxation(Relaxation):
             raise Exception("SDP relaxation is not solved yet!")
         else:
             return get_xmat_value(index, self)
+
+    def get_sos_decomposition(self, threshold=0.0):
+        """Given a solution of the dual problem, it returns the SOS
+        decomposition.
+
+        :param sdpRelaxation: The SDP relaxation to be solved.
+        :type sdpRelaxation: :class:`ncpol2sdpa.SdpRelaxation`.
+        :param threshold: Optional parameter for specifying the threshold value
+                          below which the eigenvalues and entries of the
+                          eigenvectors are disregarded.
+        :type threshold: float.
+        :returns: The SOS decomposition of [sigma_0, sigma_1, ..., sigma_m]
+        :rtype: list of :class:`sympy.core.exp.Expr`.
+        """
+        get_sos_decomposition(self, threshold=threshold)
+
+    def find_solution_ranks(self, xmat=None, baselevel=0):
+        """Helper function to detect rank loop in the solution matrix.
+
+        :param sdpRelaxation: The SDP relaxation.
+        :type sdpRelaxation: :class:`ncpol2sdpa.SdpRelaxation`.
+        :param x_mat: Optional parameter providing the primal solution of the
+                      moment matrix. If not provided, the solution is extracted
+                      from the sdpRelaxation object.
+        :type x_mat: :class:`numpy.array`.
+        :param base_level: Optional parameter for specifying the lower level
+                           relaxation for which the rank loop should be tested
+                           against.
+        :type base_level: int.
+        :returns: list of int -- the ranks of the solution matrix with in the
+                  order of increasing degree.
+        """
+        find_solution_ranks(self, xmat=xmat, baselevel=baselevel)
 
     def write_to_file(self, filename, filetype=None):
         """Write the relaxation to a file.

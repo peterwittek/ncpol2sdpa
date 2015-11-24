@@ -7,8 +7,7 @@ from ncpol2sdpa import SdpRelaxation, generate_variables, flatten, \
                        projective_measurement_constraints, Probability, \
                        define_objective_with_I, maximum_violation, \
                        bosonic_constraints, fermionic_constraints, \
-                       get_neighbors, get_xmat_value, convert_to_picos, \
-                       MoroderHierarchy
+                       get_neighbors, convert_to_picos, MoroderHierarchy
 from ncpol2sdpa.nc_utils import fast_substitute, apply_substitutions
 from sympy.core.cache import clear_cache
 
@@ -274,7 +273,7 @@ class Magnetization(unittest.TestCase):
         sdpRelaxation.solve()
         s = 0.5*(sum((Dagger(u)*u) for u in fu) -
                  sum((Dagger(d)*d) for d in fd))
-        magnetization = get_xmat_value(s, sdpRelaxation)
+        magnetization = sdpRelaxation[s]
         self.assertTrue(abs(magnetization-0.021325317328560453) < 10e-5)
 
 

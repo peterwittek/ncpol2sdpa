@@ -6,7 +6,7 @@ Created on Fri May 22 18:05:24 2015
 """
 import numpy as np
 import time
-from sympy import expand, Number
+from sympy import expand, simplify
 try:
     from scipy.sparse import lil_matrix
 except ImportError:
@@ -112,7 +112,7 @@ def solve_sdp(sdpRelaxation, solver=None, solverparameters=None):
     return primal, dual, x_mat, y_mat
 
 
-def find_rank_loop(sdpRelaxation, x_mat=None, base_level=0):
+def find_solution_ranks(sdpRelaxation, xmat=None, baselevel=0):
     """Helper function to detect rank loop in the solution matrix.
 
     :param sdpRelaxation: The SDP relaxation.
@@ -128,38 +128,34 @@ def find_rank_loop(sdpRelaxation, x_mat=None, base_level=0):
     :returns: list of int -- the ranks of the solution matrix with in the
               order of increasing degree.
     """
-    if sdpRelaxation.status == "unsolved" and x_mat is None:
+    if sdpRelaxation.status == "unsolved" and xmat is None:
         raise Exception("The SDP relaxation is unsolved and no primal " +
                         "solution is provided!")
-    elif sdpRelaxation.status != "unsolved" and x_mat is None:
-        x_mat = sdpRelaxation.x_mat[0]
+    elif sdpRelaxation.status != "unsolved" and xmat is None:
+        xmat = sdpRelaxation.x_mat[0]
     else:
-        x_mat = sdpRelaxation.x_mat[0]
+        xmat = sdpRelaxation.x_mat[0]
     if sdpRelaxation.status == "unsolved":
         raise Exception("The SDP relaxation is unsolved!")
     ranks = []
     from numpy.linalg import matrix_rank
-    if sdpRelaxation.hierarchy != "npa":
-        raise Exception("The detection of rank loop is only implemented for \
-                         the NPA hierarchy")
-    if base_level == 0:
+    if baselevel == 0:
         levels = range(1, sdpRelaxation.level + 1)
     else:
-        levels = [base_level]
+        levels = [baselevel]
     for level in levels:
         base_monomials = \
           pick_monomials_up_to_degree(sdpRelaxation.monomial_sets[0], level)
-        ranks.append(matrix_rank(x_mat[:len(base_monomials),
-                                       :len(base_monomials)]))
-
-    if x_mat.shape != (len(base_monomials), len(base_monomials)):
-        ranks.append(matrix_rank(x_mat))
+        ranks.append(matrix_rank(xmat[:len(base_monomials),
+                                      :len(base_monomials)]))
+    if xmat.shape != (len(base_monomials), len(base_monomials)):
+        ranks.append(matrix_rank(xmat))
     return ranks
 
 
-def sos_decomposition(sdpRelaxation, y_mat=None, threshold=0.0):
+def get_sos_decomposition(sdpRelaxation, y_mat=None, threshold=0.0):
     """Given a solution of the dual problem, it returns the SOS
-    decomposition. Currently limited to unconstrained problems.
+    decomposition.
 
     :param sdpRelaxation: The SDP relaxation to be solved.
     :type sdpRelaxation: :class:`ncpol2sdpa.SdpRelaxation`.
@@ -171,24 +167,44 @@ def sos_decomposition(sdpRelaxation, y_mat=None, threshold=0.0):
                       below which the eigenvalues and entries of the
                       eigenvectors are disregarded.
     :type threshold: float.
-    :returns: The SOS decomposition
-    :rtype: :class:`sympy.core.exp.Expr`.
+    :returns: The SOS decomposition of [sigma_0, sigma_1, ..., sigma_m]
+    :rtype: list of :class:`sympy.core.exp.Expr`.
     """
-    if sdpRelaxation.status == "unsolved" and y_mat is None:
+    if len(sdpRelaxation.monomial_sets) != 1:
+        raise Exception("Cannot automatically match primal and dual " +
+                        "variables.")
+    elif len(sdpRelaxation.y_mat[1:]) != len(sdpRelaxation.constraints):
+        raise Exception("Cannot automatically match constraints with blocks " +
+                        "in the dual solution.")
+    elif sdpRelaxation.status == "unsolved" and y_mat is None:
         raise Exception("The SDP relaxation is unsolved and dual solution " +
                         "is not provided!")
     elif sdpRelaxation.status != "unsolved" and y_mat is None:
         y_mat = sdpRelaxation.y_mat
-    sos = 0
-    vals, vecs = np.linalg.eigh(y_mat[0])
-    for j, val in enumerate(vals):
-        if abs(val) > threshold:
-            term = 0
-            for i, entry in enumerate(vecs[:, j]):
-                if abs(entry) > threshold:
-                    term += np.sqrt(val) * entry * \
-                      sdpRelaxation.monomial_sets[0][i]
-            sos += term**2
+    sos = []
+    for block, y_mat_block in enumerate(y_mat):
+        term = 0
+        vals, vecs = np.linalg.eigh(y_mat_block)
+        for j, val in enumerate(vals):
+            if val < -0.001:
+                raise Exception("Large negative eigenvalue: " + val +
+                                ". Matrix cannot be positive.")
+            elif val > 0:
+                sub_term = 0
+                for i, entry in enumerate(vecs[:, j]):
+                    sub_term += entry * sdpRelaxation.monomial_sets[0][i]
+                term += val * sub_term**2
+        term = expand(term)
+        new_term = 0
+        if term.is_Mul:
+            elements = [term]
+        else:
+            elements = term.as_coeff_mul()[1][0].as_coeff_add()[1]
+        for element in elements:
+            _, coeff = separate_scalar_factor(element)
+            if abs(coeff) > threshold:
+                new_term += element
+        sos.append(new_term)
     return sos
 
 

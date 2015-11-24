@@ -38,6 +38,8 @@ def parse_solution_matrix(iterator):
         solution_matrix.append(sol_mat)
         if row.startswith('}'):
             break
+    if len(solution_matrix) > 0 and solution_matrix[-1] is None:
+        solution_matrix = solution_matrix[:-1]
     return solution_matrix
 
 

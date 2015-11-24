@@ -189,17 +189,17 @@ The sums-of-square (SOS) decomposition is extracted from the dual solution:
 
 ::
 
-    sos_decomposition(sdpRelaxation, threshold=0.001)
+    sigma = sdpRelaxation.get_sos_decomposition()
 
 If we solve the SDP with the arbitrary-precision solver ``sdpa_gmp``, 
 we can find a rank loop at level two, indicating that convergence has 
-been achieved. Assuming that you exported the file and solved the SDP outside
-Python, we read the solution file and analyse the ranks:
+been achieved. 
 
 ::
 
-    primal, dual, x_mat, y_mat = read_sdpa_out("example.out", True)
-    find_rank_loop(sdpRelaxation, x_xmat=x_mat)
+    sdpRelaxation.solve(solver='sdpa', 
+      solverparameters={"executable":"sdpa_gmp", "paramsfile"="params.gmp.sdpa"})
+    sdpRelaxation.find_solution_ranks()
 
 The output for this problem is ``[2, 3]``, not showing a rank loop at this level
 of relaxation.
@@ -264,8 +264,9 @@ Solving this with the arbitrary-precision solver, we discover a rank loop:
 
 ::
 
-    primal_nc, dual_nc, x_mat_nc, y_mat_nc = read_sdpa_out("data/examplenc.out", True)
-    find_rank_loop(sdpRelaxation_nc, x_mat=x_mat_nc)
+    sdpRelaxation.solve(solver='sdpa', 
+      solverparameters={"executable":"sdpa_gmp", "paramsfile"="params.gmp.sdpa"})
+    sdpRelaxation.find_solution_ranks()
 
 The output is ``[2, 2]``, indicating a rank loop and showing that the 
 noncommutative case of the relaxation converges faster.
