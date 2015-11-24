@@ -870,7 +870,7 @@ class SdpRelaxation(Relaxation):
         :returns: The SOS decomposition of [sigma_0, sigma_1, ..., sigma_m]
         :rtype: list of :class:`sympy.core.exp.Expr`.
         """
-        get_sos_decomposition(self, threshold=threshold)
+        return get_sos_decomposition(self, threshold=threshold)
 
     def find_solution_ranks(self, xmat=None, baselevel=0):
         """Helper function to detect rank loop in the solution matrix.
@@ -888,7 +888,7 @@ class SdpRelaxation(Relaxation):
         :returns: list of int -- the ranks of the solution matrix with in the
                   order of increasing degree.
         """
-        find_solution_ranks(self, xmat=xmat, baselevel=baselevel)
+        return find_solution_ranks(self, xmat=xmat, baselevel=baselevel)
 
     def write_to_file(self, filename, filetype=None):
         """Write the relaxation to a file.
