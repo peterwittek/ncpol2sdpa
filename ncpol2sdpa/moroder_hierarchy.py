@@ -18,8 +18,9 @@ class MoroderHierarchy(SdpRelaxation):
                      or
                      :class:`sympy.physics.quantum.operator.HermitianOperator`
                      or a list of list.
-    :param nonrelaxed: Optional variables which are not to be relaxed.
-    :type nonrelaxed: list of :class:`sympy.physics.quantum.operator.Operator`
+    :param parameters: Optional symbolic variables for which moments are not
+                       generated.
+    :type parameters: list of :class:`sympy.physics.quantum.operator.Operator`
                      or
                      :class:`sympy.physics.quantum.operator.HermitianOperator`
                      or a list of list.
@@ -39,9 +40,9 @@ class MoroderHierarchy(SdpRelaxation):
     :type ppt: bool.
     """
 
-    def __init__(self, variables, nonrelaxed=None, verbose=0, normalized=True,
+    def __init__(self, variables, parameters=None, verbose=0, normalized=True,
                  ppt=False):
-        super(MoroderHierarchy, self).__init__(variables, nonrelaxed, verbose,
+        super(MoroderHierarchy, self).__init__(variables, parameters, verbose,
                                                normalized)
         self.ppt = ppt
 
@@ -78,7 +79,7 @@ class MoroderHierarchy(SdpRelaxation):
 
     def _estimate_n_vars(self):
         self.n_vars = 0
-        if self.nonrelaxed is not None:
-            self.n_vars = len(self.nonrelaxed)
+        if self.parameters is not None:
+            self.n_vars = len(self.parameters)
         n_monomials = len(self.monomial_sets[0])*len(self.monomial_sets[1])
         self.n_vars += int(n_monomials * (n_monomials + 1) / 2)

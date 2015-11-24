@@ -638,6 +638,8 @@ class SdpRelaxation(Relaxation):
             if self.verbose > 0:
                 print("Calculating block structure...")
             self.block_struct = []
+            if self.parameters is not None:
+                self.block_struct.append(-len(self.parameters))
             for monomials in self.monomial_sets:
                 self.block_struct.append(len(monomials))
             if extramomentmatrix is not None:
@@ -646,8 +648,6 @@ class SdpRelaxation(Relaxation):
                         self.block_struct.append(len(monomials))
         else:
             self.block_struct = block_struct
-        if self.parameters is not None:
-            self.block_struct.append(-len(self.parameters))
         if psd is not None:
             for matrix in psd:
                 if isinstance(matrix, list):

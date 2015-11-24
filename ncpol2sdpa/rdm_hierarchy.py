@@ -22,8 +22,9 @@ class RdmHierarchy(SdpRelaxation):
                      or
                      :class:`sympy.physics.quantum.operator.HermitianOperator`
                      or a list of list.
-    :param nonrelaxed: Optional variables which are not to be relaxed.
-    :type nonrelaxed: list of :class:`sympy.physics.quantum.operator.Operator`
+    :param parameters: Optional symbolic variables for which moments are not
+                       generated.
+    :type parameters: list of :class:`sympy.physics.quantum.operator.Operator`
                      or
                      :class:`sympy.physics.quantum.operator.HermitianOperator`
                      or a list of list.
@@ -43,8 +44,8 @@ class RdmHierarchy(SdpRelaxation):
     :type ppt: bool.
     """
 
-    def __init__(self, variables, nonrelaxed=None, verbose=0, circulant=False):
-        super(RdmHierarchy, self).__init__(variables, nonrelaxed, verbose,
+    def __init__(self, variables, parameters=None, verbose=0, circulant=False):
+        super(RdmHierarchy, self).__init__(variables, parameters, verbose,
                                            False)
         self.circulant = circulant
         self.correspondence = {}
