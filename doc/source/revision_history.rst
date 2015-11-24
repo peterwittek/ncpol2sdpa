@@ -19,6 +19,7 @@ Since v1.9:
   - Changed: Small improvements in speed in the substitution routines; unit tests for the substitution routines.
   - Changed: The `read_sdpa_out` routine takes an optional argument for a relaxation, and adds the solution to this object if requested.
   - Changed: Instead of an examples folder, all examples were migrated to the documentation.
+  - Changed: The symbolic variables which are not to be relaxed are now supplied to the constructor with the optional parameter `parameters`.
   - Fixed: PICOS and MOSEK conversion works for complex matrices too (issue #10).
   - Fixed: The moment symmetries are correctly calculated for both Hermitian and non-Hermitian variables (issue #9)
          

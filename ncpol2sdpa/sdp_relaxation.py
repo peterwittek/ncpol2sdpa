@@ -98,8 +98,9 @@ class SdpRelaxation(Relaxation):
                      or
                      :class:`sympy.physics.quantum.operator.HermitianOperator`
                      or a list of list.
-    :param nonrelaxed: Optional variables which are not to be relaxed.
-    :type nonrelaxed: list of :class:`sympy.physics.quantum.operator.Operator`
+    :param parameters: Optional symbolic variables for which moments are not
+                       generated.
+    :type parameters: list of :class:`sympy.physics.quantum.operator.Operator`
                      or
                      :class:`sympy.physics.quantum.operator.HermitianOperator`
                      or a list of list.
@@ -115,7 +116,7 @@ class SdpRelaxation(Relaxation):
                        solving it.
     :type normalized: bool.
     """
-    def __init__(self, variables, nonrelaxed=None, verbose=0, normalized=True):
+    def __init__(self, variables, parameters=None, verbose=0, normalized=True):
         """Constructor for the class.
         """
         super(SdpRelaxation, self).__init__()
@@ -132,6 +133,10 @@ class SdpRelaxation(Relaxation):
         self.pure_substitution_rules = True
         self.constraints = []
         self.complex_matrix = False
+        n_noncommutative_hermitian = 0
+        n_noncommutative_nonhermitian = 0
+        n_commutative_hermitian = 0
+        n_commutative_nonhermitian = 0
         if isinstance(variables, list):
             if len(variables) > 0 and isinstance(variables[0], list):
                 self.variables = [unique(vs) for vs in variables]
@@ -139,7 +144,47 @@ class SdpRelaxation(Relaxation):
                 self.variables = unique(variables)
         else:
             self.variables = [variables]
-        self.nonrelaxed = nonrelaxed
+        for vs in self.variables:
+            if not isinstance(vs, list):
+                vs = [vs]
+            for v in vs:
+                if v.is_commutative and v.is_hermitian:
+                    n_commutative_hermitian += 1
+                elif v.is_commutative and not v.is_hermitian:
+                    n_commutative_nonhermitian += 1
+                elif not v.is_commutative and not v.is_hermitian:
+                    n_noncommutative_nonhermitian += 1
+                else:
+                    n_noncommutative_hermitian += 1
+        self.parameters = parameters
+        info = ""
+        if n_commutative_hermitian > 0:
+            info += str(n_commutative_hermitian) + " commuting"
+        if n_commutative_nonhermitian > 0:
+            if len(info) > 0:
+                info += ", "
+            info += str(n_commutative_nonhermitian) + \
+                " commuting nonhermitian"
+        if n_noncommutative_hermitian > 0:
+                if len(info) > 0:
+                    info += ", "
+                info += str(n_noncommutative_hermitian) + \
+                    " noncommuting Hermitian"
+        if n_noncommutative_nonhermitian > 0:
+                if len(info) > 0:
+                    info += ", "
+                info += str(n_commutative_nonhermitian) + \
+                    " noncommuting nonhermitian"
+        if len(info) > 0:
+            info += " variables"
+        else:
+            info += "0 variables"
+        info = "The problem has " + info
+        if parameters is not None:
+            info += ", and " + str(len(flatten(parameters))) + \
+                "symbolic parameters"
+        if self.verbose > 0:
+            print(info)
 
     ########################################################################
     # ROUTINES RELATED TO GENERATING THE MOMENT MATRICES                   #
@@ -601,8 +646,8 @@ class SdpRelaxation(Relaxation):
                         self.block_struct.append(len(monomials))
         else:
             self.block_struct = block_struct
-        if self.nonrelaxed is not None:
-            self.block_struct.append(-len(self.nonrelaxed))
+        if self.parameters is not None:
+            self.block_struct.append(-len(self.parameters))
         if psd is not None:
             for matrix in psd:
                 if isinstance(matrix, list):
@@ -700,8 +745,8 @@ class SdpRelaxation(Relaxation):
 
     def _estimate_n_vars(self):
         self.n_vars = 0
-        if self.nonrelaxed is not None:
-            self.n_vars = len(self.nonrelaxed)
+        if self.parameters is not None:
+            self.n_vars = len(self.parameters)
         for monomials in self.monomial_sets:
             n_monomials = len(monomials)
 
@@ -711,11 +756,11 @@ class SdpRelaxation(Relaxation):
             if self.normalized:
                 self.n_vars -= 1
 
-    def __add_non_relaxed(self):
+    def __add_parameters(self):
         new_n_vars, block_index = 0, 0
-        if self.nonrelaxed is not None:
+        if self.parameters is not None:
             block_index = 1
-            for var in self.nonrelaxed:
+            for var in self.parameters:
                 new_n_vars += 1
                 self.monomial_index[var] = new_n_vars
                 self.F_struct[new_n_vars - 1, new_n_vars] = 1
@@ -1048,7 +1093,7 @@ class SdpRelaxation(Relaxation):
             print(('Estimated number of SDP variables: %d' % self.n_vars))
             print('Generating moment matrix...')
         # Generate moment matrices
-        new_n_vars, block_index = self.__add_non_relaxed()
+        new_n_vars, block_index = self.__add_parameters()
         new_n_vars, block_index = \
             self._generate_all_moment_matrix_blocks(new_n_vars, block_index)
         if extramomentmatrices is not None:
