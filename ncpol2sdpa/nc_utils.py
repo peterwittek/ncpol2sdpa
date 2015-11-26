@@ -7,9 +7,8 @@ Created on Thu May  2 16:03:05 2013
 
 @author: Peter Wittek
 """
-from sympy.core import S, Symbol, Pow, Number, expand, I
-from sympy.physics.quantum.operator import HermitianOperator, Operator
-from sympy.physics.quantum.dagger import Dagger
+from sympy import adjoint, conjugate, S, Symbol, Pow, Number, expand, I
+from sympy.physics.quantum import HermitianOperator, Operator
 from sympy.physics.quantum.qexpr import split_commutative_parts
 try:
     from scipy.sparse import lil_matrix
@@ -83,6 +82,7 @@ def remove_scalar_factor(monomial):
     monomial, _ = separate_scalar_factor(monomial)
     return monomial
 
+
 def __separate_scalar_factor(monomial):
     """Separate the constant factor from a monomial.
     """
@@ -116,11 +116,11 @@ def get_support(variables, polynomial):
         for s in symbolic_support:
             if isinstance(s, Pow):
                 base = s.base
-                if isinstance(base, Dagger):
-                    base = Dagger(base)
+                if is_adjoint(base):
+                    base = base.adjoint()
                 tmp_support[variables.index(base)] = s.exp
-            elif isinstance(s, Dagger):
-                tmp_support[variables.index(Dagger(s))] = 1
+            elif is_adjoint(s):
+                tmp_support[variables.index(s.adjoint())] = 1
             elif isinstance(s, Operator):
                 tmp_support[variables.index(s)] = 1
         support.append(tmp_support)
@@ -140,11 +140,11 @@ def get_support_variables(polynomial):
         for s in symbolic_support:
             if isinstance(s, Pow):
                 base = s.base
-                if isinstance(base, Dagger):
-                    base = Dagger(base)
+                if is_adjoint(base):
+                    base = base.adjoint()
                 support.append(base)
-            elif isinstance(s, Dagger):
-                support.append(Dagger(s))
+            elif is_adjoint(s):
+                support.append(s.adjoint())
             elif isinstance(s, Operator):
                 support.append(s)
     return support
@@ -281,13 +281,13 @@ def fast_substitute(monomial, old_sub, new_sub):
                 isinstance(old_ncomm_factors[j], Operator) and \
                     ncomm_factors[i + j] != old_ncomm_factors[j]:
                 break
-            if isinstance(ncomm_factors[i + j], Dagger) and \
-                (not isinstance(old_ncomm_factors[j], Dagger) or
+            if is_adjoint(ncomm_factors[i + j]) and \
+                (not is_adjoint(old_ncomm_factors[j]) or
                  ncomm_factors[i + j] != old_ncomm_factors[j]):
                 break
-            if not isinstance(ncomm_factors[i + j], Dagger) and \
+            if not is_adjoint(ncomm_factors[i + j]) and \
                 not isinstance(ncomm_factors[i + j], Pow) and \
-                    isinstance(old_ncomm_factors[j], Dagger):
+                    is_adjoint(old_ncomm_factors[j]):
                 break
             if isinstance(ncomm_factors[i + j], Pow):
                 if isinstance(old_ncomm_factors[j], Pow):
@@ -339,7 +339,7 @@ def fast_substitute(monomial, old_sub, new_sub):
         return new_monomial
 
 
-def generate_variable(name, hermitian=False, commutative=False):
+def generate_variable(name, hermitian=None, commutative=False):
     """Generates a commutative or noncommutative variable
 
     :param name: The symbolic name of the variable.
@@ -359,15 +359,19 @@ def generate_variable(name, hermitian=False, commutative=False):
     >>> generate_variable("c", commutative=True)
     c
     """
-    if hermitian or commutative:
+    if commutative:
+        if hermitian is None or hermitian:
+            variable = Symbol(name, real=True)
+        else:
+            variable = Symbol(name, complex=True)
+    elif hermitian is not None and hermitian:
         variable = HermitianOperator(name)
     else:
         variable = Operator(name)
-    variable.is_commutative = commutative
     return variable
 
 
-def generate_variables(n_vars, hermitian=False, commutative=False, name='x'):
+def generate_variables(n_vars, hermitian=None, commutative=False, name='x'):
     """Generates a number of commutative or noncommutative variables
 
     :param n_vars: The number of variables.
@@ -395,11 +399,15 @@ def generate_variables(n_vars, hermitian=False, commutative=False, name='x'):
 
     variables = []
     for i in range(n_vars):
-        if hermitian or commutative:
+        if commutative:
+            if hermitian is None or hermitian:
+                variables.append(Symbol('%s%s' % (name, i), real=True))
+            else:
+                variables.append(Symbol('%s%s' % (name, i), complex=True))
+        elif hermitian is not None and hermitian:
             variables.append(HermitianOperator('%s%s' % (name, i)))
         else:
             variables.append(Operator('%s%s' % (name, i)))
-        variables[i].is_commutative = commutative
     return variables
 
 
@@ -425,15 +433,15 @@ def get_monomials(variables, degree):
         ncmonomials = [S.One]
         ncmonomials.extend(var for var in variables)
         for var in variables:
-            if not var.is_hermitian:
-                ncmonomials.append(Dagger(var))
+            if not is_hermitian(var):
+                ncmonomials.append(var.adjoint())
         for _ in range(1, degree):
             temp = []
             for var in _variables:
                 for new_var in ncmonomials:
                     temp.append(var * new_var)
-                    if var != 1 and not var.is_hermitian:
-                        temp.append(Dagger(var) * new_var)
+                    if var != 1 and not is_hermitian(var):
+                        temp.append(var.adjoint() * new_var)
             ncmonomials = unique(temp[:])
         return ncmonomials
 
@@ -595,6 +603,20 @@ def find_variable_set(variable_sets, polynomial):
 
 def is_number_type(exp):
     if isinstance(exp, (int, float, complex, Number)):
+        return True
+    else:
+        return False
+
+
+def is_adjoint(exp):
+    if isinstance(exp, (adjoint, conjugate)):
+        return True
+    else:
+        return False
+
+
+def is_hermitian(exp):
+    if exp.is_hermitian or (exp.is_hermitian is None and not exp.is_complex):
         return True
     else:
         return False

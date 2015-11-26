@@ -12,7 +12,6 @@ from math import floor
 import numpy as np
 from sympy import S, Expr, simplify
 from sympy.matrices import Matrix
-from sympy.physics.quantum.dagger import Dagger
 import sys
 try:
     from scipy.linalg import qr
@@ -289,14 +288,14 @@ class SdpRelaxation(Relaxation):
                     for columnB in range(start_columnB, len(monomialsB)):
                         processed_entries += 1
                         if (not ppt) or (columnB >= rowB):
-                            monomial = Dagger(monomialsA[rowA]) * \
+                            monomial = monomialsA[rowA].adjoint() * \
                                        monomialsA[columnA] * \
-                                       Dagger(monomialsB[rowB]) * \
+                                       monomialsB[rowB].adjoint() * \
                                        monomialsB[columnB]
                         else:
-                            monomial = Dagger(monomialsA[rowA]) * \
+                            monomial = monomialsA[rowA].adjoint() * \
                                        monomialsA[columnA] * \
-                                       Dagger(monomialsB[columnB]) * \
+                                       monomialsB[columnB].adjoint() * \
                                        monomialsB[rowB]
                         # Apply the substitutions if any
                         n_vars = self._push_monomial(monomial, n_vars,
@@ -448,8 +447,8 @@ class SdpRelaxation(Relaxation):
                     # Calculate the moments of polynomial entries
                     polynomial = \
                         simplify_polynomial(
-                            Dagger(monomials[row]) * ineq * monomials[column],
-                            self.substitutions)
+                            monomials[row].adjoint() * ineq *
+                            monomials[column], self.substitutions)
                     self.__push_facvar_sparse(polynomial, block_index,
                                               row_offsets[block_index-1],
                                               row, column)
@@ -517,7 +516,7 @@ class SdpRelaxation(Relaxation):
                 for column in range(row, len(monomials)):
                     # Calculate the moments of polynomial entries
                     polynomial = \
-                        simplify_polynomial(Dagger(monomials[row]) *
+                        simplify_polynomial(monomials[row].adjoint() *
                                             equality * monomials[column],
                                             self.substitutions)
                     A[n_rows] = self._get_facvar(polynomial)
