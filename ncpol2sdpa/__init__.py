@@ -13,7 +13,7 @@ from .steering_hierarchy import SteeringHierarchy
 from .moroder_hierarchy import MoroderHierarchy
 from .rdm_hierarchy import RdmHierarchy
 from .nc_utils import generate_variable, generate_variables, flatten, \
-                      save_monomial_index
+                      save_monomial_index, get_monomials
 from .sdpa_utils import read_sdpa_out, convert_to_human_readable
 from .physics_utils import bosonic_constraints, fermionic_constraints, \
     pauli_constraints, get_neighbors, get_next_neighbors, correlator, \
@@ -39,6 +39,7 @@ __all__ = ['SdpRelaxation',
            'define_objective_with_I',
            'Probability',
            'flatten',
+           'get_monomials',
            'get_neighbors',
            'get_next_neighbors',
            'read_sdpa_out',

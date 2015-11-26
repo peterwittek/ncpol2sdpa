@@ -26,6 +26,7 @@ Functions to Help Define Polynomial Optimization Problems
 =========================================================
 .. autofunction:: ncpol2sdpa.generate_variable
 .. autofunction:: ncpol2sdpa.generate_variables
+.. autofunction:: ncpol2sdpa.get_monomials
 .. autofunction:: ncpol2sdpa.flatten
 
 Functions to Convert or Study Relaxations

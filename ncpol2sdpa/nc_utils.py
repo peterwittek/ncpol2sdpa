@@ -403,7 +403,7 @@ def generate_variables(n_vars, hermitian=False, commutative=False, name='x'):
     return variables
 
 
-def get_ncmonomials(variables, degree):
+def get_monomials(variables, degree):
     """Generates all noncommutative monomials up to a degree
 
     :param variables: The noncommutative variables to generate monomials from
@@ -482,11 +482,11 @@ def iscomplex(polynomial):
     return False
 
 
-def get_monomials(variables, extramonomials, substitutions, degree,
-                  removesubstitutions=True):
+def get_all_monomials(variables, extramonomials, substitutions, degree,
+                      removesubstitutions=True):
     """Return the monomials of a certain degree.
     """
-    monomials = get_ncmonomials(variables, degree)
+    monomials = get_monomials(variables, degree)
     if extramonomials is not None:
         monomials.extend(extramonomials)
     if removesubstitutions and substitutions is not None:

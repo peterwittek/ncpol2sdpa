@@ -10,7 +10,7 @@ Created on Sun May 26 15:06:17 2013
 from __future__ import division, print_function
 from math import floor
 import numpy as np
-from sympy import S, Expr
+from sympy import S, Expr, simplify
 from sympy.matrices import Matrix
 from sympy.physics.quantum.dagger import Dagger
 import sys
@@ -19,13 +19,14 @@ try:
     from scipy.sparse import lil_matrix, hstack
 except ImportError:
     from .sparse_utils import lil_matrix
-from .nc_utils import apply_substitutions, pick_monomials_up_to_degree, \
-    ncdegree, separate_scalar_factor, flatten, build_permutation_matrix, \
-    simplify_polynomial, get_monomials, unique, iscomplex, \
-    is_pure_substitution_rule, convert_relational, save_monomial_index, \
-    find_variable_set, is_number_type
-from .solver_common import get_xmat_value, solve_sdp, get_sos_decomposition, \
-                           find_solution_ranks
+from .nc_utils import apply_substitutions, build_permutation_matrix, \
+                      convert_relational, find_variable_set, flatten, \
+                      get_all_monomials, is_number_type, \
+                      is_pure_substitution_rule, iscomplex, ncdegree, \
+                      pick_monomials_up_to_degree, save_monomial_index, \
+                      separate_scalar_factor, simplify_polynomial, unique
+from .solver_common import find_solution_ranks, get_sos_decomposition, \
+                           get_xmat_value, solve_sdp
 from .mosek_utils import convert_to_mosek
 from .sdpa_utils import write_to_sdpa, write_to_human_readable
 from .chordal_extension import find_variable_cliques
@@ -218,7 +219,7 @@ class SdpRelaxation(Relaxation):
     def _process_monomial(self, monomial, n_vars):
         """Process a single monomial when building the moment matrix.
         """
-        coeff, monomial = monomial.as_coeff_Mul()
+        monomial, coeff = separate_scalar_factor(monomial)
         k = 0
         # Have we seen this monomial before?
         try:
@@ -351,6 +352,7 @@ class SdpRelaxation(Relaxation):
         result = []
         for monomial in monomials:
             monomial, coeff2 = separate_scalar_factor(monomial)
+            monomial = simplify(monomial)
             coeff = coeff1*coeff2
             if monomial.is_Number:
                 result.append((0, coeff))
@@ -365,7 +367,7 @@ class SdpRelaxation(Relaxation):
                 result.append((k, coeff))
             except KeyError:
                 if not daggered:
-                    dag_result = self._get_index_of_monomial(Dagger(monomial),
+                    dag_result = self._get_index_of_monomial(monomial.adjoint(),
                                                              daggered=True)
                     result += [(k, coeff0*coeff) for k, coeff0 in dag_result]
                 else:
@@ -760,13 +762,13 @@ class SdpRelaxation(Relaxation):
                 if extramonomials is not None:
                     extramonomials_ = extramonomials[k]
                 self.monomial_sets.append(
-                    get_monomials(variables, extramonomials_,
-                                  self.substitutions, self.level))
+                    get_all_monomials(variables, extramonomials_,
+                                      self.substitutions, self.level))
                 k += 1
         else:
             self.monomial_sets.append(
-                get_monomials(self.variables, extramonomials,
-                              self.substitutions, self.level))
+                get_all_monomials(self.variables, extramonomials,
+                                  self.substitutions, self.level))
 
     def _estimate_n_vars(self):
         self.n_vars = 0
