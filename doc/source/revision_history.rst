@@ -11,6 +11,7 @@ Since v1.9:
   - New: The convenience method `save_monomial_index()` was added to the class `SdpRelaxation`.
   - New: The convenience method `find_solution_ranks()` was added to the class `SdpRelaxation`. It replaces the previous stand-alone `find_rank_loop()` function.
   - New: The new method `extract_dual_value()` was added to the class `SdpRelaxation` to calculate the inner product of the coefficient matrix of an SDP variable with the dual solution.
+  - New: The class `RdmHierarchy` was added to generate SDPs of the reduced density matrix method. Initial support for 1D spinless, translational invariant systems is included.
   - Changed: The function `generate_variables` are now returns a list of `sympy.Symbol` variables if commutative variables are requested, and the default is commutative.
   - Changed: Many unnecessary user-facing functions were removed. 
   - Changed: The SOS decomposition is now requested with `get_sos_decomposition` from the class `SdpRelaxation`, and it returns a list of the sigma_i polynomials.
