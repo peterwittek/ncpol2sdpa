@@ -8,7 +8,7 @@ Created on Fri May 16 14:27:47 2014
 """
 from sympy.core import S
 from sympy.physics.quantum.dagger import Dagger
-from .nc_utils import generate_variables, flatten
+from .nc_utils import generate_operators, flatten
 from .solver_common import solve_sdp
 from .sdp_relaxation import SdpRelaxation
 
@@ -175,9 +175,8 @@ def generate_measurements(party, label):
     """
     measurements = []
     for i in range(len(party)):
-        measurements.append(generate_variables(label + '%s' % i, party[i] - 1, 
-                                               hermitian=True, 
-                                               commutative=False))
+        measurements.append(generate_operators(label + '%s' % i, party[i] - 1,
+                                               hermitian=True))
     return measurements
 
 
