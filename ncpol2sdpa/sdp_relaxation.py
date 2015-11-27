@@ -161,14 +161,15 @@ class SdpRelaxation(Relaxation):
         n_commutative_hermitian = 0
         n_commutative_nonhermitian = 0
         if isinstance(variables, list):
-            if len(variables) > 0 and isinstance(variables[0], list):
+            if len(variables) > 0 and (isinstance(variables[0], list) or
+                                       isinstance(variables[0], tuple)):
                 self.variables = [unique(vs) for vs in variables]
             else:
                 self.variables = unique(variables)
         else:
             self.variables = [variables]
         for vs in self.variables:
-            if not isinstance(vs, list):
+            if not isinstance(vs, list) and not isinstance(vs, tuple):
                 vs = [vs]
             for v in vs:
                 if v.is_commutative and (v.is_hermitian is None or

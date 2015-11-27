@@ -28,7 +28,7 @@ def flatten(lol):
     for element in lol:
         if element is None:
             continue
-        elif not isinstance(element, list):
+        elif not isinstance(element, list) and not isinstance(element, tuple):
             new_list.append(element)
         elif len(element) > 0:
             new_list.extend(flatten(element))
