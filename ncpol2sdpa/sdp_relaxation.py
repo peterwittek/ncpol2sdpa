@@ -25,7 +25,7 @@ from .nc_utils import apply_substitutions, build_permutation_matrix, \
                       pick_monomials_up_to_degree, save_monomial_index, \
                       separate_scalar_factor, simplify_polynomial, unique
 from .solver_common import find_solution_ranks, get_sos_decomposition, \
-                           get_xmat_value, solve_sdp
+                           get_xmat_value, solve_sdp, extract_dual_value
 from .mosek_utils import convert_to_mosek
 from .sdpa_utils import write_to_sdpa, write_to_human_readable
 from .chordal_extension import find_variable_cliques
@@ -240,11 +240,16 @@ class SdpRelaxation(Relaxation):
                                            self.pure_substitution_rules)
         if is_number_type(monomial):
             if rowA == 0 and columnA == 0 and rowB == 0 and columnB == 0 and \
-              monomial == 1.0 and not self.normalized:
-                n_vars += 1
-                self.F_struct[row_offset + rowA * N*lenB +
-                              rowB * N + columnA * lenB + columnB,
-                              n_vars] = 1
+              monomial == 1.0:
+                if not self.normalized:
+                    n_vars += 1
+                    self.F_struct[row_offset + rowA * N*lenB +
+                                  rowB * N + columnA * lenB + columnB,
+                                  n_vars] = 1
+                else:
+                    self.F_struct[row_offset + rowA * N*lenB +
+                                  rowB * N + columnA * lenB + columnB,
+                                  0] = float(self.normalized)
             else:
                 self.F_struct[row_offset + rowA * N*lenB +
                               rowB * N + columnA * lenB + columnB,
@@ -942,6 +947,22 @@ class SdpRelaxation(Relaxation):
         :rtype: list of :class:`sympy.core.exp.Expr`.
         """
         return get_sos_decomposition(self, threshold=threshold)
+
+    def extract_dual_value(self, monomial, blocks=None):
+        """Given a solution of the dual problem and a monomial, it returns the
+        inner product of the corresponding coefficient matrix and the dual
+        solution. It can be restricted to certain blocks.
+
+        :param monomial: The monomial for which the value is requested.
+        :type monomial: :class:`sympy.core.exp.Expr`.
+        :param monomial: The monomial for which the value is requested.
+        :type monomial: :class:`sympy.core.exp.Expr`.
+        :param blocks: Optional parameter to specify the blocks to be included.
+        :type blocks: list of `int`.
+        :returns: The value of the monomial in the solved relaxation.
+        :rtype: float.
+        """
+        return extract_dual_value(self, monomial, blocks)
 
     def find_solution_ranks(self, xmat=None, baselevel=0):
         """Helper function to detect rank loop in the solution matrix.

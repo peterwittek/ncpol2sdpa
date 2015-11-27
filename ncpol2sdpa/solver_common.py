@@ -241,7 +241,7 @@ def get_xmat_value(monomial, sdpRelaxation, x_mat=None):
 
     :param monomial: The monomial for which the value is requested.
     :type monomial: :class:`sympy.core.exp.Expr`.
-    :param sdpRelaxation: The SDP relaxation to be solved.
+    :param sdpRelaxation: The SDP relaxation.
     :type sdpRelaxation: :class:`ncpol2sdpa.SdpRelaxation`.
     :param x_mat: Optional parameter providing the primal solution of the
                   moment matrix. If not provided, the solution is extracted
@@ -282,4 +282,49 @@ def get_xmat_value(monomial, sdpRelaxation, x_mat=None):
                                get_recursive_xmat_value(index, row_offsets,
                                                         sdpRelaxation, x_mat)
             result += coeff * value / sdpRelaxation.F_struct[row, k]
+    return result
+
+
+def extract_dual_value(sdpRelaxation, monomial, blocks=None):
+    """Given a solution of the dual problem and a monomial, it returns the
+    inner product of the corresponding coefficient matrix and the dual
+    solution. It can be restricted to certain blocks.
+
+    :param sdpRelaxation: The SDP relaxation.
+    :type sdpRelaxation: :class:`ncpol2sdpa.SdpRelaxation`.
+    :param monomial: The monomial for which the value is requested.
+    :type monomial: :class:`sympy.core.exp.Expr`.
+    :param monomial: The monomial for which the value is requested.
+    :type monomial: :class:`sympy.core.exp.Expr`.
+    :param blocks: Optional parameter to specify the blocks to be included.
+    :type blocks: list of `int`.
+    :returns: The value of the monomial in the solved relaxation.
+    :rtype: float.
+    """
+    if sdpRelaxation.status == "unsolved":
+        raise Exception("The SDP relaxation is unsolved!")
+    if blocks is None:
+        blocks = [i for i, _ in enumerate(sdpRelaxation.block_struct)]
+    if is_number_type(monomial):
+        index = 0
+    else:
+        index = sdpRelaxation.monomial_index[monomial]
+    row_offsets = [0]
+    cumulative_sum = 0
+    for block_size in sdpRelaxation.block_struct:
+        cumulative_sum += block_size ** 2
+        row_offsets.append(cumulative_sum)
+    result = 0
+    for row in range(len(sdpRelaxation.F_struct.rows)):
+        if len(sdpRelaxation.F_struct.rows[row]) > 0:
+            col_index = 0
+            for k in sdpRelaxation.F_struct.rows[row]:
+                if k != index:
+                    continue
+                value = sdpRelaxation.F_struct.data[row][col_index]
+                col_index += 1
+                block_index, i, j = convert_row_to_sdpa_index(
+                    sdpRelaxation.block_struct, row_offsets, row)
+                if block_index in blocks:
+                    result += -value*sdpRelaxation.y_mat[block_index][i][j]
     return result

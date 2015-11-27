@@ -6,10 +6,11 @@ Since v1.9:
   - New: Better support for the steering hierarchy in a new class `SteeringHierarchy`.
   - New: The function `generate_variable` returns a single symbolic variable.
   - New: The `SdpRelaxation` class is now subscriptable. You can retrieve the value of polynomials in the solved relaxation in such way. Internally, it calls `get_xmat_value` with `self`.
-  - New: The convenience function `solve()` was added to the class `SdpRelaxation`.
-  - New: The convenience function `write_to_file()` was added to the class `SdpRelaxation`.
-  - New: The convenience function `save_monomial_index()` was added to the class `SdpRelaxation`.
-  - New: The convenience function `find_solution_ranks()` was added to the class `SdpRelaxation`. It replaces the previous stand-alone `find_rank_loop()` function.
+  - New: The convenience method `solve()` was added to the class `SdpRelaxation`.
+  - New: The convenience method `write_to_file()` was added to the class `SdpRelaxation`.
+  - New: The convenience method `save_monomial_index()` was added to the class `SdpRelaxation`.
+  - New: The convenience method `find_solution_ranks()` was added to the class `SdpRelaxation`. It replaces the previous stand-alone `find_rank_loop()` function.
+  - New: The new method `extract_dual_value()` was added to the class `SdpRelaxation` to calculate the inner product of the coefficient matrix of an SDP variable with the dual solution.
   - Changed: Many unnecessary user-facing functions were removed. 
   - Changed: The SOS decomposition is now requested with `get_sos_decomposition` from the class `SdpRelaxation`, and it returns a list of the sigma_i polynomials.
   - Changed: The optional parameter `bounds` for `get_relaxation` is deprececated, use the optional parameters `momentinequalities` and `momentequalities` instead.
