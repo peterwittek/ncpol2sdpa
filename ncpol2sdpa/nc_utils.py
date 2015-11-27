@@ -626,7 +626,7 @@ def is_adjoint(exp):
 
 
 def is_hermitian(exp):
-    if exp.is_hermitian or (exp.is_hermitian is None and not exp.is_complex):
+    if exp.is_hermitian or (exp.is_hermitian is None and exp.is_complex):
         return True
     else:
         return False
