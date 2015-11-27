@@ -22,7 +22,7 @@ We rely on NumPy and SciPy to remove the equality constraints from the problem
     e = np.ones(n)
     Q = (np.diag(np.dot(e.T, W)) - W) / 4
 
-    x = generate_variables(n, commutative=True)
+    x = generate_variables('x', n)
     equalities = [xi ** 2 - 1 for xi in x]
 
     objective = -np.dot(x, np.dot(Q, np.transpose(x)))
@@ -160,7 +160,7 @@ interpret.
     hbar, omega = 1, 1 # Parameters for the Hamiltonian
 
     # Define ladder operators
-    a = generate_variables(N, name='a')
+    a = generate_operators('a', N)
 
     hamiltonian = sum(hbar*omega*(Dagger(ai)*ai+0.5) for ai in a)
     substitutions = bosonic_constraints(a)
@@ -322,7 +322,7 @@ simple example:
 ::
 
     level = 2
-    X = generate_variables(3, commutative=True)
+    X = generate_variables('x', 3)
 
     obj = X[1] - 2*X[0]*X[1] + X[1]*X[2]
     inequalities = [1-X[0]**2-X[1]**2, 1-X[1]**2-X[2]**2]

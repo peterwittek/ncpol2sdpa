@@ -339,41 +339,13 @@ def fast_substitute(monomial, old_sub, new_sub):
         return new_monomial
 
 
-def generate_variable(name, hermitian=None, commutative=False):
-    """Generates a commutative or noncommutative variable
-
-    :param name: The symbolic name of the variable.
-    :type name: str.
-    :param hermitian: Optional parameter to request Hermitian variables .
-    :type hermitian: bool.
-    :param commutative: Optional parameter to request commutative variables.
-                        Commutative variables are Hermitian by default.
-    :type commutative: bool.
-
-    :returns: :class:`sympy.physics.quantum.operator.Operator` or
-              :class:`sympy.physics.quantum.operator.HermitianOperator`
-              variable
-
-    :Example:
-
-    >>> generate_variable("c", commutative=True)
-    c
-    """
-    if commutative:
-        if hermitian is None or hermitian:
-            variable = Symbol(name, real=True)
-        else:
-            variable = Symbol(name, complex=True)
-    elif hermitian is not None and hermitian:
-        variable = HermitianOperator(name)
-    else:
-        variable = Operator(name)
-    return variable
-
-
-def generate_variables(n_vars, hermitian=None, commutative=False, name='x'):
+def generate_variables(name, n_vars=1, hermitian=None, commutative=True):
     """Generates a number of commutative or noncommutative variables
 
+    :param name: The prefix in the symbolic representation of the noncommuting
+                 variables. This will be suffixed by a number from 0 to
+                 n_vars-1 if n_vars > 1.
+    :type name: str.
     :param n_vars: The number of variables.
     :type n_vars: int.
     :param hermitian: Optional parameter to request Hermitian variables .
@@ -381,11 +353,49 @@ def generate_variables(n_vars, hermitian=None, commutative=False, name='x'):
     :param commutative: Optional parameter to request commutative variables.
                         Commutative variables are Hermitian by default.
     :type commutative: bool.
+
+    :returns: list of :class:`sympy.physics.quantum.operator.Operator` or
+              :class:`sympy.physics.quantum.operator.HermitianOperator`
+              variables or `sympy.Symbol`
+
+    :Example:
+
+    >>> generate_variables('y', 2, commutative=True)
+    ￼[y0, y1]
+    """
+
+    variables = []
+    for i in range(n_vars):
+        if n_vars > 1:
+            var_name = '%s%s' % (name, i)
+        else:
+            var_name = '%s' % name
+        if commutative:
+            if hermitian is None or hermitian:
+                variables.append(Symbol(var_name, real=True))
+            else:
+                variables.append(Symbol(var_name, complex=True))
+        elif hermitian is not None and hermitian:
+            variables.append(HermitianOperator(var_name))
+        else:
+            variables.append(Operator(var_name))
+    return variables
+
+
+def generate_operators(name, n_vars=1, hermitian=None, commutative=False):
+    """Generates a number of commutative or noncommutative operators
+
     :param name: The prefix in the symbolic representation of the noncommuting
                  variables. This will be suffixed by a number from 0 to
-                 n_vars-1. Default value is "x".
+                 n_vars-1 if n_vars > 1.
     :type name: str.
-
+    :param n_vars: The number of variables.
+    :type n_vars: int.
+    :param hermitian: Optional parameter to request Hermitian variables .
+    :type hermitian: bool.
+    :param commutative: Optional parameter to request commutative variables.
+                        Commutative variables are Hermitian by default.
+    :type commutative: bool.
 
     :returns: list of :class:`sympy.physics.quantum.operator.Operator` or
               :class:`sympy.physics.quantum.operator.HermitianOperator`
@@ -393,21 +403,21 @@ def generate_variables(n_vars, hermitian=None, commutative=False, name='x'):
 
     :Example:
 
-    >>> generate_variables(2, commutative=True, name='y')
+    >>> generate_variables('y', 2, commutative=True)
     ￼[y0, y1]
     """
 
     variables = []
     for i in range(n_vars):
-        if commutative:
-            if hermitian is None or hermitian:
-                variables.append(Symbol('%s%s' % (name, i), real=True))
-            else:
-                variables.append(Symbol('%s%s' % (name, i), complex=True))
-        elif hermitian is not None and hermitian:
-            variables.append(HermitianOperator('%s%s' % (name, i)))
+        if n_vars > 1:
+            var_name = '%s%s' % (name, i)
         else:
-            variables.append(Operator('%s%s' % (name, i)))
+            var_name = '%s' % name
+        if hermitian is not None and hermitian:
+            variables.append(HermitianOperator(var_name))
+        else:
+            variables.append(Operator(var_name))
+        variables[-1].is_commutative = commutative
     return variables
 
 

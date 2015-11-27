@@ -16,22 +16,14 @@ the number of variables increases. Once the solution is obtained, it can
 be studied further with some helper functions.
 
 To instantiate the SdpRelaxation object, you need to specify the
-noncommuting variables:
+variables. You can use any SymPy symbolic variable, as long as the adjoint 
+operator is well-defined. The library also has helper functions to generate 
+commutative or noncommutative variables or operators. 
 
-::
-
-    X = generate_variables(2, 'X')
-    sdpRelaxation = SdpRelaxation(X)
-
-Getting the relaxation requires at least the level of relaxation:
-
-::
-
-    sdpRelaxation.get_relaxation(level)
-
-This will generate the moment matrix. Additional elements of the
-problem, such as the objective function, inequalities, equalities, and
-constraints on the moments.
+Getting the relaxation requires at least the level of relaxation, and the 
+matching method, `SdpRelaxation.get_relaxation`, will generate the moment 
+matrix. Additional elements of the problem, such as the objective function, 
+inequalities, equalities, and constraints on the moments.
 
 The last step in is to either solve or export the relaxation. The function
 `solve_sdp` or the class method `SdpRelaxation.solve` autodetects the possible 
@@ -92,11 +84,11 @@ are based on SymPy.
 
     n_vars = 2 # Number of variables
     level = 2  # Requested level of relaxation
-    x = generate_variables(n_vars, commutative=True, name='x')
+    x = generate_variables('x', n_vars)
 
-Above we must declare the variables as commutative. By default, the generated
-variables are noncommutative and non-Hermitian. With these variables, we can 
-define the objective and the inequality constraint.
+By default, the generated variables are commutative. Alternatively, you can use
+standard SymPy symbols, but it is worth declaring them as real. With these 
+variables, we can define the objective and the inequality constraint.
 
 ::
 
@@ -238,11 +230,11 @@ The constraints remain identical:
 .. math:: x_1^2-x_1=0.
 
 Defining the problem, generating the relaxation, and solving it follow a similar
-pattern:
+pattern, but we request operators instead of variables.
 
 ::
 
-    X = generate_variables(n_vars, hermitian=True, name='X')
+    X = generate_operators('X', n_vars, hermitian=True)
     obj_nc = X[0] * X[1] + X[1] * X[0]
     inequalities_nc = [-X[1] ** 2 + X[1] + 0.5]
     substitutions_nc = {X[0]**2 : X[0]}

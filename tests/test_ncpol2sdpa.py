@@ -3,11 +3,12 @@ from test import test_support
 import numpy as np
 from sympy import S, expand
 from sympy.physics.quantum.dagger import Dagger
-from ncpol2sdpa import SdpRelaxation, generate_variables, flatten, \
-                       projective_measurement_constraints, Probability, \
-                       define_objective_with_I, maximum_violation, \
-                       bosonic_constraints, fermionic_constraints, \
-                       get_neighbors, convert_to_picos, MoroderHierarchy
+from ncpol2sdpa import bosonic_constraints, convert_to_picos, \
+                       define_objective_with_I, fermionic_constraints, \
+                       flatten, generate_operators, generate_variables, \
+                       get_neighbors, maximum_violation, MoroderHierarchy, \
+                       Probability, projective_measurement_constraints,  \
+                       SdpRelaxation
 from ncpol2sdpa.nc_utils import fast_substitute, apply_substitutions
 from sympy.core.cache import clear_cache
 
@@ -33,8 +34,8 @@ class ApplySubstitutions(unittest.TestCase):
             return monomial
 
         length, h, U, t = 2, 3.8, -6, 1
-        fu = generate_variables(length, name='fu')
-        fd = generate_variables(length, name='fd')
+        fu = generate_operators('fu', length)
+        fd = generate_operators('fd', length)
         _b = flatten([fu, fd])
         hamiltonian = 0
         for j in range(length):
@@ -70,7 +71,7 @@ class Chsh(unittest.TestCase):
                 exp_values.append(exp_value)
             return exp_values
 
-        E = generate_variables(8, name='E', hermitian=True)
+        E = generate_operators('E', 8, hermitian=True)
         M, outcomes = [], []
         for i in range(4):
             M.append([E[2 * i], E[2 * i + 1]])
@@ -124,7 +125,7 @@ class ExampleCommutative(unittest.TestCase):
         clear_cache()
 
     def test_solving_with_sdpa(self):
-        x = generate_variables(2, commutative=True)
+        x = generate_variables('x', 2, commutative=True)
         sdpRelaxation = SdpRelaxation(x)
         sdpRelaxation.get_relaxation(2, objective=x[0]*x[1] + x[1]*x[0],
                                      inequalities=[-x[1]**2 + x[1] + 0.5],
@@ -136,7 +137,7 @@ class ExampleCommutative(unittest.TestCase):
 class ExampleNoncommutative(unittest.TestCase):
 
     def setUp(self):
-        X = generate_variables(2, hermitian=True)
+        X = generate_operators('x', 2, hermitian=True)
         self.sdpRelaxation = SdpRelaxation(X)
         self.sdpRelaxation.get_relaxation(2, objective=X[0]*X[1] + X[1]*X[0],
                                           inequalities=[-X[1]**2 + X[1] + 0.5],
@@ -164,7 +165,7 @@ class FastSubstitute(unittest.TestCase):
         clear_cache()
 
     def test_fast_substitute(self):
-        f = generate_variables(2, name='f')
+        f = generate_operators('f', 2)
         substitutions = {}
         substitutions[Dagger(f[0])*f[0]] = -f[0]*Dagger(f[0])
         monomial = Dagger(f[0])*f[0]
@@ -183,7 +184,7 @@ class FastSubstitute(unittest.TestCase):
         rhs = -f[0]*Dagger(f[0])
         self.assertTrue(fast_substitute(monomial, lhs, rhs) ==
                         monomial.subs(lhs, rhs))
-        g = generate_variables(2, name='g')
+        g = generate_operators('g', 2)
         monomial = 2*g[0]**3*g[1]*Dagger(f[0])**2*f[0]
         self.assertTrue(fast_substitute(monomial, lhs, rhs) ==
                         monomial.subs(lhs, rhs))
@@ -212,7 +213,7 @@ class Gloptipoly(unittest.TestCase):
         clear_cache()
 
     def test_solving(self):
-        x = generate_variables(2, commutative=True)
+        x = generate_variables('x', 2, commutative=True)
         g0 = 4 * x[0] ** 2 + x[0] * x[1] - 4 * x[1] ** 2 - \
             2.1 * x[0] ** 4 + 4 * x[1] ** 4 + x[0] ** 6 / 3
         sdpRelaxation = SdpRelaxation(x)
@@ -228,7 +229,7 @@ class HarmonicOscillator(unittest.TestCase):
 
     def test_ground_state_energy(self):
         N = 3
-        a = generate_variables(N, name='a')
+        a = generate_operators('a', N)
         substitutions = bosonic_constraints(a)
         hamiltonian = sum(Dagger(a[i]) * a[i] for i in range(N))
         sdpRelaxation = SdpRelaxation(a, verbose=0)
@@ -245,8 +246,8 @@ class Magnetization(unittest.TestCase):
 
     def test_ground_state(self):
         length, n, h, U, t = 2, 0.8, 3.8, -6, 1
-        fu = generate_variables(length, name='fu')
-        fd = generate_variables(length, name='fd')
+        fu = generate_operators('fu', length)
+        fd = generate_operators('fd', length)
         _b = flatten([fu, fd])
         monomials = [[ci for ci in _b]]
         monomials[-1].extend([Dagger(ci) for ci in _b])
@@ -287,7 +288,7 @@ class MaxCut(unittest.TestCase):
             np.diag([1, 1], 7) + np.diag([1], 8)
         W = W + W.T
         Q = (np.diag(np.dot(np.ones(len(W)).T, W)) - W) / 4
-        x = generate_variables(len(W), commutative=True)
+        x = generate_variables('x', len(W), commutative=True)
         equalities = [xi ** 2 - 1 for xi in x]
         objective = -np.dot(x, np.dot(Q, np.transpose(x)))
         sdpRelaxation = SdpRelaxation(x)
@@ -361,7 +362,7 @@ class SparsePop(unittest.TestCase):
         clear_cache()
 
     def test_chordal_extension(self):
-        X = generate_variables(3, commutative=True)
+        X = generate_variables('x', 3, commutative=True)
         inequalities = [1-X[0]**2-X[1]**2, 1-X[1]**2-X[2]**2]
         sdpRelaxation = SdpRelaxation(X)
         sdpRelaxation.get_relaxation(2,

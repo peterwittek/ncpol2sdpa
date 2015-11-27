@@ -175,8 +175,9 @@ def generate_measurements(party, label):
     """
     measurements = []
     for i in range(len(party)):
-        measurements.append(generate_variables(party[i] - 1, hermitian=True,
-                                               name=label + '%s' % i))
+        measurements.append(generate_variables(label + '%s' % i, party[i] - 1, 
+                                               hermitian=True, 
+                                               commutative=False))
     return measurements
 
 
