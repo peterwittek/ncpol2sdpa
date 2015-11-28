@@ -322,12 +322,23 @@ class SdpRelaxation(Relaxation):
     def _generate_all_moment_matrix_blocks(self, n_vars, block_index):
         processed_entries = 0
         for monomials in self.monomial_sets:
-            n_vars, block_index, processed_entries = \
-                self._generate_moment_matrix(
-                    n_vars,
-                    block_index,
-                    processed_entries,
-                    monomials, [S.One])
+            if len(monomials) > 0 and isinstance(monomials[0], list):
+                if len(monomials[0]) != len(monomials[1]):
+                    raise Exception("Cannot generate square block from "
+                                    "unequal monomial lists!")
+                n_vars, block_index, processed_entries = \
+                    self._generate_moment_matrix(
+                        n_vars,
+                        block_index,
+                        processed_entries,
+                        monomials[0], monomials[1])
+            else:
+                n_vars, block_index, processed_entries = \
+                    self._generate_moment_matrix(
+                        n_vars,
+                        block_index,
+                        processed_entries,
+                        monomials, [S.One])
             self.var_offsets.append(n_vars)
         return n_vars, block_index
 
@@ -673,11 +684,18 @@ class SdpRelaxation(Relaxation):
             if self.parameters is not None:
                 self.block_struct.append(-len(self.parameters))
             for monomials in self.monomial_sets:
-                self.block_struct.append(len(monomials))
+                if len(monomials) > 0 and isinstance(monomials[0], list):
+                    self.block_struct.append(len(monomials[0]))
+                else:
+                    self.block_struct.append(len(monomials))
             if extramomentmatrix is not None:
                 for _ in extramomentmatrix:
                     for monomials in self.monomial_sets:
-                        self.block_struct.append(len(monomials))
+                        if len(monomials) > 0 and \
+                              isinstance(monomials[0], list):
+                            self.block_struct.append(len(monomials[0]))
+                        else:
+                            self.block_struct.append(len(monomials))
         else:
             self.block_struct = block_struct
         if psd is not None:
@@ -780,7 +798,10 @@ class SdpRelaxation(Relaxation):
         if self.parameters is not None:
             self.n_vars = len(self.parameters)
         for monomials in self.monomial_sets:
-            n_monomials = len(monomials)
+            if len(monomials) > 0 and isinstance(monomials[0], list):
+                n_monomials = len(monomials[0])
+            else:
+                n_monomials = len(monomials)
 
             # The minus one compensates for the constant term in the
             # top left corner of the moment matrix

@@ -4,6 +4,7 @@ Created on Wed Nov  10 11:24:48 2015
 
 @author: Peter Wittek
 """
+import sys
 from math import sqrt
 from sympy import expand, S
 from sympy.physics.quantum.dagger import Dagger
@@ -220,6 +221,42 @@ class RdmHierarchy(SdpRelaxation):
                                             processed_entries,
                                             monomialsA, [S.One])
 
+    def __generate_semisymmetric_moment_matrix(self, n_vars, block_index,
+                                               processed_entries, monomialsA,
+                                               monomialsB):
+        """Generate the moment matrix of monomials.
+
+        Arguments:
+        n_vars -- current number of variables
+        block_index -- current block index in the SDP matrix
+        monomials -- |W_d| set of words of length up to the relaxation level
+        """
+        row_offset = 0
+        if block_index > 0:
+            for block_size in self.block_struct[0:block_index]:
+                row_offset += block_size ** 2
+        N = len(monomialsA)
+        for rowB in range(len(monomialsB)):
+            for columnA in range(rowB, len(monomialsA)):
+                        processed_entries += 1
+                        monomial = monomialsB[rowB].adjoint() * \
+                            monomialsA[columnA]
+                        n_vars = self._push_monomial(monomial, n_vars,
+                                                     row_offset, rowB,
+                                                     columnA, N, 1,
+                                                     1, 1)
+            if self.verbose > 0:
+                percentage = \
+                    "{0:.0f}%".format(float(processed_entries-1)/self.n_vars *
+                                      100)
+                sys.stdout.write("\r\x1b[KCurrent number of SDP variables: %d"
+                                 " (done: %s)" % (n_vars, percentage))
+                sys.stdout.flush()
+        if self.verbose > 0:
+            sys.stdout.write("\r")
+        return n_vars, block_index + 1, processed_entries
+
+
     def _generate_moment_matrix(self, n_vars, block_index, processed_entries,
                                 monomialsA, monomialsB):
         if self.circulant:
@@ -235,10 +272,18 @@ class RdmHierarchy(SdpRelaxation):
                                 " terms.")
 
         else:
-            return super(RdmHierarchy, self).\
-                    _generate_moment_matrix(n_vars, block_index,
-                                            processed_entries,
-                                            monomialsA, monomialsB)
+            if len(monomialsB) == 1 and monomialsB[0] == S.One:
+                return super(RdmHierarchy, self).\
+                        _generate_moment_matrix(n_vars, block_index,
+                                                processed_entries,
+                                                monomialsA, monomialsB)
+            else:
+                return \
+                  self.__generate_semisymmetric_moment_matrix(n_vars,
+                                                              block_index,
+                                                              processed_entries,
+                                                              monomialsA,
+                                                              monomialsB)
 
     def _get_index_of_monomial(self, element, enablesubstitution=True,
                                daggered=False):
