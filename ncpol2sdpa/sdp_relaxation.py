@@ -10,7 +10,7 @@ Created on Sun May 26 15:06:17 2013
 from __future__ import division, print_function
 from math import floor
 import numpy as np
-from sympy import S, Expr, simplify
+from sympy import S, Expr, simplify, expand
 from sympy.matrices import Matrix
 import sys
 try:
@@ -464,7 +464,7 @@ class SdpRelaxation(Relaxation):
                     # Calculate the moments of polynomial entries
                     polynomial = \
                         simplify_polynomial(
-                            monomials[row].adjoint() * ineq *
+                            monomials[row].adjoint() * expand(ineq) *
                             monomials[column], self.substitutions)
                     self.__push_facvar_sparse(polynomial, block_index,
                                               row_offsets[block_index-1],
