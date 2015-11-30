@@ -238,13 +238,11 @@ class RdmHierarchy(SdpRelaxation):
         N = len(monomialsA)
         for rowB in range(len(monomialsB)):
             for columnA in range(rowB, len(monomialsA)):
-                        processed_entries += 1
-                        monomial = monomialsB[rowB].adjoint() * \
-                            monomialsA[columnA]
-                        n_vars = self._push_monomial(monomial, n_vars,
-                                                     row_offset, rowB,
-                                                     columnA, N, 1,
-                                                     1, 1)
+                processed_entries += 1
+                monomial = monomialsB[rowB].adjoint() * \
+                    monomialsA[columnA]
+                n_vars = self._push_monomial(monomial, n_vars, row_offset,
+                                             rowB, columnA, N, 0, 0, 1)
             if self.verbose > 0:
                 percentage = \
                     "{0:.0f}%".format(float(processed_entries-1)/self.n_vars *
@@ -255,7 +253,6 @@ class RdmHierarchy(SdpRelaxation):
         if self.verbose > 0:
             sys.stdout.write("\r")
         return n_vars, block_index + 1, processed_entries
-
 
     def _generate_moment_matrix(self, n_vars, block_index, processed_entries,
                                 monomialsA, monomialsB):
