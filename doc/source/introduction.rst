@@ -11,6 +11,7 @@ The objective is to be able to solve very large scale optimization problems. Exa
 - `Moroder <http://dx.doi.org/10.1103/PhysRevLett.111.030501>`_ hierarchy to enable PPT-style and other additional constraints.
 - Sums-of-square (SOS) decomposition based on the dual solution.
 - `Ground-state energy problems <http://dx.doi.org/10.1137/090760155>`_: bosonic and `fermionic systems <http://nbviewer.ipython.org/github/peterwittek/ipython-notebooks/blob/master/Comparing_DMRG_ED_and_SDP.ipynb>`_, Pauli spin operators. This methodology closely resembles the reduced density matrix (RDM) method.
+- `Hierarchy for quantum steering <http://dx.doi.org/10.1103/physrevlett.115.210401>`_.
 
 The implementation has an intuitive syntax for entering problems and it scales for a larger number of noncommutative variables using a sparse representation of the SDP problem. Further details are found in the following paper:
 
