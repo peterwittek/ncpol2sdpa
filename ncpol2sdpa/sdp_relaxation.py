@@ -857,6 +857,7 @@ class SdpRelaxation(Relaxation):
                                  equalities by solving the linear equations.
         :type removeequalities: bool.
         """
+        self.status = "unsolved"
         if block_index == 0:
             block_index = self.constraint_starting_block
             self.__wipe_F_struct_from_constraints()
