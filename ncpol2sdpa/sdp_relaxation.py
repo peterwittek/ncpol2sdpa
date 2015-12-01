@@ -368,7 +368,6 @@ class SdpRelaxation(Relaxation):
         result = []
         for monomial in monomials:
             monomial, coeff2 = separate_scalar_factor(monomial)
-            monomial = simplify(monomial)
             coeff = coeff1*coeff2
             if monomial.is_Number:
                 result.append((0, coeff))
