@@ -10,8 +10,7 @@ Created on Sun May 26 15:06:17 2013
 from __future__ import division, print_function
 from math import floor
 import numpy as np
-from sympy import S, Expr, simplify, expand
-from sympy.matrices import Matrix
+from sympy import S, Expr, expand
 import sys
 try:
     from scipy.linalg import qr
@@ -476,27 +475,6 @@ class SdpRelaxation(Relaxation):
             sys.stdout.write("\n")
         return block_index
 
-    def __process_psd(self, psd, block_index):
-        row_offsets = [0]
-        for block, block_size in enumerate(self.block_struct):
-            row_offsets.append(row_offsets[block] + block_size ** 2)
-        for matrix in psd:
-            for row in range(self.block_struct[block_index]):
-                for column in range(row, self.block_struct[block_index]):
-                    if isinstance(matrix, list):
-                        polynomial = \
-                          simplify_polynomial(matrix[row][column],
-                                              self.substitutions)
-                    elif isinstance(matrix, Matrix):
-                        polynomial = \
-                          simplify_polynomial(matrix[row, column],
-                                              self.substitutions)
-                    self.__push_facvar_sparse(polynomial, block_index+1,
-                                              row_offsets[block_index],
-                                              row, column)
-            block_index += 1
-        return block_index
-
     def __process_equalities(
             self, equalities, all_monomials):
         """Generate localizing matrices
@@ -672,7 +650,7 @@ class SdpRelaxation(Relaxation):
 
     def _calculate_block_structure(self, inequalities, equalities, bounds,
                                    momentinequalities, momentequalities,
-                                   psd, extramomentmatrix, removeequalities,
+                                   extramomentmatrix, removeequalities,
                                    block_struct=None):
         """Calculates the block_struct array for the output file.
         """
@@ -697,14 +675,6 @@ class SdpRelaxation(Relaxation):
                             self.block_struct.append(len(monomials))
         else:
             self.block_struct = block_struct
-        if psd is not None:
-            for matrix in psd:
-                if isinstance(matrix, list):
-                    self.block_struct.append(len(matrix))
-                elif isinstance(matrix, Matrix):
-                    self.block_struct.append(matrix.shape[0])
-                else:
-                    raise Exception("Unknown format for PSD constraint")
         degree_warning = False
         if inequalities is not None:
             n_inequalities = len(inequalities)
@@ -788,9 +758,16 @@ class SdpRelaxation(Relaxation):
                                       self.substitutions, self.level))
                 k += 1
         else:
-            self.monomial_sets.append(
-                get_all_monomials(self.variables, extramonomials,
-                                  self.substitutions, self.level))
+            if extramonomials is not None and len(extramonomials) > 0 and \
+                  isinstance(extramonomials[0], list):
+                self.monomial_sets.append(
+                    get_all_monomials(self.variables, extramonomials[0],
+                                      self.substitutions, self.level))
+                self.monomial_sets += extramonomials[1:]
+            else:
+                self.monomial_sets.append(
+                    get_all_monomials(self.variables, extramonomials,
+                                      self.substitutions, self.level))
 
     def _estimate_n_vars(self):
         self.n_vars = 0
@@ -832,7 +809,7 @@ class SdpRelaxation(Relaxation):
 
     def process_constraints(self, inequalities=None, equalities=None,
                             bounds=None, momentinequalities=None,
-                            momentequalities=None, psd=None, block_index=0,
+                            momentequalities=None, block_index=0,
                             removeequalities=False,
                             localizing_monomial_sets=None):
         """Process the constraints and generate localizing matrices. Useful
@@ -849,9 +826,6 @@ class SdpRelaxation(Relaxation):
         :param bounds: Optional parameter of bounds on variables which will not
                        be relaxed by localizing matrices.
         :type bounds: list of :class:`sympy.core.exp.Expr`.
-        :param psd: Optional parameter of list of matrices that should be
-                    positive semidefinite.
-        :type psd: list of lists or of :class:`sympy.matrices.Matrix`.
         :param removeequalities: Optional parameter to attempt removing the
                                  equalities by solving the linear equations.
         :type removeequalities: bool.
@@ -860,8 +834,6 @@ class SdpRelaxation(Relaxation):
         if block_index == 0:
             block_index = self.constraint_starting_block
             self.__wipe_F_struct_from_constraints()
-        if psd is not None:
-            block_index = self.__process_psd(psd, block_index)
         self.constraints = flatten([inequalities])
         if not (removeequalities or equalities is None):
             # Equalities are converted to pairs of inequalities
@@ -1050,7 +1022,7 @@ class SdpRelaxation(Relaxation):
     def get_relaxation(self, level, objective=None, inequalities=None,
                        equalities=None, substitutions=None, bounds=None,
                        momentinequalities=None, momentequalities=None,
-                       psd=None, removeequalities=False, extramonomials=None,
+                       removeequalities=False, extramonomials=None,
                        extramomentmatrices=None, extraobjexpr=None,
                        localizing_monomials=None, chordal_extension=False):
         """Get the SDP relaxation of a noncommutative polynomial optimization
@@ -1075,9 +1047,6 @@ class SdpRelaxation(Relaxation):
         :param momentequalities: Optional parameter of equalities defined
                                  on moments.
         :type momentequalities: list of :class:`sympy.core.exp.Expr`.
-        :param psd: Optional parameter of list of matrices that should be
-                    positive semidefinite.
-        :type psd: list of lists or of :class:`sympy.matrices.Matrix`.
         :param removeequalities: Optional parameter to attempt removing the
                                  equalities by solving the linear equations.
         :type removeequalities: bool.
@@ -1138,7 +1107,7 @@ class SdpRelaxation(Relaxation):
         # Figure out basic structure of the SDP
         self._calculate_block_structure(inequalities, equalities, bounds,
                                         momentinequalities, momentequalities,
-                                        psd, extramomentmatrices,
+                                        extramomentmatrices,
                                         removeequalities)
         self._estimate_n_vars()
         if extramomentmatrices is not None:
@@ -1182,5 +1151,5 @@ class SdpRelaxation(Relaxation):
         # Process constraints
         self.constraint_starting_block = block_index
         self.process_constraints(inequalities, equalities, bounds,
-                                 momentinequalities, momentequalities, psd,
+                                 momentinequalities, momentequalities,
                                  block_index, removeequalities)
