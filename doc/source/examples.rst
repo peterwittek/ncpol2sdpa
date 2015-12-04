@@ -2,15 +2,10 @@
 Examples
 ********
 
-Example 1: Mixed-Level Relaxation of a Bell Inequality
+Example 1: Max-cut
 ======================================================
 This is a polynomial optimization problem of commutative variables mentioned in
-Section 5.12 of the following paper:
-
-Henrion, D.; Lasserre, J. & Löfberg, J. GloptiPoly 3: moments, optimization and
-semidefinite programming. Optimization Methods & Software, 2009, 24, 761-779
-
-We rely on NumPy and SciPy to remove the equality constraints from the problem
+Section 5.12 of Henrion et. al (2009). We rely on NumPy and SciPy to remove the equality constraints from the problem
 
 ::
 
@@ -32,7 +27,71 @@ We rely on NumPy and SciPy to remove the equality constraints from the problem
                                  removeequalities=True)
     sdpRelaxation.solve()
 
-Example 2: Mixed-Level Relaxation of a Bell Inequality
+Example 2: Parametric Polynomial Optimization Problems
+======================================================
+In a parametric polynomial optimization problem, we can separate two sets of variables, and one set acts as a parameter to the problem. More formally, we would like to find the following function:
+
+.. math::
+
+   J(x) = \inf_{y\in\mathbb{R}^m}\{f(x,y): h_j(y)\geq 0, j=1,\ldots,r\}
+
+where :math:`x\in\mathbf{X}=\{x\in \mathbb{R}^n: h_k(x)\geq 0, k=r+1,\ldots,t\}`. We can approximate :math:`J(x)` using the dual an SDP relaxation. The following implements Example 4 from Lasserre (2010).
+
+.. code:: python
+
+    from sympy import integrate, N
+    import matplotlib.pyplot as plt
+
+    def J(x):
+        return -2*abs(1-2*x)*sqrt(x/(1+x))
+
+    def Jk(x, coeffs):
+        return sum(ci*x**i for i, ci in enumerate(coeffs))
+
+    x = generate_variables('x')[0]
+    y = generate_variables('y', 2)
+    f = (1-2*x)*(y[0] + y[1])
+
+    gamma = [integrate(x**i, (x, 0, 1)) for i in range(1, 2*level+1)]
+    marginals = [x**i-N(gamma[i-1]) for i in range(1, 2*level+1)]
+
+    inequalities = [x*y[0]**2 + y[1]**2 - x,  - x*y[0]**2 - y[1]**2 + x,
+                    y[0]**2 + x*y[1]**2 - x,  - y[0]**2 - x*y[1]**2 + x,
+                    1-x, x]
+    sdp = SdpRelaxation(flatten([x, y]))
+    sdp.get_relaxation(level, objective=f, momentequalities=marginals,
+                       inequalities=inequalities)
+    sdp.solve()
+    coeffs = [sdp.extract_dual_value(0, range(len(inequalities)+1))]
+    coeffs += [sdp.y_mat[len(inequalities)+1+2*i][0][0] - sdp.y_mat[len(inequalities)+1+2*i+1][0][0]
+               for i in range(len(marginals))]
+    plt.plot(x_domain, [J(xi) for xi in x_domain], linewidth=2.5)
+    plt.plot(x_domain, [Jk(xi, coeffs) for xi in x_domain], linewidth=2.5)
+    plt.show() 
+
+.. image:: figures/jointmarginal.png
+
+Example 3: Sparse Relaxation with Chordal Extension
+===================================================
+This method replicates the behaviour of SparsePOP (Waki et. al, 2008). The following is a 
+simple example:
+
+::
+
+    level = 2
+    X = generate_variables('x', 3)
+
+    obj = X[1] - 2*X[0]*X[1] + X[1]*X[2]
+    inequalities = [1-X[0]**2-X[1]**2, 1-X[1]**2-X[2]**2]
+
+    sdpRelaxation = SdpRelaxation(X)
+    sdpRelaxation.get_relaxation(level, objective=obj, 
+                                 inequalities=inequalities, chordal_extension=True)
+    sdpRelaxation.solve()
+    print(sdpRelaxation.primal, sdpRelaxation.dual)
+
+
+Example 4: Mixed-Level Relaxation of a Bell Inequality
 ======================================================
 
 It is often the case that moving to a higher-order relaxation is
@@ -93,7 +152,7 @@ only need to provide the strings we would like to see -- this time it is AB:
     sdpRelaxation.solve()
     print(sdpRelaxation.primal)
 
-Example 3: Additional manipulation of the generated SDPs with PICOS
+Example 5: Additional manipulation of the generated SDPs with PICOS
 ===================================================================
 A compatibility layer with PICOS allows additional manipulations of the 
 optimization problem and also calling a wider ranger of solvers. 
@@ -120,7 +179,7 @@ Finally we can solve the SDP with any of solvers that PICOS supports:
 
     P.solve()
 
-Example 4: Bosonic System
+Example 6: Bosonic System
 ==================================================
 
 The system Hamiltonian describes :math:`N` harmonic oscillators with a
@@ -177,7 +236,7 @@ It is remarkable that we get the correct value at the first level of
 relaxation, but this property is typical for bosonic systems (Navascués
 et al. 2013).
 
-Example 5: Using the Nieto-Silleras Hierarchy
+Example 7: Using the Nieto-Silleras Hierarchy
 ==================================================
 
 One of the newer approaches to the SDP relaxations takes all joint
@@ -243,7 +302,7 @@ From here, the solution follows the usual pathway:
     print(sdpRelaxation.primal, sdpRelaxation.dual)
 
 
-Example 6: Using the Moroder Hierarchy
+Example 8: Using the Moroder Hierarchy
 ==================================================
 
 This type of hierarchy allows for a wider range of constraints of the
@@ -311,24 +370,3 @@ If all we need is the partial positivity of the moment matrix, that is actually 
                                      verbose=1, ppt=True)
     sdpRelaxation.get_relaxation(level, objective=objective,
                                  substitutions=P.substitutions)
-
-
-
-Example 7: Sparse Relaxation with Chordal Extension
-===================================================
-This method replicates the behaviour of SparsePOP (Waki et. al, 2008). The following is a 
-simple example:
-
-::
-
-    level = 2
-    X = generate_variables('x', 3)
-
-    obj = X[1] - 2*X[0]*X[1] + X[1]*X[2]
-    inequalities = [1-X[0]**2-X[1]**2, 1-X[1]**2-X[2]**2]
-
-    sdpRelaxation = SdpRelaxation(X)
-    sdpRelaxation.get_relaxation(level, objective=obj, 
-                                 inequalities=inequalities, chordal_extension=True)
-    sdpRelaxation.solve()
-    print(sdpRelaxation.primal, sdpRelaxation.dual)

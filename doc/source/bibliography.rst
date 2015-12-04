@@ -1,16 +1,22 @@
 References
 ==================================================
-Bancal, Jean-Daniel, Lana Sheridan, and Valerio Scarani. 2014. “More
+Bancal, J.D., L. Sheridan, and V. Scarani. 2014. “More
 Randomness from the Same Data.” *New Journal of Physics* 16 (3): 033011.
 doi:\ `10.1088/1367-2630/16/3/033011 <http://dx.doi.org/10.1088/1367-2630/16/3/033011>`__.
 
 Fayngold, M., and V. Fayngold. 2013. *Quantum Mechanics and Quantum
 Information*. Wiley-VCH.
 
+Henrion, D., J. Lasserre and J. Löfberg. 2009. “GloptiPoly 3: Moments, Optimization and
+Semidefinite Programming.” *Optimization Methods & Software*, 24: 761–779. 
+
 Johansson, J.R., P.D. Nation, and Franco Nori. 2013. “QuTiP 2: A Python
 Framework for the Dynamics of Open Quantum Systems.” *Computer Physics
 Communications* 184 (4): 1234–40.
 doi:\ `10.1016/j.cpc.2012.11.019 <http://dx.doi.org/10.1016/j.cpc.2012.11.019>`__.
+
+Lasserre, J. B. 2010. “A Joint+Marginal Approach to Parametric Polynomial Optimization.” *SIAM Journal on Optimization* 20(4):1995–2022. 
+doi:\ `10.1137/090759240 <http://dx.doi.org/10.1137/090759240>`__.
 
 Moroder, Tobias, Jean-Daniel Bancal, Yeong-Cherng Liang, Martin Hofmann,
 and Otfried Gühne. 2013. “Device-Independent Entanglement Quantification
