@@ -9,11 +9,11 @@ except ImportError:
     from distutils.core import setup
 setup(
     name='ncpol2sdpa',
-    version='1.9',
+    version='1.10',
     author='Peter Wittek',
     author_email='peterwittek@users.noreply.github.com',
     packages=['ncpol2sdpa'],
-    url='http://peterwittek.github.io/ncpol2sdpa/',
+    url='http://ncpol2sdpa.readthedocs.org/',
     keywords=[
         'sdp',
         'semidefinite programming',
