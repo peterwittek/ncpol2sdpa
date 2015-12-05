@@ -36,37 +36,35 @@ Usage
 =====
 Documentation is available `on Read the Docs <http://ncpol2sdpa.readthedocs.org/en/stable/>`_. The following code replicates the toy example from Pironio, S.; Navascues, M. & Acin, A. Convergent relaxations of polynomial optimization problems with noncommuting variables SIAM Journal on Optimization, SIAM, 2010, 20, 2157-2180.
 
-::
+.. code:: python
 
-  from ncpol2sdpa import generate_variables, SdpRelaxation
+    from ncpol2sdpa import generate_operators, SdpRelaxation
 
-  # Number of Hermitian variables
-  n_vars = 2
-  # Level of relaxation
-  level = 2
+    # Number of operators
+    n_vars = 2
+    # Level of relaxation
+    level = 2
 
-  # Get Hermitian variables
-  X = generate_variables(n_vars, hermitian=True)
+    # Get Hermitian operators
+    X = generate_operators('X', n_vars, hermitian=True)
 
-  # Define the objective function
-  obj = X[0] * X[1] + X[1] * X[0]
+    # Define the objective function
+    obj = X[0] * X[1] + X[1] * X[0]
 
-  # Inequality constraints
-  inequalities = [-X[1] ** 2 + X[1] + 0.5>=0]
+    # Inequality constraints
+    inequalities = [-X[1] ** 2 + X[1] + 0.5 >= 0]
 
-  # Simple monomial substitutions
-  substitutions = {}
-  substitutions[X[0] ** 2] = X[0]
+    # Simple monomial substitutions
+    substitutions = {X[0]**2: X[0]}
 
-  # Obtain SDP relaxation
-  sdpRelaxation = SdpRelaxation(X)
-  sdpRelaxation.get_relaxation(level, objective=obj, inequalities=inequalities,
-                               substitutions=substitutions)
-  sdpRelaxation.solve()
-  print(sdpRelaxation.primal, sdpRelaxation.dual, sdpRelaxation.status)
+    # Obtain SDP relaxation
+    sdpRelaxation = SdpRelaxation(X)
+    sdpRelaxation.get_relaxation(level, objective=obj, inequalities=inequalities,
+                                 substitutions=substitutions)
+    sdpRelaxation.solve()
+    print(sdpRelaxation.primal, sdpRelaxation.dual, sdpRelaxation.status)
 
-
-Further instances are in the examples folder and also in the manual.
+Further examples are found in the documentation.
 
 Installation
 ============
