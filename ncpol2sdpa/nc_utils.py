@@ -40,9 +40,7 @@ def simplify_polynomial(polynomial, monomial_substitutions):
     """
     if isinstance(polynomial, (int, float, complex)):
         return polynomial
-    polynomial = (1.0 * polynomial).expand(basic=False, log=False,
-                                           power_base=False, power_exp=False,
-                                           deep=False, mul=True,
+    polynomial = (1.0 * polynomial).expand(mul=True,
                                            multinomial=True)
     if is_number_type(polynomial):
         return polynomial
