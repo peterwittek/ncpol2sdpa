@@ -5,17 +5,17 @@ Function Reference
 SdpRelaxation Class
 ===================
 .. autoclass:: ncpol2sdpa.SdpRelaxation
-   :members: get_relaxation, set_objective, process_constraints, solve, __getitem__, write_to_file, save_monomial_index, get_sos_decomposition, find_solution_ranks
+   :members: get_relaxation, set_objective, process_constraints, solve, __getitem__, write_to_file, save_monomial_index, get_sos_decomposition, find_solution_ranks, convert_to_picos, convert_to_mosek, extract_dual_value
 
 MoroderHierarchy Class
 =======================
 .. autoclass:: ncpol2sdpa.SteeringHierarchy
-   :members: get_relaxation, set_objective, process_constraints, solve, __getitem__, write_to_file, save_monomial_index
+   :members: get_relaxation, set_objective, process_constraints, solve, __getitem__, write_to_file, save_monomial_index, convert_to_picos, convert_to_mosek
 
 SteeringHierarchy Class
 =======================
 .. autoclass:: ncpol2sdpa.SteeringHierarchy
-   :members: get_relaxation, set_objective, process_constraints, solve, __getitem__, write_to_file, save_monomial_index
+   :members: get_relaxation, set_objective, process_constraints, solve, __getitem__, write_to_file, save_monomial_index, convert_to_picos, convert_to_mosek
 
 FaacetsRelaxation Class
 =======================
@@ -29,13 +29,9 @@ Functions to Help Define Polynomial Optimization Problems
 .. autofunction:: ncpol2sdpa.get_monomials
 .. autofunction:: ncpol2sdpa.flatten
 
-Functions to Convert or Study Relaxations
+Functions to Study Output of Solver
 =================================================
 .. autofunction:: ncpol2sdpa.read_sdpa_out
-.. autofunction:: ncpol2sdpa.convert_to_human_readable
-.. autofunction:: ncpol2sdpa.convert_to_mosek
-.. autofunction:: ncpol2sdpa.convert_to_picos
-.. autofunction:: ncpol2sdpa.save_monomial_index
 
 Functions and Classes to Define Physics Problems
 ================================================

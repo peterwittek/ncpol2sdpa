@@ -3,7 +3,7 @@ from test import test_support
 import numpy as np
 from sympy import S, expand
 from sympy.physics.quantum.dagger import Dagger
-from ncpol2sdpa import bosonic_constraints, convert_to_picos, \
+from ncpol2sdpa import bosonic_constraints, \
                        define_objective_with_I, fermionic_constraints, \
                        flatten, generate_operators, generate_variables, \
                        get_neighbors, maximum_violation, MoroderHierarchy, \
@@ -315,7 +315,7 @@ class Moroder(unittest.TestCase):
                                          verbose=0, normalized=False)
         sdpRelaxation.get_relaxation(1, objective=objective,
                                      substitutions=P.substitutions)
-        Problem = convert_to_picos(sdpRelaxation, duplicate_moment_matrix=True)
+        Problem = sdpRelaxation.convert_to_picos(duplicate_moment_matrix=True)
         X = Problem.get_variable('X')
         Y = Problem.get_variable('Y')
         Z = Problem.add_variable('Z', (sdpRelaxation.block_struct[0],

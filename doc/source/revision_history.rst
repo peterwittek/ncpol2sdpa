@@ -9,6 +9,7 @@ Revision History
   - New: The convenience method `write_to_file()` was added to the class `SdpRelaxation`.
   - New: The convenience method `save_monomial_index()` was added to the class `SdpRelaxation`.
   - New: The convenience method `find_solution_ranks()` was added to the class `SdpRelaxation`. It replaces the previous stand-alone `find_rank_loop()` function.
+  - New: The conversion routines `convert_to_picos` and `convert_to_mosek` are also part of the class `sdpRelaxation`.
   - New: The new method `extract_dual_value()` was added to the class `SdpRelaxation` to calculate the inner product of the coefficient matrix of an SDP variable with the dual solution.
   - New: The class `RdmHierarchy` was added to generate SDPs of the reduced density matrix method. Initial support for 1D spinless, translational invariant systems is included.
   - New: Better support for the steering hierarchy in a new class `SteeringHierarchy`.

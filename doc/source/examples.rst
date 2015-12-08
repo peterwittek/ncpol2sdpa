@@ -163,7 +163,7 @@ the relevant function call to:
 
 ::
 
-    P = convert_to_picos(sdpRelaxation)
+    P = sdpRelaxation.convert_to_picos()
 
 This returns a PICOS problem. For instance, we can manually define the value
 of certain elements of the moment matrix before solving the SDP:
@@ -344,7 +344,7 @@ We can further process the moment matrix, for instance, to impose partial positi
 
 ::
 
-    Problem = convert_to_picos(sdpRelaxation, duplicate_moment_matrix=True)
+    Problem = sdpRelaxation.convert_to_picos(duplicate_moment_matrix=True)
     X = Problem.get_variable('X')
     Y = Problem.get_variable('Y')
     Z = Problem.add_variable('Z', (sdpRelaxation.block_struct[0],

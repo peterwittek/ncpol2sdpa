@@ -26,6 +26,7 @@ from .nc_utils import apply_substitutions, build_permutation_matrix, \
 from .solver_common import find_solution_ranks, get_sos_decomposition, \
                            get_xmat_value, solve_sdp, extract_dual_value
 from .mosek_utils import convert_to_mosek
+from .picos_utils import convert_to_picos
 from .sdpa_utils import write_to_sdpa, write_to_human_readable
 from .chordal_extension import find_variable_cliques
 
@@ -1018,6 +1019,28 @@ class SdpRelaxation(Relaxation):
         :type filename: str.
         """
         save_monomial_index(filename, self.monomial_index)
+
+    def convert_to_picos(self, duplicate_moment_matrix=False):
+        """Convert the SDP relaxation to a PICOS problem such that the exported
+        .dat-s file is extremely sparse, there is not penalty imposed in terms
+        of SDP variables or number of constraints. This conversion can be used
+        for imposing extra constraints on the moment matrix, such as partial
+        transpose.
+
+        :param duplicate_moment_matrix: Optional parameter to add an
+                                        unconstrained moment matrix to the
+                                        problem with the same structure as the
+                                        moment matrix with the PSD constraint.
+        :type duplicate_moment_matrix: bool.
+
+        :returns: :class:`picos.Problem`.
+        """
+        return \
+            convert_to_picos(self,
+                             duplicate_moment_matrix=duplicate_moment_matrix)
+
+    def convert_to_mosek(self):
+        return convert_to_mosek(self)
 
     def get_relaxation(self, level, objective=None, inequalities=None,
                        equalities=None, substitutions=None, bounds=None,
