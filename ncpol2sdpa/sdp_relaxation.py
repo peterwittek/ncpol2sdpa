@@ -1040,6 +1040,10 @@ class SdpRelaxation(Relaxation):
                              duplicate_moment_matrix=duplicate_moment_matrix)
 
     def convert_to_mosek(self):
+        """Convert an SDP relaxation to a MOSEK task.
+
+        :returns: :class:`mosek.Task`.
+        """
         return convert_to_mosek(self)
 
     def get_relaxation(self, level, objective=None, inequalities=None,
