@@ -107,7 +107,7 @@ class SteeringHierarchy(SdpRelaxation):
         return k, coeff
 
     def _push_monomial(self, monomial, n_vars, row_offset, rowA, columnA, N,
-                       rowB, columnB, lenB):
+                       rowB, columnB, lenB, prevent_substitutions=False):
         monomial = apply_substitutions(monomial, self.substitutions,
                                        self.pure_substitution_rules)
         if is_number_type(monomial):
@@ -246,7 +246,8 @@ class SteeringHierarchy(SdpRelaxation):
 
     def _calculate_block_structure(self, inequalities, equalities, bounds,
                                    momentinequalities, momentequalities,
-                                   extramomentmatrix, removeequalities):
+                                   extramomentmatrix, removeequalities,
+                                   block_struct=None):
         """Calculates the block_struct array for the output file.
         """
         super(SteeringHierarchy, self).\

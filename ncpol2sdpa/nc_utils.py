@@ -610,21 +610,12 @@ def find_variable_set(variable_sets, polynomial):
 
 
 def is_number_type(exp):
-    if isinstance(exp, (int, float, complex, Number)):
-        return True
-    else:
-        return False
+    return isinstance(exp, (int, float, complex, Number))
 
 
 def is_adjoint(exp):
-    if isinstance(exp, (adjoint, conjugate)):
-        return True
-    else:
-        return False
+    return isinstance(exp, (adjoint, conjugate))
 
 
 def is_hermitian(exp):
-    if exp.is_hermitian or (exp.is_hermitian is None and exp.is_complex):
-        return True
-    else:
-        return False
+    return exp.is_hermitian or (exp.is_hermitian is None and exp.is_complex)

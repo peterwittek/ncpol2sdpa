@@ -79,7 +79,8 @@ class MoroderHierarchy(SdpRelaxation):
 
     def _calculate_block_structure(self, inequalities, equalities, bounds,
                                    momentinequalities, momentequalities,
-                                   extramomentmatrix, removeequalities):
+                                   extramomentmatrix, removeequalities,
+                                   block_struct=None):
         """Calculates the block_struct array for the output file.
         """
         block_struct = []

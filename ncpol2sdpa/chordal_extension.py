@@ -108,8 +108,8 @@ def find_clique_index(variables, polynomial, clique_set):
     return -1
 
 
-def find_variable_cliques(variables, level, objective=0, substitutions=None,
-                          inequalities=None, equalities=None):
+def find_variable_cliques(variables, objective=0, inequalities=None,
+                          equalities=None):
     if objective == 0 and inequalities is None and equalities is None:
         raise Exception("There is nothing to extract the chordal structure " +
                         "from!")

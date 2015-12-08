@@ -8,10 +8,10 @@ Created on Sun May 26 15:06:17 2013
 @author: Peter Wittek
 """
 from __future__ import division, print_function
-from math import floor
-import numpy as np
-from sympy import S, Expr, expand
 import sys
+from math import floor
+from sympy import S, Expr, expand
+import numpy as np
 try:
     from scipy.linalg import qr
     from scipy.sparse import lil_matrix, hstack
@@ -192,15 +192,15 @@ class SdpRelaxation(Relaxation):
             info += str(n_commutative_nonhermitian) + \
                 " commuting nonhermitian"
         if n_noncommutative_hermitian > 0:
-                if len(info) > 0:
-                    info += ", "
-                info += str(n_noncommutative_hermitian) + \
-                    " noncommuting Hermitian"
+            if len(info) > 0:
+                info += ", "
+            info += str(n_noncommutative_hermitian) + \
+                " noncommuting Hermitian"
         if n_noncommutative_nonhermitian > 0:
-                if len(info) > 0:
-                    info += ", "
-                info += str(n_commutative_nonhermitian) + \
-                    " noncommuting nonhermitian"
+            if len(info) > 0:
+                info += ", "
+            info += str(n_commutative_nonhermitian) + \
+                " noncommuting nonhermitian"
         if len(info) > 0:
             info += " variables"
         else:
@@ -737,8 +737,7 @@ class SdpRelaxation(Relaxation):
                 self.block_struct += [1, 1]
         self.localizing_monomial_sets = monomial_sets
 
-    def __generate_monomial_sets(self, objective, inequalities, equalities,
-                                 extramonomials):
+    def __generate_monomial_sets(self, extramonomials):
         if self.level == -1:
             if extramonomials is None or extramonomials == []:
                 raise Exception("Cannot build relaxation at level -1 without \
@@ -811,8 +810,7 @@ class SdpRelaxation(Relaxation):
     def process_constraints(self, inequalities=None, equalities=None,
                             bounds=None, momentinequalities=None,
                             momentequalities=None, block_index=0,
-                            removeequalities=False,
-                            localizing_monomial_sets=None):
+                            removeequalities=False):
         """Process the constraints and generate localizing matrices. Useful
         only if the moment matrix already exists. Call it if you want to
         replace your constraints. The number of the respective types of
@@ -1121,11 +1119,9 @@ class SdpRelaxation(Relaxation):
                 if iscomplex(lhs) or iscomplex(rhs):
                     self.complex_matrix = True
         if chordal_extension:
-            self.variables = find_variable_cliques(self.variables, level,
-                                                   objective, substitutions,
+            self.variables = find_variable_cliques(self.variables, objective,
                                                    inequalities, equalities)
-        self.__generate_monomial_sets(objective, inequalities, equalities,
-                                      extramonomials)
+        self.__generate_monomial_sets(extramonomials)
         self.localizing_monomial_sets = localizing_monomials
 
         if bounds is not None:

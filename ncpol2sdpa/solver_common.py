@@ -4,9 +4,9 @@ Created on Fri May 22 18:05:24 2015
 
 @author: Peter Wittek
 """
-import numpy as np
 import time
-from sympy import expand, simplify
+import numpy as np
+from sympy import expand
 try:
     from scipy.sparse import lil_matrix
 except ImportError:
@@ -182,7 +182,7 @@ def get_sos_decomposition(sdpRelaxation, y_mat=None, threshold=0.0):
     elif sdpRelaxation.status != "unsolved" and y_mat is None:
         y_mat = sdpRelaxation.y_mat
     sos = []
-    for block, y_mat_block in enumerate(y_mat):
+    for y_mat_block in y_mat:
         term = 0
         vals, vecs = np.linalg.eigh(y_mat_block)
         for j, val in enumerate(vals):

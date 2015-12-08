@@ -6,7 +6,7 @@ Created on Wed Nov  10 11:24:48 2015
 """
 import sys
 from math import sqrt
-from sympy import expand, S
+from sympy import S
 from sympy.physics.quantum.dagger import Dagger
 from .sdp_relaxation import SdpRelaxation
 from .nc_utils import apply_substitutions, is_number_type, \
@@ -255,7 +255,7 @@ class RdmHierarchy(SdpRelaxation):
         return n_vars, block_index + 1, processed_entries
 
     def _generate_moment_matrix(self, n_vars, block_index, processed_entries,
-                                monomialsA, monomialsB):
+                                monomialsA, monomialsB, ppt=False):
         if self.circulant:
             if ncdegree(monomialsA[0]) == 1:
                 return self.__second_moments(n_vars, monomialsA, block_index,
