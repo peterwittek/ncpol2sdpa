@@ -821,10 +821,15 @@ class SdpRelaxation(Relaxation):
         :type inequalities: list of :class:`sympy.core.exp.Expr`.
         :param equalities: Optional parameter to list equality constraints.
         :type equalities: list of :class:`sympy.core.exp.Expr`.
-        :type substitutions: dict of :class:`sympy.core.exp.Expr`.
-        :param bounds: Optional parameter of bounds on variables which will not
-                       be relaxed by localizing matrices.
-        :type bounds: list of :class:`sympy.core.exp.Expr`.
+        :param momentinequalities: Optional parameter of inequalities defined
+                                   on moments.
+        :type momentinequalities: list of :class:`sympy.core.exp.Expr`.
+        :param momentequalities: Optional parameter of equalities defined
+                                 on moments.
+        :type momentequalities: list of :class:`sympy.core.exp.Expr`.
+        :param removeequalities: Optional parameter to attempt removing the
+                                 equalities by solving the linear equations.
+
         :param removeequalities: Optional parameter to attempt removing the
                                  equalities by solving the linear equations.
         :type removeequalities: bool.
