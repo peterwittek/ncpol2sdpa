@@ -476,43 +476,43 @@ class SdpRelaxation(Relaxation):
             sys.stdout.write("\n")
         return block_index
 
-    def __process_equalities(
-            self, equalities, all_monomials):
+    def __process_equalities(self, equalities, momentequalities):
         """Generate localizing matrices
 
         Arguments:
         equalities -- list of equality constraints
-        monomials  -- localizing monomials
-        level -- the level of the relaxation
+        equalities -- list of moment equality constraints
         """
-        max_localization_order = 0
-        for equality in equalities:
+        monomial_sets = []
+        n_rows = 0
+        for equality in flatten([equalities, momentequalities]):
             # Find the order of the localizing matrix
             if equality.is_Relational:
                 equality = convert_relational(equality)
             eq_order = ncdegree(equality)
             if eq_order > 2 * self.level:
-                print("An equality constraint has degree %d. Choose a "
-                      "higher level of relaxation." % eq_order)
-                raise Exception
+                raise Exception("An equality constraint has degree %d. Choose"
+                                " a higher level of relaxation." % eq_order)
             localization_order = int(floor((2 * self.level - eq_order) / 2))
-            if localization_order > max_localization_order:
-                max_localization_order = localization_order
-        monomials = \
-            pick_monomials_up_to_degree(all_monomials, max_localization_order)
-        A = np.zeros(
-            (int(len(equalities) * len(monomials) * (len(monomials) + 1) / 2),
-             self.n_vars + 1))
+            index = find_variable_set(self.variables, equality)
+            localizing_monomials = \
+                pick_monomials_up_to_degree(self.monomial_sets[index],
+                                            localization_order)
+            if len(localizing_monomials) == 0:
+                localizing_monomials = [S.One]
+            localizing_monomials = unique(localizing_monomials)
+            monomial_sets.append(localizing_monomials)
+            n_rows += len(localizing_monomials)*(len(localizing_monomials)+1)/2
+        A = np.zeros((n_rows, self.n_vars + 1), dtype=self.F_struct.dtype)
         n_rows = 0
-        for equality in equalities:
-            # Find the order of the localizing matrix
+        for i, equality in enumerate(flatten([equalities, momentequalities])):
             # Process M_y(gy)(u,w) entries
-            for row in range(len(monomials)):
-                for column in range(row, len(monomials)):
+            for row in range(len(monomial_sets[i])):
+                for column in range(row, len(monomial_sets[i])):
                     # Calculate the moments of polynomial entries
                     polynomial = \
-                        simplify_polynomial(monomials[row].adjoint() *
-                                            equality * monomials[column],
+                        simplify_polynomial(monomial_sets[i][row].adjoint() *
+                                            equality*monomial_sets[i][column],
                                             self.substitutions)
                     A[n_rows] = self._get_facvar(polynomial)
                     # This is something really weird: we want the constant
@@ -524,11 +524,10 @@ class SdpRelaxation(Relaxation):
                     n_rows += 1
         return A
 
-    def __remove_equalities(self, equalities, A):
+    def __remove_equalities(self, equalities, momentequalities):
         """Attempt to remove equalities by solving the linear equations.
         """
-        if len(equalities) == 0:
-            return
+        A = self.__process_equalities(equalities, momentequalities)
         c = np.array(self.obj_facvar)
         Q, R, P = qr(np.transpose(A[:, 1:]), pivoting=True)
         E = build_permutation_matrix(P)
@@ -670,7 +669,7 @@ class SdpRelaxation(Relaxation):
                 for _ in extramomentmatrix:
                     for monomials in self.monomial_sets:
                         if len(monomials) > 0 and \
-                              isinstance(monomials[0], list):
+                                isinstance(monomials[0], list):
                             self.block_struct.append(len(monomials[0]))
                         else:
                             self.block_struct.append(len(monomials))
@@ -731,7 +730,7 @@ class SdpRelaxation(Relaxation):
             for _ in momentinequalities:
                 monomial_sets.append([S.One])
                 self.block_struct.append(1)
-        if momentequalities is not None:
+        if not removeequalities and momentequalities is not None:
             for _ in momentequalities:
                 monomial_sets += [[S.One], [S.One]]
                 self.block_struct += [1, 1]
@@ -852,7 +851,7 @@ class SdpRelaxation(Relaxation):
         if momentinequalities is not None:
             for mineq in momentinequalities:
                 self.constraints.append(mineq)
-        if momentequalities is not None:
+        if not removeequalities and momentequalities is not None:
             for meq in momentequalities:
                 self.constraints.append(meq)
                 if isinstance(meq, str):
@@ -863,10 +862,8 @@ class SdpRelaxation(Relaxation):
                 else:
                     self.constraints.append(-meq)
         self.__process_inequalities(block_index)
-        if removeequalities and equalities is not None:
-            A = self.__process_equalities(equalities,
-                                          flatten(self.monomial_sets))
-            self.__remove_equalities(equalities, A)
+        if removeequalities:
+            self.__remove_equalities(equalities, momentequalities)
 
     def set_objective(self, objective, extraobjexpr=None):
         """Set or change the objective function of the polynomial optimization

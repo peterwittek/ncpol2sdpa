@@ -241,7 +241,7 @@ def fast_substitute(monomial, old_sub, new_sub):
         new_comm_factors, _ = split_commutative_parts(new_sub)
     comm_monomial = 1
     is_constant_term = False
-    if len(comm_factors) == 1 and isinstance(comm_factors[0], Number):
+    if len(comm_factors) == 1 and is_number_type(comm_factors[0]):
         is_constant_term = True
         comm_monomial = comm_factors[0]
     if not is_constant_term and len(comm_factors) > 0:
@@ -254,7 +254,32 @@ def fast_substitute(monomial, old_sub, new_sub):
             comm_new_sub = 1
             for comm_factor in new_comm_factors:
                 comm_new_sub *= comm_factor
-            comm_monomial = comm_monomial.subs(comm_old_sub, comm_new_sub)
+            # Dummy heuristic to get around retarded SymPy bug
+            if isinstance(comm_old_sub, Pow):
+                # In this case, we are in trouble
+                old_base = comm_old_sub.base
+                if comm_monomial.has(old_base):
+                    old_degree = comm_old_sub.exp
+                    new_monomial = 1
+                    match = False
+                    for factor in comm_monomial.as_ordered_factors():
+                        if factor.has(old_base):
+                            if isinstance(factor, Pow):
+                                degree = factor.exp
+                                if degree >= old_degree:
+                                    match = True
+                                    new_monomial *= \
+                                        old_base**(degree-old_degree) * \
+                                        comm_new_sub
+
+                            else:
+                                new_monomial *= factor
+                        else:
+                            new_monomial *= factor
+                    if match:
+                        comm_monomial = new_monomial
+            else:
+                comm_monomial = comm_monomial.subs(comm_old_sub, comm_new_sub)
     if len(ncomm_factors) == 0 or len(old_ncomm_factors) == 0:
         return comm_monomial
     # old_factors = old_sub.as_ordered_factors()
