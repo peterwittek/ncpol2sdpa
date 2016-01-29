@@ -485,24 +485,31 @@ class SdpRelaxation(Relaxation):
         """
         monomial_sets = []
         n_rows = 0
-        for equality in flatten([equalities, momentequalities]):
-            # Find the order of the localizing matrix
-            if equality.is_Relational:
-                equality = convert_relational(equality)
-            eq_order = ncdegree(equality)
-            if eq_order > 2 * self.level:
-                raise Exception("An equality constraint has degree %d. Choose"
-                                " a higher level of relaxation." % eq_order)
-            localization_order = int(floor((2 * self.level - eq_order) / 2))
-            index = find_variable_set(self.variables, equality)
-            localizing_monomials = \
-                pick_monomials_up_to_degree(self.monomial_sets[index],
-                                            localization_order)
-            if len(localizing_monomials) == 0:
-                localizing_monomials = [S.One]
-            localizing_monomials = unique(localizing_monomials)
-            monomial_sets.append(localizing_monomials)
-            n_rows += len(localizing_monomials)*(len(localizing_monomials)+1)/2
+        if equalities is not None:
+            for equality in equalities:
+                # Find the order of the localizing matrix
+                if equality.is_Relational:
+                    equality = convert_relational(equality)
+                eq_order = ncdegree(equality)
+                if eq_order > 2 * self.level:
+                    raise Exception("An equality constraint has degree %d. "
+                                    "Choose a higher level of relaxation."
+                                    % eq_order)
+                localization_order = int(floor((2 * self.level - eq_order)/2))
+                index = find_variable_set(self.variables, equality)
+                localizing_monomials = \
+                    pick_monomials_up_to_degree(self.monomial_sets[index],
+                                                localization_order)
+                if len(localizing_monomials) == 0:
+                    localizing_monomials = [S.One]
+                localizing_monomials = unique(localizing_monomials)
+                monomial_sets.append(localizing_monomials)
+                n_rows += len(localizing_monomials) * \
+                    (len(localizing_monomials) + 1) / 2
+        if momentequalities is not None:
+            for _ in momentequalities:
+                monomial_sets.append([S.One])
+                n_rows += 1
         A = np.zeros((n_rows, self.n_vars + 1), dtype=self.F_struct.dtype)
         n_rows = 0
         for i, equality in enumerate(flatten([equalities, momentequalities])):
@@ -532,13 +539,14 @@ class SdpRelaxation(Relaxation):
         Q, R, P = qr(np.transpose(A[:, 1:]), pivoting=True)
         E = build_permutation_matrix(P)
         n = np.max(np.nonzero(np.sum(np.abs(R), axis=1) > 0)) + 1
-        x = np.dot(Q[:, 0:n], np.linalg.solve(np.transpose(R[0:n, :]),
-                                              E.T.dot(-A[:, 0])))
+        x = np.dot(Q[:, :n], np.linalg.solve(np.transpose(R[:n, :]),
+                                             E.T.dot(-A[:, 0])))
         x = np.append(1, x)
         H = lil_matrix(Q[:, n:])  # New basis
         # Transforming the objective function
         self.obj_facvar = H.T.dot(c)
         # Transforming the moment matrix and localizing matrices
+        self.F_struct = self.F_struct[:,:self.n_vars+1]
         new_constant_column = lil_matrix(self.F_struct.dot(x))
         self.F_struct = hstack([new_constant_column.T,
                                 self.F_struct[:, 1:].dot(H)])
@@ -887,7 +895,7 @@ class SdpRelaxation(Relaxation):
                       "constant term. It is not included in the SDP objective."
                       % facvar[0])
         else:
-            self.obj_facvar = self._get_facvar(0)
+            self.obj_facvar = self._get_facvar(0)[1:]
         if extraobjexpr is not None:
             for sub_expr in extraobjexpr.split(']'):
                 startindex = 0
