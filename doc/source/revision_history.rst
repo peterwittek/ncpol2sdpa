@@ -1,6 +1,9 @@
 Revision History
 ****************
 
+**Version 1.10.1 (2016-01-29)** 
+  - Fixed: The moment equalities are removed correctly if asked.
+
 **Version 1.10 (2015-12-08)** 
 
   - New: The function ``generate_operators`` returns a list of operators from the ``sympy.physics.quantum`` submodule. This is the old behaviour of ``generate_variables``.
