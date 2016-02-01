@@ -18,7 +18,8 @@ try:
 except ImportError:
     from .sparse_utils import lil_matrix
 from .nc_utils import apply_substitutions, build_permutation_matrix, \
-                      convert_relational, find_variable_set, flatten, \
+                      check_simple_substitution, convert_relational, \
+                      find_variable_set, flatten, \
                       get_all_monomials, is_number_type, \
                       is_pure_substitution_rule, iscomplex, ncdegree, \
                       pick_monomials_up_to_degree, save_monomial_index, \
@@ -155,6 +156,7 @@ class SdpRelaxation(Relaxation):
         self.monomial_sets = []
         self.pure_substitution_rules = True
         self.constraints = []
+        self.moment_substitutions = {}
         self.complex_matrix = False
         n_noncommutative_hermitian = 0
         n_noncommutative_nonhermitian = 0
@@ -221,17 +223,22 @@ class SdpRelaxation(Relaxation):
         """
         monomial, coeff = separate_scalar_factor(monomial)
         k = 0
-        # Have we seen this monomial before?
+        # Are we substituting this for a constant?
         try:
-            # If yes, then we improve sparsity by reusing the
-            # previous variable to denote this entry in the matrix
-            k = self.monomial_index[monomial]
+            coeff2 = self.moment_substitutions[monomial]
+            coeff *= coeff2
         except KeyError:
-            # Otherwise we define a new entry in the associated
-            # array recording the monomials, and add an entry in
-            # the moment matrix
-            k = n_vars + 1
-            self.monomial_index[monomial] = k
+            # Have we seen this monomial before?
+            try:
+                # If yes, then we improve sparsity by reusing the
+                # previous variable to denote this entry in the matrix
+                k = self.monomial_index[monomial]
+            except KeyError:
+                # Otherwise we define a new entry in the associated
+                # array recording the monomials, and add an entry in
+                # the moment matrix
+                k = n_vars + 1
+                self.monomial_index[monomial] = k
         return k, coeff
 
     def _push_monomial(self, monomial, n_vars, row_offset, rowA, columnA, N,
@@ -378,16 +385,20 @@ class SdpRelaxation(Relaxation):
                     monomial = -monomial
                     coeff = -1.0 * coeff
             try:
-                k = self.monomial_index[monomial]
-                result.append((k, coeff))
+                coeff0 = self.moment_substitutions[monomial]
+                result.append((0, coeff0*coeff))
             except KeyError:
-                if not daggered:
-                    dag_result = self._get_index_of_monomial(monomial.adjoint(),
-                                                             daggered=True)
-                    result += [(k, coeff0*coeff) for k, coeff0 in dag_result]
-                else:
-                    raise RuntimeError("The requested monomial " +
-                                       str(monomial) + " could not be found.")
+                try:
+                    k = self.monomial_index[monomial]
+                    result.append((k, coeff))
+                except KeyError:
+                    if not daggered:
+                        dag_result = self._get_index_of_monomial(monomial.adjoint(),
+                                                                 daggered=True)
+                        result += [(k, coeff0*coeff) for k, coeff0 in dag_result]
+                    else:
+                        raise RuntimeError("The requested monomial " +
+                                           str(monomial) + " could not be found.")
         return result
 
     def __push_facvar_sparse(self, polynomial, block_index, row_offset, i, j):
@@ -535,6 +546,8 @@ class SdpRelaxation(Relaxation):
         """Attempt to remove equalities by solving the linear equations.
         """
         A = self.__process_equalities(equalities, momentequalities)
+        if A.shape[0] == 0:
+            return
         c = np.array(self.obj_facvar)
         Q, R, P = qr(np.transpose(A[:, 1:]), pivoting=True)
         E = build_permutation_matrix(P)
@@ -738,10 +751,16 @@ class SdpRelaxation(Relaxation):
             for _ in momentinequalities:
                 monomial_sets.append([S.One])
                 self.block_struct.append(1)
-        if not removeequalities and momentequalities is not None:
-            for _ in momentequalities:
-                monomial_sets += [[S.One], [S.One]]
-                self.block_struct += [1, 1]
+        if momentequalities is not None:
+            for moment_eq in momentequalities:
+                substitution = check_simple_substitution(moment_eq)
+                if substitution == (0, 0):
+                    if not removeequalities:
+                        monomial_sets += [[S.One], [S.One]]
+                        self.block_struct += [1, 1]
+                else:
+                    self.moment_substitutions[substitution[0]] = \
+                        substitution[1]
         self.localizing_monomial_sets = monomial_sets
 
     def __generate_monomial_sets(self, extramonomials):
@@ -859,19 +878,27 @@ class SdpRelaxation(Relaxation):
         if momentinequalities is not None:
             for mineq in momentinequalities:
                 self.constraints.append(mineq)
-        if not removeequalities and momentequalities is not None:
+        reduced_moment_equalities = []
+        if momentequalities is not None:
             for meq in momentequalities:
-                self.constraints.append(meq)
-                if isinstance(meq, str):
-                    tmp = meq.replace("+", "p")
-                    tmp = tmp.replace("-", "+")
-                    tmp = tmp.replace("p", "-")
-                    self.constraints.append(tmp)
-                else:
-                    self.constraints.append(-meq)
+                substitution = check_simple_substitution(meq)
+                if substitution == (0, 0):
+                    if not removeequalities:
+                        self.constraints.append(meq)
+                        if isinstance(meq, str):
+                            tmp = meq.replace("+", "p")
+                            tmp = tmp.replace("-", "+")
+                            tmp = tmp.replace("p", "-")
+                            self.constraints.append(tmp)
+                        else:
+                            self.constraints.append(-meq)
+                    else:
+                        reduced_moment_equalities.append(meq)
         self.__process_inequalities(block_index)
+        if reduced_moment_equalities == []:
+            reduced_moment_equalities = None
         if removeequalities:
-            self.__remove_equalities(equalities, momentequalities)
+            self.__remove_equalities(equalities, reduced_moment_equalities)
 
     def set_objective(self, objective, extraobjexpr=None):
         """Set or change the objective function of the polynomial optimization

@@ -1,6 +1,10 @@
 Revision History
 ****************
 
+**Since 1.10.1**
+  - New: Very efficient substitutions of moment equalities if one side of the equality is the moment of a monomial, and the other side is a constant.
+
+
 **Version 1.10.1 (2016-01-29)** 
   - Fixed: The moment equalities are removed correctly if asked.
 

@@ -634,6 +634,33 @@ def find_variable_set(variable_sets, polynomial):
     return -1
 
 
+def check_simple_substitution(equality):
+    if isinstance(equality, str):
+        return (0, 0)
+    elif equality.is_Relational:
+        eq = convert_relational(equality)
+    else:
+        eq = equality
+    if eq.is_Mul or eq.is_Pow:
+        monomial, _ = separate_scalar_factor(eq)
+        return (monomial, 0)
+    if eq.is_Add:
+        components = eq.as_ordered_terms()
+        if len(components) == 2:
+            n_constant = 0
+            constant = 0
+            coeff = 0
+            for component in components:
+                if is_number_type(component):
+                    n_constant += 1
+                    constant = component
+                else:
+                    monomial, coeff = separate_scalar_factor(component)
+            if n_constant == 1:
+                return (monomial, float(-constant/coeff))
+    return (0, 0)
+
+
 def is_number_type(exp):
     return isinstance(exp, (int, float, complex, Number))
 
