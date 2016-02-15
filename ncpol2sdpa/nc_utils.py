@@ -640,7 +640,7 @@ def check_simple_substitution(equality):
     elif equality.is_Relational:
         eq = convert_relational(equality)
     else:
-        eq = equality
+        eq = expand(equality)
     if eq.is_Mul or eq.is_Pow:
         monomial, _ = separate_scalar_factor(eq)
         return (monomial, 0)
