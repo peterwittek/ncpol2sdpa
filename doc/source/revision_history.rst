@@ -1,5 +1,7 @@
 Revision History
 ****************
+Since version 1.10.2:
+  - Fixed: Problem with unexpanded moment equality constraints resolved.
 
 **Version 1.10.2 (2016-02-03)** 
   - New: Very efficient substitutions of moment equalities if one side of the equality is the moment of a monomial, and the other side is a constant.
