@@ -1,6 +1,6 @@
 Revision History
 ****************
-Since version 1.10.2:
+**Version 1.10.3 (2016-02-26)** 
   - Fixed: Problem with unexpanded moment equality constraints resolved.
 
 **Version 1.10.2 (2016-02-03)** 

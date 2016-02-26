@@ -32,7 +32,7 @@ Optional dependencies include:
 
 Usage
 =====
-Documentation is available `on Read the Docs <http://ncpol2sdpa.readthedocs.org/en/stable/>`_. The following code replicates the toy example from Pironio, S.; Navascués, M. & Acín, A. Convergent relaxations of polynomial optimization problems with noncommuting variables SIAM Journal on Optimization, SIAM, 2010, 20, 2157-2180.
+Documentation is available on `Read the Docs <http://ncpol2sdpa.readthedocs.org/en/stable/>`_. The following code replicates the toy example from Pironio, S.; Navascués, M. & Acín, A. Convergent relaxations of polynomial optimization problems with noncommuting variables SIAM Journal on Optimization, SIAM, 2010, 20, 2157-2180.
 
 .. code:: python
 
