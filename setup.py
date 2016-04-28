@@ -13,7 +13,7 @@ setup(
     author='Peter Wittek',
     author_email='peterwittek@users.noreply.github.com',
     packages=['ncpol2sdpa'],
-    url='http://ncpol2sdpa.readthedocs.org/',
+    url='http://ncpol2sdpa.readthedocs.io/',
     keywords=[
         'sdp',
         'semidefinite programming',

@@ -18,7 +18,7 @@ Optional dependencies include:
 - `PICOS <http://picos.zib.de/>`_ is necessary for using the Cvxopt solver and for converting the problem to a PICOS instance.
 - `MOSEK <http://www.mosek.com/>`_ Python module is necessary to work with the MOSEK solver.
 - `Cvxopt <http://cvxopt.org/>`_ is required by both Chompack and PICOS.
-- `Chompack <http://chompack.readthedocs.org/en/latest/>`_ improves the sparsity of the chordal graph extension.
+- `Chompack <http://chompack.readthedocs.io/>`_ improves the sparsity of the chordal graph extension.
 
 Installation
 ============

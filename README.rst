@@ -28,11 +28,11 @@ Optional dependencies include:
 - `PICOS <http://picos.zib.de/>`_ is necessary for using the Cvxopt solver and for converting the problem to a PICOS instance.
 - `MOSEK <http://www.mosek.com/>`_ Python module is necessary to work with the MOSEK solver.
 - `Cvxopt <http://cvxopt.org/>`_ is required by both Chompack and PICOS.
-- `Chompack <http://chompack.readthedocs.org/en/latest/>`_ improves the sparsity of the chordal graph extension.
+- `Chompack <http://chompack.readthedocs.io/en/latest/>`_ improves the sparsity of the chordal graph extension.
 
 Usage
 =====
-Documentation is available on `Read the Docs <http://ncpol2sdpa.readthedocs.org/en/stable/>`_. The following code replicates the toy example from Pironio, S.; Navascués, M. & Acín, A. Convergent relaxations of polynomial optimization problems with noncommuting variables SIAM Journal on Optimization, SIAM, 2010, 20, 2157-2180.
+Documentation is available on `Read the Docs <http://ncpol2sdpa.readthedocs.io/>`_. The following code replicates the toy example from Pironio, S.; Navascués, M. & Acín, A. Convergent relaxations of polynomial optimization problems with noncommuting variables SIAM Journal on Optimization, SIAM, 2010, 20, 2157-2180.
 
 .. code:: python
 
