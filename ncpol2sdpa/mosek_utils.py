@@ -64,6 +64,7 @@ def solve_with_mosek(sdpRelaxation, solverparameters=None):
     task = convert_to_mosek(sdpRelaxation)
     if solverparameters is not None:
         for par, val in solverparameters.items():
+            import mosek
             try:
                 mskpar = eval('mosek.iparam.' + par)
                 task.putintparam(mskpar, val)
