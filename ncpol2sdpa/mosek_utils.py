@@ -63,17 +63,34 @@ def parse_mosek_solution(sdpRelaxation, task):
 def solve_with_mosek(sdpRelaxation, solverparameters=None):
     task = convert_to_mosek(sdpRelaxation)
     if solverparameters is not None:
+        import mosek
         for par, val in solverparameters.items():
-            import mosek
             try:
-                mskpar = eval('mosek.iparam.' + par)
-                task.putintparam(mskpar, val)
-            except AttributeError:
-                try:
+                #get rid of a leading "mosek."
+                if(par.startswith("mosek.")):
+                    par = par[6:]
+                #if ?param. prefix is given use it to determine the type
+                if(par.startswith("iparam.")):
+                    mskpar = eval('mosek.' + par)
+                    task.putintparam(mskpar, val)
+                elif(par.startswith("dparam.")):
+                    mskpar = eval('mosek.' + par)
+                    task.putdouparam(mskpar, val)
+                elif(par.startswith("sparam.")):
+                    mskpar = eval('mosek.' + par)
+                    task.putstrparam(mskpar, val)
+                #else try to infer the type from the type of val
+                elif isinstance(val,int):
+                    mskpar = eval('mosek.iparam.' + par)
+                    task.putintparam(mskpar, val)
+                elif isinstance(val,float):
                     mskpar = eval('mosek.dparam.' + par)
                     task.putdouparam(mskpar, val)
-                except AttributeError:
-                    raise Exception('Unknown mosek parameter')
+                elif isinstance(val,str):
+                    mskpar = eval('mosek.sparam.' + par)
+                    task.putstrparam(mskpar, val)
+            except AttributeError:
+                raise Exception('No mosek parameter found with the name mosek(.iparam|.dparam|.sparam|).'+str(par)+' that takes a value of type '+str(type(val))+'. See the mosek python API manual for valid parameters.')
     task.optimize()
     primal, dual, x_mat, y_mat, status = parse_mosek_solution(sdpRelaxation,
                                                               task)
