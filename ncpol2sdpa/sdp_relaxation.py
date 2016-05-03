@@ -12,6 +12,7 @@ import sys
 from math import floor
 from sympy import S, Expr, expand
 import numpy as np
+import time
 try:
     import multiprocessing
     from functools import partial
@@ -332,6 +333,7 @@ class SdpRelaxation(Relaxation):
                                      " (done: %s)" % (n_vars, percentage))
                     sys.stdout.flush()
         else:
+            time0 = time.time()
             pool = multiprocessing.Pool()
             func = partial(foo, monomialsA=monomialsA, monomialsB=monomialsB, ppt=ppt, substitutions=self.substitutions, pure_substitution_rules=self.pure_substitution_rules)
 
@@ -355,7 +357,7 @@ class SdpRelaxation(Relaxation):
                         "{0:.0f}%".format(float(processed_entries-1)/self.n_vars *
                                           100)
                     sys.stdout.write("\r\x1b[KCurrent number of SDP variables: %d"
-                                     " (done: %s, working in %s processes)" % (n_vars, percentage, multiprocessing.cpu_count()))
+                                     " (done: %s, working in %s processes for %s seconds)" % (n_vars, percentage, multiprocessing.cpu_count(), int(time.time()-time0)))
                     sys.stdout.flush()
 
             pool.close()
