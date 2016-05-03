@@ -297,37 +297,71 @@ class SdpRelaxation(Relaxation):
             for block_size in self.block_struct[0:block_index]:
                 row_offset += block_size ** 2
         N = len(monomialsA)*len(monomialsB)
-        # We process the M_d(u,w) entries in the moment matrix
-        for rowA in range(len(monomialsA)):
-            for columnA in range(rowA, len(monomialsA)):
-                for rowB in range(len(monomialsB)):
-                    start_columnB = 0
-                    if rowA == columnA:
-                        start_columnB = rowB
-                    for columnB in range(start_columnB, len(monomialsB)):
-                        processed_entries += 1
-                        if (not ppt) or (columnB >= rowB):
-                            monomial = monomialsA[rowA].adjoint() * \
-                                       monomialsA[columnA] * \
-                                       monomialsB[rowB].adjoint() * \
-                                       monomialsB[columnB]
-                        else:
-                            monomial = monomialsA[rowA].adjoint() * \
-                                       monomialsA[columnA] * \
-                                       monomialsB[columnB].adjoint() * \
-                                       monomialsB[rowB]
-                        # Apply the substitutions if any
-                        n_vars = self._push_monomial(monomial, n_vars,
-                                                     row_offset, rowA,
-                                                     columnA, N, rowB,
-                                                     columnB, len(monomialsB))
-            if self.verbose > 0:
-                percentage = \
-                    "{0:.0f}%".format(float(processed_entries-1)/self.n_vars *
-                                      100)
-                sys.stdout.write("\r\x1b[KCurrent number of SDP variables: %d"
-                                 " (done: %s)" % (n_vars, percentage))
-                sys.stdout.flush()
+        try:
+            multiprocessing
+        except:
+            # We process the M_d(u,w) entries in the moment matrix
+            for rowA in range(len(monomialsA)):
+                for columnA in range(rowA, len(monomialsA)):
+                    for rowB in range(len(monomialsB)):
+                        start_columnB = 0
+                        if rowA == columnA:
+                            start_columnB = rowB
+                        for columnB in range(start_columnB, len(monomialsB)):
+                            processed_entries += 1
+                            if (not ppt) or (columnB >= rowB):
+                                monomial = monomialsA[rowA].adjoint() * \
+                                           monomialsA[columnA] * \
+                                           monomialsB[rowB].adjoint() * \
+                                           monomialsB[columnB]
+                            else:
+                                monomial = monomialsA[rowA].adjoint() * \
+                                           monomialsA[columnA] * \
+                                           monomialsB[columnB].adjoint() * \
+                                           monomialsB[rowB]
+                            # Apply the substitutions if any
+                            n_vars = self._push_monomial(monomial, n_vars,
+                                                         row_offset, rowA,
+                                                         columnA, N, rowB,
+                                                         columnB, len(monomialsB))
+                if self.verbose > 0:
+                    percentage = \
+                        "{0:.0f}%".format(float(processed_entries-1)/self.n_vars *
+                                          100)
+                    sys.stdout.write("\r\x1b[KCurrent number of SDP variables: %d"
+                                     " (done: %s)" % (n_vars, percentage))
+                    sys.stdout.flush()
+        else:
+            pool = multiprocessing.Pool()
+            func = partial(foo, monomialsA=monomialsA, monomialsB=monomialsB, ppt=ppt, substitutions=self.substitutions, pure_substitution_rules=self.pure_substitution_rules)
+
+            pooliter = pool.imap(func, (
+                (rowA, columnA, rowB)
+                for rowA in range(len(monomialsA))
+                for rowB in range(len(monomialsB))
+                for columnA in range(rowA, len(monomialsA))
+            ))
+
+            for iteration, (rowA, columnA, rowB, columnB, monomial) in enumerate(pooliter):
+#                print("iteration=",iteration)
+                processed_entries += 1
+                n_vars = self._push_monomial(monomial, n_vars,
+                                             row_offset, rowA,
+                                             columnA, N, rowB,
+                                             columnB, len(monomialsB),
+                                             prevent_substitutions=True)
+                if self.verbose > 0:
+                    percentage = \
+                        "{0:.0f}%".format(float(processed_entries-1)/self.n_vars *
+                                          100)
+                    sys.stdout.write("\r\x1b[KCurrent number of SDP variables: %d"
+                                     " (done: %s, working in %s processes)" % (n_vars, percentage, multiprocessing.cpu_count()))
+                    sys.stdout.flush()
+
+            pool.close()
+            pool.join()
+
+                
         if self.verbose > 0:
             sys.stdout.write("\r")
         return n_vars, block_index + 1, processed_entries
@@ -1262,6 +1296,33 @@ class SdpRelaxation(Relaxation):
 def moment_of_entry(pos, monomials, ineq, substitutions):
     row = pos[0]
     column = pos[1]
+    
     return row, column, simplify_polynomial(
         monomials[row].adjoint() * ineq *
         monomials[column], substitutions)
+
+
+def foo(arg, monomialsA, monomialsB, ppt, substitutions, pure_substitution_rules):
+    rowA = arg[0]
+    columnA = arg[1]
+    rowB = arg[2]
+    
+    start_columnB = 0
+    if rowA == columnA:
+        start_columnB = rowB
+    for columnB in range(start_columnB, len(monomialsB)):
+#        processed_entries += 1
+        if (not ppt) or (columnB >= rowB):
+            monomial = monomialsA[rowA].adjoint() * \
+                       monomialsA[columnA] * \
+                       monomialsB[rowB].adjoint() * \
+                       monomialsB[columnB]
+        else:
+            monomial = monomialsA[rowA].adjoint() * \
+                       monomialsA[columnA] * \
+                       monomialsB[columnB].adjoint() * \
+                       monomialsB[rowB]
+            # Apply the substitutions if any
+        monomial = apply_substitutions(monomial, substitutions,
+                                       pure_substitution_rules)
+    return rowA, columnA, rowB, columnB, monomial
