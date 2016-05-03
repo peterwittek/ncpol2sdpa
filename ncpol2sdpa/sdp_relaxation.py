@@ -54,6 +54,7 @@ class Relaxation(object):
         self.y_mat = None
         self.solution_time = None
         self.status = "unsolved"
+        self.constraints_hash = None
 
     def solve(self, solver=None, solverparameters=None):
         """Call a solver on the SDP relaxation. Upon successful solution, it
@@ -898,6 +899,11 @@ class SdpRelaxation(Relaxation):
                                  equalities by solving the linear equations.
         :type removeequalities: bool.
         """
+        if block_index == 0 or block_index == self.constraint_starting_block:
+            if self.constraints_hash == hash(frozenset((str(inequalities),str(equalities),str(bounds),str(momentinequalities),str(momentequalities),str(removeequalities)))):
+                return
+            self.constraints_hash = hash(frozenset((str(inequalities),str(equalities),str(bounds),str(momentinequalities),str(momentequalities),str(removeequalities))))
+        
         self.status = "unsolved"
         if block_index == 0:
             block_index = self.constraint_starting_block
