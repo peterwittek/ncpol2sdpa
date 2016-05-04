@@ -9,7 +9,7 @@ Created on Sun May 26 15:06:17 2013
 """
 from __future__ import division, print_function
 import sys
-from math import floor
+from math import floor, sqrt
 from sympy import S, Expr, expand
 import numpy as np
 import time
@@ -335,17 +335,16 @@ class SdpRelaxation(Relaxation):
         else:
             time0 = time.time()
             pool = multiprocessing.Pool()
-            func = partial(foo, monomialsA=monomialsA, monomialsB=monomialsB, ppt=ppt, substitutions=self.substitutions, pure_substitution_rules=self.pure_substitution_rules)
-
+            func = partial(assemble_monomial_and_do_substitutions, monomialsA=monomialsA, monomialsB=monomialsB, ppt=ppt, substitutions=self.substitutions, pure_substitution_rules=self.pure_substitution_rules)
+            chunksize = max(int(sqrt(len(monomialsA)*len(monomialsB)*len(monomialsA)/2)/multiprocessing.cpu_count()),1)#this is just a guess and can be optimized
             pooliter = pool.imap(func, (
                 (rowA, columnA, rowB)
                 for rowA in range(len(monomialsA))
                 for rowB in range(len(monomialsB))
                 for columnA in range(rowA, len(monomialsA))
-            ))
+            ), chunksize)
 
-            for iteration, (rowA, columnA, rowB, columnB, monomial) in enumerate(pooliter):
-#                print("iteration=",iteration)
+            for rowA, columnA, rowB, columnB, monomial in pooliter:
                 processed_entries += 1
                 n_vars = self._push_monomial(monomial, n_vars,
                                              row_offset, rowA,
@@ -357,7 +356,7 @@ class SdpRelaxation(Relaxation):
                         "{0:.0f}%".format(float(processed_entries-1)/self.n_vars *
                                           100)
                     sys.stdout.write("\r\x1b[KCurrent number of SDP variables: %d"
-                                     " (done: %s, working in %s processes for %s seconds)" % (n_vars, percentage, multiprocessing.cpu_count(), int(time.time()-time0)))
+                                     " (done: %s, working in %s processes for %s seconds with a chunksize of %s)" % (n_vars, percentage, multiprocessing.cpu_count(), int(time.time()-time0), chunksize))
                     sys.stdout.flush()
 
             pool.close()
@@ -545,7 +544,13 @@ class SdpRelaxation(Relaxation):
                 monomials = self.localizing_monomial_sets[block_index -
                                                           initial_block_index-1]
                 func = partial(moment_of_entry, monomials=monomials, ineq=ineq, substitutions=self.substitutions)
-                pooliter = pool.imap(func, ([row,column] for row in range(len(monomials)) for column in range(row, len(monomials))))
+                chunksize = max(int(sqrt(len(monomials)*len(monomials)/2)/multiprocessing.cpu_count()),1)#this is just a guess and can be optimized
+                pooliter = pool.imap(func,
+                                     ([row,column]
+                                      for row in range(len(monomials))
+                                      for column in range(row, len(monomials))
+                                     ), chunksize)
+                
                 for row, column, polynomial in pooliter:
                     self.__push_facvar_sparse(polynomial, block_index,
                                               row_offsets[block_index-1],
@@ -1304,7 +1309,7 @@ def moment_of_entry(pos, monomials, ineq, substitutions):
         monomials[column], substitutions)
 
 
-def foo(arg, monomialsA, monomialsB, ppt, substitutions, pure_substitution_rules):
+def assemble_monomial_and_do_substitutions(arg, monomialsA, monomialsB, ppt, substitutions, pure_substitution_rules):
     rowA = arg[0]
     columnA = arg[1]
     rowB = arg[2]
@@ -1313,7 +1318,6 @@ def foo(arg, monomialsA, monomialsB, ppt, substitutions, pure_substitution_rules
     if rowA == columnA:
         start_columnB = rowB
     for columnB in range(start_columnB, len(monomialsB)):
-#        processed_entries += 1
         if (not ppt) or (columnB >= rowB):
             monomial = monomialsA[rowA].adjoint() * \
                        monomialsA[columnA] * \
