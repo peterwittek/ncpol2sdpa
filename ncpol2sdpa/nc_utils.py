@@ -641,7 +641,8 @@ def check_simple_substitution(equality):
         eq = convert_relational(equality)
     else:
         eq = expand(equality)
-    if eq.is_Mul or eq.is_Pow:
+    if eq.is_Mul or eq.is_Pow or isinstance(eq, Symbol) or \
+            isinstance(eq, Operator):
         monomial, _ = separate_scalar_factor(eq)
         return (monomial, 0)
     if eq.is_Add:
