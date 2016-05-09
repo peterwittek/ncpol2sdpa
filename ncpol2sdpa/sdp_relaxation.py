@@ -123,6 +123,8 @@ class SdpRelaxation(Relaxation):
                        if further processing is done on the SDP matrix before
                        solving it.
     :type normalized: bool.
+    :param parallel: Optional parameter for allowing parallel computations.
+    :type parallel: bool.
 
     Attributes:
       - `monomial_sets`: The monomial sets that generate the moment matrix blocks.
@@ -144,7 +146,8 @@ class SdpRelaxation(Relaxation):
       - `status`: The solution status of the relaxation.
 
     """
-    def __init__(self, variables, parameters=None, verbose=0, normalized=True):
+    def __init__(self, variables, parameters=None, verbose=0, normalized=True,
+                 parallel=False):
         """Constructor for the class.
         """
         super(SdpRelaxation, self).__init__()
@@ -220,6 +223,13 @@ class SdpRelaxation(Relaxation):
                 "symbolic parameters"
         if self.verbose > 0:
             print(info)
+        self._parallel = False
+        if parallel:
+            try:
+                multiprocessing
+                self._parallel = parallel
+            except:
+                print("Warning: multiprocessing cannot be imported!")
 
     ########################################################################
     # ROUTINES RELATED TO GENERATING THE MOMENT MATRICES                   #
@@ -298,9 +308,7 @@ class SdpRelaxation(Relaxation):
             for block_size in self.block_struct[0:block_index]:
                 row_offset += block_size ** 2
         N = len(monomialsA)*len(monomialsB)
-        try:
-            multiprocessing
-        except:
+        if not self._parallel:
             # We process the M_d(u,w) entries in the moment matrix
             for rowA in range(len(monomialsA)):
                 for columnA in range(rowA, len(monomialsA)):
@@ -362,7 +370,7 @@ class SdpRelaxation(Relaxation):
             pool.close()
             pool.join()
 
-                
+
         if self.verbose > 0:
             sys.stdout.write("\r")
         return n_vars, block_index + 1, processed_entries
@@ -503,11 +511,9 @@ class SdpRelaxation(Relaxation):
 
 
 
-            
 
-        try:
-            multiprocessing
-        except:
+
+        if not self._parallel:
             for k, ineq in enumerate(self.constraints):
                 block_index += 1
                 if isinstance(ineq, str):
@@ -533,7 +539,7 @@ class SdpRelaxation(Relaxation):
                                      (k+1, len(self.constraints)))
                     sys.stdout.flush()
         else:
-            pool = multiprocessing.Pool()            
+            pool = multiprocessing.Pool()
             for k, ineq in enumerate(self.constraints):
                 block_index += 1
                 if isinstance(ineq, str):
@@ -550,11 +556,11 @@ class SdpRelaxation(Relaxation):
                                       for row in range(len(monomials))
                                       for column in range(row, len(monomials))
                                      ), chunksize)
-                
+
                 for row, column, polynomial in pooliter:
                     self.__push_facvar_sparse(polynomial, block_index,
                                               row_offsets[block_index-1],
-                                              row, column)            
+                                              row, column)
                 if self.verbose > 0:
                     sys.stdout.write("\r\x1b[KProcessing %d/%d constraints..." %
                                      (k+1, len(self.constraints)))
@@ -562,11 +568,11 @@ class SdpRelaxation(Relaxation):
 
             pool.close()
             pool.join()
-            
+
         if self.verbose > 0:
             sys.stdout.write("\n")
         return block_index
-    
+
     def __process_equalities(self, equalities, momentequalities):
         """Generate localizing matrices
 
@@ -944,7 +950,7 @@ class SdpRelaxation(Relaxation):
             if self.constraints_hash == hash(frozenset((str(inequalities),str(equalities),str(bounds),str(momentinequalities),str(momentequalities),str(removeequalities)))):
                 return
             self.constraints_hash = hash(frozenset((str(inequalities),str(equalities),str(bounds),str(momentinequalities),str(momentequalities),str(removeequalities))))
-        
+
         self.status = "unsolved"
         if block_index == 0:
             block_index = self.constraint_starting_block
@@ -1303,7 +1309,7 @@ class SdpRelaxation(Relaxation):
 def moment_of_entry(pos, monomials, ineq, substitutions):
     row = pos[0]
     column = pos[1]
-    
+
     return row, column, simplify_polynomial(
         monomials[row].adjoint() * ineq *
         monomials[column], substitutions)
@@ -1313,7 +1319,7 @@ def assemble_monomial_and_do_substitutions(arg, monomialsA, monomialsB, ppt, sub
     rowA = arg[0]
     columnA = arg[1]
     rowB = arg[2]
-    
+
     start_columnB = 0
     if rowA == columnA:
         start_columnB = rowB
