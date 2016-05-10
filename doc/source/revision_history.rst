@@ -1,15 +1,19 @@
 Revision History
 ****************
-**Version 1.10.3 (2016-02-26)** 
+Since 1.10.3
+  - New: Experimental new parallel computation of the moment matrix and the constraints.
+  - Fixed: Constants in PICOS conversion are added correctly irrespective of where they are in the matrices.
+
+**Version 1.10.3 (2016-02-26)**
   - Fixed: Problem with unexpanded moment equality constraints resolved.
 
-**Version 1.10.2 (2016-02-03)** 
+**Version 1.10.2 (2016-02-03)**
   - New: Very efficient substitutions of moment equalities if one side of the equality is the moment of a monomial, and the other side is a constant.
 
-**Version 1.10.1 (2016-01-29)** 
+**Version 1.10.1 (2016-01-29)**
   - Fixed: The moment equalities are removed correctly if asked.
 
-**Version 1.10 (2015-12-08)** 
+**Version 1.10 (2015-12-08)**
 
   - New: The function ``generate_operators`` returns a list of operators from the ``sympy.physics.quantum`` submodule. This is the old behaviour of ``generate_variables``.
   - New: The ``SdpRelaxation`` class is now subscriptable. You can retrieve the value of polynomials in the solved relaxation in such way. Internally, it calls ``get_xmat_value`` with ``self``.
@@ -22,7 +26,7 @@ Revision History
   - New: The class ``RdmHierarchy`` was added to generate SDPs of the reduced density matrix method. Initial support for 1D spinless, translational invariant systems is included.
   - New: Better support for the steering hierarchy in a new class ``SteeringHierarchy``.
   - Changed: The function ``generate_variables`` now returns a list of ``sympy.Symbol`` variables if commutative variables are requested, and the default is commutative.
-  - Changed: Many unnecessary user-facing functions were removed. 
+  - Changed: Many unnecessary user-facing functions were removed.
   - Changed: The SOS decomposition is now requested with ``get_sos_decomposition`` from the class ``SdpRelaxation``, and it returns a list of the SOS polynomials.
   - Changed: The optional parameter ``bounds`` for ``get_relaxation`` is deprececated, use the optional parameters ``momentinequalities`` and ``momentequalities`` instead.
   - Changed: Removed ``convert_to_picos_extra_moment_matrix`` and added optional parameter ``duplicate_moment_matrix`` to ``convert_to_picos`` to achieve the same effect.
@@ -35,8 +39,8 @@ Revision History
   - Changed: Redundant positive-semidefinite constraint type removed.
   - Fixed: PICOS and MOSEK conversion works for complex matrices too (`issue #10 <https://github.com/peterwittek/ncpol2sdpa/issues/10>`_).
   - Fixed: The moment symmetries are correctly calculated for both Hermitian and non-Hermitian variables (`issue #9 <https://github.com/peterwittek/ncpol2sdpa/issues/9>`_)
-         
-**Version 1.9 (2015-08-28)** 
+
+**Version 1.9 (2015-08-28)**
 
   - New: Defining the constraints now also allows using for the symbols ``<``, ``<=``, ``>=``, ``>``. Additionally, the function ``Eq`` from SymPy can be used to defined equalities.
   - New: The function ``solve_sdp`` also accepts ``solver="cvxopt"`` to use CVXOPT for solving a relaxation (requires PICOS and CVXOPT).
@@ -53,11 +57,11 @@ Revision History
   - Changed: Constant term in objective function is added to the primal and dual values when using the ``solve_sdp`` function.
   - Changed: The primal and dual values of the Mosek solution change their signs when using the ``solve_sdp`` function.
   - Changed: The verbosity parameter also controls the console output of every solver.
-  - Changed: Faacets relaxations got their own class ``FaacetsRelaxation``. 
+  - Changed: Faacets relaxations got their own class ``FaacetsRelaxation``.
   - Fixed: Localizing matrices are built correctly when substitution rules contain polynomials and when the identity operator is not part of the monomial sets.
   - Fixed: The function ``get_xmat_value`` also works in Pypy.
 
-**Version 1.8 (2015-05-25)** 
+**Version 1.8 (2015-05-25)**
 
   - New: Complex moment matrices are embedded to as real matrices in the SDPA export and the ``solve_sdp`` function.
   - New: Localizing monomials can be fine-tuned by supplying them to ``get_relaxation`` through the optional parameter ``localizing_monomials``.
