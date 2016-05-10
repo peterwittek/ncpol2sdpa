@@ -83,10 +83,8 @@ def convert_to_picos(sdpRelaxation, duplicate_moment_matrix=False):
 
                 else:
                     c.append(sdpRelaxation.F_struct.data[row_offset+i][j])
-                    # Note that a constant term can only possibly occur in a
-                    # top-left corner
-                    Ic.append(0)
-                    Jc.append(0)
+                    Ic.append(i%block_size)
+                    Jc.append(i//block_size)
         permutation = cvx.spmatrix(x, Ix, Jx, (block_size**2,
                                                theoretical_n_vars))
         constant = cvx.spmatrix(c, Ic, Jc, (block_size, block_size))
