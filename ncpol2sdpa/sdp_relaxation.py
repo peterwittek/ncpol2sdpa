@@ -602,7 +602,7 @@ class SdpRelaxation(Relaxation):
                 localizing_monomials = unique(localizing_monomials)
                 monomial_sets.append(localizing_monomials)
                 n_rows += len(localizing_monomials) * \
-                    (len(localizing_monomials) + 1) / 2
+                    (len(localizing_monomials) + 1) // 2
         if momentequalities is not None:
             for _ in momentequalities:
                 monomial_sets.append([S.One])
