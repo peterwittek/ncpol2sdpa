@@ -54,7 +54,7 @@ def convert_to_picos(sdpRelaxation, duplicate_moment_matrix=False):
     import cvxopt as cvx
     P = pic.Problem(verbose=sdpRelaxation.verbose)
     block_size = sdpRelaxation.block_struct[0]
-    if sdpRelaxation.F_struct.dtype == np.float64:
+    if sdpRelaxation.F.dtype == np.float64:
         X = P.add_variable('X', (block_size, block_size), vtype="symmetric")
         if duplicate_moment_matrix:
             Y = P.add_variable('Y', (block_size, block_size), vtype="symmetric")
@@ -67,22 +67,21 @@ def convert_to_picos(sdpRelaxation, duplicate_moment_matrix=False):
     for block_size in sdpRelaxation.block_struct:
         x, Ix, Jx = [], [], []
         c, Ic, Jc = [], [], []
-        for i, row in enumerate(sdpRelaxation.F_struct.rows[row_offset:
-                                                            row_offset +
-                                                            block_size**2]):
+        for i, row in enumerate(sdpRelaxation.F.rows[row_offset: row_offset +
+                                                     block_size**2]):
             for j, column in enumerate(row):
                 if column > 0:
-                    x.append(sdpRelaxation.F_struct.data[row_offset+i][j])
+                    x.append(sdpRelaxation.F.data[row_offset+i][j])
                     Ix.append(i)
                     Jx.append(column-1)
                     i0 = (i//block_size)+(i % block_size)*block_size
                     if i != i0:
-                        x.append(sdpRelaxation.F_struct.data[row_offset+i][j])
+                        x.append(sdpRelaxation.F.data[row_offset+i][j])
                         Ix.append(i0)
                         Jx.append(column-1)
 
                 else:
-                    c.append(sdpRelaxation.F_struct.data[row_offset+i][j])
+                    c.append(sdpRelaxation.F.data[row_offset+i][j])
                     Ic.append(i%block_size)
                     Jc.append(i//block_size)
         permutation = cvx.spmatrix(x, Ix, Jx, (block_size**2,

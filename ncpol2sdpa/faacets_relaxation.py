@@ -79,15 +79,14 @@ class FaacetsRelaxation(Relaxation):
         self.n_vars = M.max() - 1
         bs = len(M)  # The block size
         self.block_struct = [bs]
-        self.F_struct = lil_matrix((bs**2, self.n_vars + 1))
+        self.F = lil_matrix((bs**2, self.n_vars + 1))
         # Constructing the internal representation of the constraint matrices
         # See Section 2.1 in the SDPA manual and also Yalmip's internal
         # representation
         for i in range(bs):
             for j in range(i, bs):
                 if M[i, j] != 0:
-                    self.F_struct[i*bs+j, abs(M[i, j])-1] = copysign(1,
-                                                                     M[i, j])
+                    self.F[i*bs+j, abs(M[i, j])-1] = copysign(1, M[i, j])
         self.obj_facvar = [0 for _ in range(self.n_vars)]
         for i in range(1, len(ncIndices)):
             self.obj_facvar[abs(ncIndices[i])-2] += \

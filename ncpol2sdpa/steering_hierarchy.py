@@ -112,21 +112,19 @@ class SteeringHierarchy(SdpRelaxation):
                                        self.pure_substitution_rules)
         if is_number_type(monomial):
             if rowA == 0 and columnA == 0 and rowB == 0 and columnB == 0 and \
-              monomial == 1.0 and not self.normalized:
+                    monomial == 1.0 and not self.normalized:
                 if self.matrix_var_dim is None:
                     n_vars += 1
-                    self.F_struct[row_offset + rowA * N*lenB +
-                                  rowB * N + columnA * lenB + columnB,
-                                  n_vars] = 1
+                    self.F[row_offset + rowA * N*lenB + rowB * N +
+                           columnA * lenB + columnB, n_vars] = 1
                 else:
                     n_vars = self.__add_matrix_variable(row_offset, rowA,
                                                         columnA, N, rowB,
                                                         columnB, lenB,
                                                         n_vars + 1, False, 1)
             else:
-                self.F_struct[row_offset + rowA * N*lenB +
-                              rowB * N + columnA * lenB + columnB,
-                              0] = monomial
+                self.F[row_offset + rowA * N*lenB + rowB * N +
+                       columnA * lenB + columnB, 0] = monomial
         elif monomial.is_Add:
             for element in monomial.as_ordered_terms():
                 n_vars = self._push_monomial(element, n_vars, row_offset,
@@ -140,9 +138,8 @@ class SteeringHierarchy(SdpRelaxation):
                     if k < 0:
                         coeff = -coeff
                         k = -k
-                self.F_struct[row_offset + rowA * N*lenB +
-                              rowB * N +
-                              columnA * lenB + columnB, k] = coeff
+                self.F[row_offset + rowA * N*lenB + rowB * N +
+                       columnA * lenB + columnB, k] = coeff
             else:
                 conjugate = False
                 if k < 0:
@@ -177,11 +174,10 @@ class SteeringHierarchy(SdpRelaxation):
                 else:
                     imag_zero = 1
                 value = coeff*(1+imag*imag_zero)
-                self.F_struct[row_offset +
-                              block_row_index*self.matrix_var_dim*N*lenB +
-                              rowB*self.matrix_var_dim*N +
-                              block_column_index*lenB +
-                              self.matrix_var_dim*columnB, k] = value
+                self.F[row_offset +
+                       block_row_index*self.matrix_var_dim*N*lenB +
+                       rowB*self.matrix_var_dim*N + block_column_index*lenB +
+                       self.matrix_var_dim*columnB, k] = value
                 k += 1
         k -= 1
         return k

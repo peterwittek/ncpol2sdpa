@@ -10,7 +10,7 @@ from sympy import S
 from sympy.physics.quantum.dagger import Dagger
 from .sdp_relaxation import SdpRelaxation
 from .nc_utils import apply_substitutions, is_number_type, \
-                      separate_scalar_factor, ncdegree
+    separate_scalar_factor, ncdegree
 
 
 class RdmHierarchy(SdpRelaxation):
@@ -96,7 +96,7 @@ class RdmHierarchy(SdpRelaxation):
                 coeff.append(coeff1)
         for rowA, columnA in coords:
             for ki, coeffi in zip(k, coeff):
-                self.F_struct[row_offset + rowA * N + columnA, ki] = coeffi
+                self.F[row_offset + rowA * N + columnA, ki] = coeffi
         '''
         for monomial in monomials[1:]:
             monomial = apply_substitutions(monomial, self.substitutions,

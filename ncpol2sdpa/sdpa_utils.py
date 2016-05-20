@@ -193,20 +193,20 @@ def write_to_sdpa(sdpRelaxation, filename):
         cumulative_sum += block_size ** 2
         row_offsets.append(cumulative_sum)
     multiplier = 1
-    if sdpRelaxation.F_struct.dtype == np.complex128:
+    if sdpRelaxation.F.dtype == np.complex128:
         multiplier = 2
     lines = [[] for _ in range(multiplier*sdpRelaxation.n_vars+1)]
-    for row in range(len(sdpRelaxation.F_struct.rows)):
-        if len(sdpRelaxation.F_struct.rows[row]) > 0:
+    for row in range(len(sdpRelaxation.F.rows)):
+        if len(sdpRelaxation.F.rows[row]) > 0:
             col_index = 0
-            for k in sdpRelaxation.F_struct.rows[row]:
-                value = sdpRelaxation.F_struct.data[row][col_index]
+            for k in sdpRelaxation.F.rows[row]:
+                value = sdpRelaxation.F.data[row][col_index]
                 col_index += 1
                 block_index, i, j = convert_row_to_sdpa_index(
                     sdpRelaxation.block_struct, row_offsets, row)
                 if k == 0:
                     value *= -1
-                if sdpRelaxation.F_struct.dtype == np.float64:
+                if sdpRelaxation.F.dtype == np.float64:
                     lines[k].append('{0}\t{1}\t{2}\t{3}\n'.format(
                         block_index + 1, i + 1, j + 1, value))
                 else:
@@ -290,11 +290,11 @@ def convert_to_human_readable(sdpRelaxation):
         matrix_line = ["0"] * matrix_size
         matrix.append(matrix_line)
 
-    for row in range(len(sdpRelaxation.F_struct.rows)):
-        if len(sdpRelaxation.F_struct.rows[row]) > 0:
+    for row in range(len(sdpRelaxation.F.rows)):
+        if len(sdpRelaxation.F.rows[row]) > 0:
             col_index = 0
-            for k in sdpRelaxation.F_struct.rows[row]:
-                value = sdpRelaxation.F_struct.data[row][col_index]
+            for k in sdpRelaxation.F.rows[row]:
+                value = sdpRelaxation.F.data[row][col_index]
                 col_index += 1
                 block_index, i, j = convert_row_to_sdpa_index(
                     sdpRelaxation.block_struct, row_offsets, row)

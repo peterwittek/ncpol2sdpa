@@ -210,7 +210,7 @@ def get_sos_decomposition(sdpRelaxation, y_mat=None, threshold=0.0):
 
 def get_index_of_monomial(monomial, row_offsets, sdpRelaxation):
     k = sdpRelaxation._get_index_of_monomial(monomial)[0][0]
-    Fk = sdpRelaxation.F_struct.getcol(k)
+    Fk = sdpRelaxation.F.getcol(k)
     if not isinstance(Fk, lil_matrix):
         Fk = Fk.tolil()
     for row in range(len(Fk.rows)):
@@ -221,18 +221,18 @@ def get_index_of_monomial(monomial, row_offsets, sdpRelaxation):
 
 
 def get_recursive_xmat_value(k, row_offsets, sdpRelaxation, x_mat):
-    Fk = sdpRelaxation.F_struct[:, k]
+    Fk = sdpRelaxation.F[:, k]
     for row in range(len(Fk.rows)):
         if Fk.rows[row] != []:
             block, i, j = convert_row_to_sdpa_index(sdpRelaxation.block_struct,
                                                     row_offsets, row)
             value = x_mat[block][i, j]
-            for index in sdpRelaxation.F_struct.rows[row]:
+            for index in sdpRelaxation.F.rows[row]:
                 if k != index:
-                    value -= sdpRelaxation.F_struct[row, index] * \
+                    value -= sdpRelaxation.F[row, index] * \
                                get_recursive_xmat_value(index, row_offsets,
                                                         sdpRelaxation, x_mat)
-            return value / sdpRelaxation.F_struct[row, k]
+            return value / sdpRelaxation.F[row, k]
 
 
 def get_xmat_value(monomial, sdpRelaxation, x_mat=None):
@@ -276,12 +276,12 @@ def get_xmat_value(monomial, sdpRelaxation, x_mat=None):
             row, k, block, i, j = get_index_of_monomial(element, row_offsets,
                                                         sdpRelaxation)
             value = x_mat[block][i, j]
-            for index in sdpRelaxation.F_struct.rows[row]:
+            for index in sdpRelaxation.F.rows[row]:
                 if k != index:
-                    value -= sdpRelaxation.F_struct[row, index] * \
+                    value -= sdpRelaxation.F[row, index] * \
                                get_recursive_xmat_value(index, row_offsets,
                                                         sdpRelaxation, x_mat)
-            result += coeff * value / sdpRelaxation.F_struct[row, k]
+            result += coeff * value / sdpRelaxation.F[row, k]
     return result
 
 
@@ -315,13 +315,13 @@ def extract_dual_value(sdpRelaxation, monomial, blocks=None):
         cumulative_sum += block_size ** 2
         row_offsets.append(cumulative_sum)
     result = 0
-    for row in range(len(sdpRelaxation.F_struct.rows)):
-        if len(sdpRelaxation.F_struct.rows[row]) > 0:
+    for row in range(len(sdpRelaxation.F.rows)):
+        if len(sdpRelaxation.F.rows[row]) > 0:
             col_index = 0
-            for k in sdpRelaxation.F_struct.rows[row]:
+            for k in sdpRelaxation.F.rows[row]:
                 if k != index:
                     continue
-                value = sdpRelaxation.F_struct.data[row][col_index]
+                value = sdpRelaxation.F.data[row][col_index]
                 col_index += 1
                 block_index, i, j = convert_row_to_sdpa_index(
                     sdpRelaxation.block_struct, row_offsets, row)

@@ -80,13 +80,13 @@ def solve_with_mosek(sdpRelaxation, solverparameters=None):
                     mskpar = eval('mosek.' + par)
                     task.putstrparam(mskpar, val)
                 #else try to infer the type from the type of val
-                elif isinstance(val,int):
+                elif isinstance(val, int):
                     mskpar = eval('mosek.iparam.' + par)
                     task.putintparam(mskpar, val)
-                elif isinstance(val,float):
+                elif isinstance(val, float):
                     mskpar = eval('mosek.dparam.' + par)
                     task.putdouparam(mskpar, val)
-                elif isinstance(val,str):
+                elif isinstance(val, str):
                     mskpar = eval('mosek.sparam.' + par)
                     task.putstrparam(mskpar, val)
             except AttributeError:
@@ -135,11 +135,11 @@ def convert_to_mosek_matrix(sdpRelaxation):
         cumulative_square_sum += block_size ** 2
         row_offsets.append(cumulative_square_sum)
         block_offsets.append(cumulative_sum)
-    for row in range(len(sdpRelaxation.F_struct.rows)):
-        if len(sdpRelaxation.F_struct.rows[row]) > 0:
+    for row in range(len(sdpRelaxation.F.rows)):
+        if len(sdpRelaxation.F.rows[row]) > 0:
             col_index = 0
-            for k in sdpRelaxation.F_struct.rows[row]:
-                value = sdpRelaxation.F_struct.data[row][col_index]
+            for k in sdpRelaxation.F.rows[row]:
+                value = sdpRelaxation.F.data[row][col_index]
                 i, j = convert_to_mosek_index(sdpRelaxation.block_struct,
                                               row_offsets, block_offsets, row)
                 if k > 0:
