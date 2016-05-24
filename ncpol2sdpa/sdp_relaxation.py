@@ -501,10 +501,6 @@ class SdpRelaxation(Relaxation):
         for block, block_size in enumerate(self.block_struct):
             row_offsets.append(row_offsets[block] + block_size ** 2)
 
-
-
-
-
         if not self._parallel:
             for k, ineq in enumerate(self.constraints):
                 block_index += 1
@@ -606,11 +602,14 @@ class SdpRelaxation(Relaxation):
             for row in range(len(monomial_sets[i])):
                 for column in range(row, len(monomial_sets[i])):
                     # Calculate the moments of polynomial entries
-                    polynomial = \
-                        simplify_polynomial(monomial_sets[i][row].adjoint() *
-                                            equality*monomial_sets[i][column],
-                                            self.substitutions)
-                    A[n_rows] = self._get_facvar(polynomial)
+                    if isinstance(equality, str):
+                        self.__parse_expression(equality, -1, A[n_rows])
+                    else:
+                        poly = \
+                         simplify_polynomial(monomial_sets[i][row].adjoint() *
+                                             equality*monomial_sets[i][column],
+                                             self.substitutions)
+                        A[n_rows] = self._get_facvar(poly)
                     # This is something really weird: we want the constant
                     # terms in equalities to be positive. Otherwise funny
                     # things happen in the QR decomposition and the basis
@@ -712,7 +711,7 @@ class SdpRelaxation(Relaxation):
                     self.__impose_ppt(block_index)
         return n_vars, block_index
 
-    def __parse_expression(self, expr, row_offset):
+    def __parse_expression(self, expr, row_offset, line=None):
         if expr.find("]") > -1:
             sub_exprs = expr.split(']')
             for sub_expr in sub_exprs:
@@ -733,11 +732,18 @@ class SdpRelaxation(Relaxation):
                     base_row_offset = sum([bs**2 for bs in
                                            self.block_struct[:mm_ind]])
                     width = self.block_struct[mm_ind]
-                    self.F[row_offset] += \
-                        value*self.F[base_row_offset + i*width + j]
+                    if row_offset > -1:
+                        self.F[row_offset] += \
+                            value*self.F[base_row_offset + i*width + j]
+                    else:
+                        line += value*self.F[base_row_offset + i*width + j,
+                                             :self.n_vars+1].toarray()[0]
                 else:
                     value = float(sub_expr)
-                    self.F[row_offset, 0] += value
+                    if row_offset > -1:
+                        self.F[row_offset, 0] += value
+                    else:
+                        line[0] += value
 
     ########################################################################
     # ROUTINES RELATED TO INITIALIZING DATA STRUCTURES                     #
