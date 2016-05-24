@@ -163,6 +163,7 @@ class SdpRelaxation(Relaxation):
         self.monomial_sets = []
         self.pure_substitution_rules = True
         self.constraints = []
+        self._constraint_to_block_index = {}
         self.moment_substitutions = {}
         self.complex_matrix = False
         n_noncommutative_hermitian = 0
@@ -937,9 +938,17 @@ class SdpRelaxation(Relaxation):
         """
         self.status = "unsolved"
         if block_index == 0:
+            if equalities is not None and removeequalities:
+                raise Exception("The moment matrix has to be generated again "
+                                "when equality constraints are removed by "
+                                "solving the equations.")
             block_index = self.constraint_starting_block
             self.__wipe_F_from_constraints()
         self.constraints = flatten([inequalities])
+        self._constraint_to_block_index = {}
+        for constraint in self.constraints:
+            self._constraint_to_block_index[constraint] = (block_index, )
+            block_index += 1
         if not (removeequalities or equalities is None):
             # Equalities are converted to pairs of inequalities
             for equality in equalities:
@@ -947,9 +956,14 @@ class SdpRelaxation(Relaxation):
                     equality = convert_relational(equality)
                 self.constraints.append(equality)
                 self.constraints.append(-equality)
+                self._constraint_to_block_index[equality] = (block_index,
+                                                             block_index+1)
+                block_index += 2
         if momentinequalities is not None:
             for mineq in momentinequalities:
                 self.constraints.append(mineq)
+                self._constraint_to_block_index[constraint] = (block_index, )
+                block_index += 1
         reduced_moment_equalities = []
         if momentequalities is not None:
             for meq in momentequalities:
@@ -964,8 +978,12 @@ class SdpRelaxation(Relaxation):
                             self.constraints.append(tmp)
                         else:
                             self.constraints.append(-meq)
+                        self._constraint_to_block_index[meq] = (block_index,
+                                                                block_index+1)
+                        block_index += 2
                     else:
                         reduced_moment_equalities.append(meq)
+        block_index = self.constraint_starting_block
         self.__process_inequalities(block_index)
         if reduced_moment_equalities == []:
             reduced_moment_equalities = None
@@ -1038,8 +1056,6 @@ class SdpRelaxation(Relaxation):
         """Given a solution of the dual problem, it returns the SOS
         decomposition.
 
-        :param sdpRelaxation: The SDP relaxation to be solved.
-        :type sdpRelaxation: :class:`ncpol2sdpa.SdpRelaxation`.
         :param threshold: Optional parameter for specifying the threshold value
                           below which the eigenvalues and entries of the
                           eigenvectors are disregarded.
@@ -1082,6 +1098,35 @@ class SdpRelaxation(Relaxation):
                   order of increasing degree.
         """
         return find_solution_ranks(self, xmat=xmat, baselevel=baselevel)
+
+    def get_dual(self, constraint, ymat=None):
+        """Given a solution of the dual problem and a constraint of any type,
+        it returns the corresponding block in the dual solution. If it is an
+        equality constraint that was converted to a pair of inequalities, it
+        returns a two-tuple of the matching dual blocks.
+
+        :param constraint: The constraint.
+        :type index: `sympy.core.exp.Expr`
+        :param y_mat: Optional parameter providing the dual solution of the
+                      SDP. If not provided, the solution is extracted
+                      from the sdpRelaxation object.
+        :type y_mat: :class:`numpy.array`.
+        :returns: The corresponding block in the dual solution.
+        :rtype: :class:`numpy.array` or a tuple thereof.
+        """
+        if not isinstance(constraint, Expr):
+            raise Exception("Not a monomial or polynomial!")
+        elif self.status == "unsolved" and ymat is None:
+            raise Exception("SDP relaxation is not solved yet!")
+        elif ymat is None:
+            ymat = self.y_mat
+        index = self._constraint_to_block_index.get(constraint)
+        if index is None:
+            raise Exception("Constraint is not in the dual!")
+        if len(index) == 2:
+            return ymat[index[0]], self.y_mat[index[1]]
+        else:
+            return ymat[index[0]]
 
     def write_to_file(self, filename, filetype=None):
         """Write the relaxation to a file.

@@ -145,7 +145,7 @@ def find_solution_ranks(sdpRelaxation, xmat=None, baselevel=0):
         levels = [baselevel]
     for level in levels:
         base_monomials = \
-          pick_monomials_up_to_degree(sdpRelaxation.monomial_sets[0], level)
+            pick_monomials_up_to_degree(sdpRelaxation.monomial_sets[0], level)
         ranks.append(matrix_rank(xmat[:len(base_monomials),
                                       :len(base_monomials)]))
     if xmat.shape != (len(base_monomials), len(base_monomials)):
@@ -230,8 +230,8 @@ def get_recursive_xmat_value(k, row_offsets, sdpRelaxation, x_mat):
             for index in sdpRelaxation.F.rows[row]:
                 if k != index:
                     value -= sdpRelaxation.F[row, index] * \
-                               get_recursive_xmat_value(index, row_offsets,
-                                                        sdpRelaxation, x_mat)
+                        get_recursive_xmat_value(index, row_offsets,
+                                                 sdpRelaxation, x_mat)
             return value / sdpRelaxation.F[row, k]
 
 
@@ -279,8 +279,8 @@ def get_xmat_value(monomial, sdpRelaxation, x_mat=None):
             for index in sdpRelaxation.F.rows[row]:
                 if k != index:
                     value -= sdpRelaxation.F[row, index] * \
-                               get_recursive_xmat_value(index, row_offsets,
-                                                        sdpRelaxation, x_mat)
+                        get_recursive_xmat_value(index, row_offsets,
+                                                 sdpRelaxation, x_mat)
             result += coeff * value / sdpRelaxation.F[row, k]
     return result
 
