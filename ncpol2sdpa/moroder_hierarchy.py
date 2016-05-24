@@ -77,7 +77,7 @@ class MoroderHierarchy(SdpRelaxation):
                                          ppt=self.ppt)
         return n_vars, block_index
 
-    def _calculate_block_structure(self, inequalities, equalities, bounds,
+    def _calculate_block_structure(self, inequalities, equalities,
                                    momentinequalities, momentequalities,
                                    extramomentmatrix, removeequalities,
                                    block_struct=None):
@@ -93,7 +93,7 @@ class MoroderHierarchy(SdpRelaxation):
                 block_struct.append(len(self.monomial_sets[0]) *
                                     len(self.monomial_sets[1]))
         super(MoroderHierarchy, self).\
-            _calculate_block_structure(inequalities, equalities, bounds,
+            _calculate_block_structure(inequalities, equalities,
                                        momentinequalities, momentequalities,
                                        extramomentmatrix,
                                        removeequalities,

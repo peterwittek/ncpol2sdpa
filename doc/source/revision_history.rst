@@ -2,6 +2,7 @@ Revision History
 ****************
 Since 1.10.3
   - New: Experimental new parallel computation of the moment matrix and the constraints.
+  - Changed: Deprecated optional parameter ``bounds`` was removed.
   - Fixed: Constants in PICOS conversion are added correctly irrespective of where they are in the matrices.
 
 **Version 1.10.3 (2016-02-26)**

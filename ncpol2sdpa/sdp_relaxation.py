@@ -743,7 +743,7 @@ class SdpRelaxation(Relaxation):
     # ROUTINES RELATED TO INITIALIZING DATA STRUCTURES                     #
     ########################################################################
 
-    def _calculate_block_structure(self, inequalities, equalities, bounds,
+    def _calculate_block_structure(self, inequalities, equalities,
                                    momentinequalities, momentequalities,
                                    extramomentmatrix, removeequalities,
                                    block_struct=None):
@@ -817,10 +817,6 @@ class SdpRelaxation(Relaxation):
                   "relaxation or ensure that a mixed-order relaxation has the"
                   " necessary monomials" % (ineq_order))
 
-        if bounds is not None:
-            for _ in bounds:
-                monomial_sets.append([S.One])
-                self.block_struct.append(1)
         if momentinequalities is not None:
             for _ in momentinequalities:
                 monomial_sets.append([S.One])
@@ -908,9 +904,8 @@ class SdpRelaxation(Relaxation):
     ########################################################################
 
     def process_constraints(self, inequalities=None, equalities=None,
-                            bounds=None, momentinequalities=None,
-                            momentequalities=None, block_index=0,
-                            removeequalities=False):
+                            momentinequalities=None, momentequalities=None,
+                            block_index=0, removeequalities=False):
         """Process the constraints and generate localizing matrices. Useful
         only if the moment matrix already exists. Call it if you want to
         replace your constraints. The number of the respective types of
@@ -946,9 +941,6 @@ class SdpRelaxation(Relaxation):
                     equality = convert_relational(equality)
                 self.constraints.append(equality)
                 self.constraints.append(-equality)
-        if bounds is not None:
-            for bound in bounds:
-                self.constraints.append(bound)
         if momentinequalities is not None:
             for mineq in momentinequalities:
                 self.constraints.append(mineq)
@@ -1155,7 +1147,7 @@ class SdpRelaxation(Relaxation):
         return convert_to_mosek(self)
 
     def get_relaxation(self, level, objective=None, inequalities=None,
-                       equalities=None, substitutions=None, bounds=None,
+                       equalities=None, substitutions=None,
                        momentinequalities=None, momentequalities=None,
                        removeequalities=False, extramonomials=None,
                        extramomentmatrices=None, extraobjexpr=None,
@@ -1234,11 +1226,8 @@ class SdpRelaxation(Relaxation):
         self.__generate_monomial_sets(extramonomials)
         self.localizing_monomial_sets = localizing_monomials
 
-        if bounds is not None:
-            print("The optional parameter `bounds' is deprecated. Please use"
-                  " the parameter `momentinequalities' or `momentequalities'")
         # Figure out basic structure of the SDP
-        self._calculate_block_structure(inequalities, equalities, bounds,
+        self._calculate_block_structure(inequalities, equalities,
                                         momentinequalities, momentequalities,
                                         extramomentmatrices,
                                         removeequalities)
@@ -1283,9 +1272,9 @@ class SdpRelaxation(Relaxation):
         self.set_objective(objective, extraobjexpr)
         # Process constraints
         self.constraint_starting_block = block_index
-        self.process_constraints(inequalities, equalities, bounds,
-                                 momentinequalities, momentequalities,
-                                 block_index, removeequalities)
+        self.process_constraints(inequalities, equalities, momentinequalities,
+                                 momentequalities, block_index,
+                                 removeequalities)
 
 
 def moment_of_entry(pos, monomials, ineq, substitutions):
