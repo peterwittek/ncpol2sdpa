@@ -952,12 +952,12 @@ class SdpRelaxation(Relaxation):
         if not (removeequalities or equalities is None):
             # Equalities are converted to pairs of inequalities
             for equality in equalities:
+                self._constraint_to_block_index[equality] = (block_index,
+                                                             block_index+1)
                 if equality.is_Relational:
                     equality = convert_relational(equality)
                 self.constraints.append(equality)
                 self.constraints.append(-equality)
-                self._constraint_to_block_index[equality] = (block_index,
-                                                             block_index+1)
                 block_index += 2
         if momentinequalities is not None:
             for mineq in momentinequalities:
