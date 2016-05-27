@@ -10,9 +10,8 @@ Created on Sun May 26 15:06:17 2013
 from __future__ import division, print_function
 import sys
 from functools import partial
-from math import floor, sqrt
 import numpy as np
-from sympy import S, Expr, expand
+from sympy import S, Expr
 import time
 
 try:
@@ -321,8 +320,8 @@ class SdpRelaxation(Relaxation):
         if self._parallel:
             pool = multiprocessing.Pool()
             # This is just a guess and can be optimized
-            chunksize = max(int(sqrt(len(monomialsA) * len(monomialsB) *
-                                     len(monomialsA) / 2) /
+            chunksize = max(int(np.sqrt(len(monomialsA) * len(monomialsB) *
+                                        len(monomialsA) / 2) /
                             multiprocessing.cpu_count()), 1)
             iter_ = pool.imap(func, ((rowA, columnA, rowB, columnB)
                                      for rowA in range(len(monomialsA))
@@ -515,7 +514,7 @@ class SdpRelaxation(Relaxation):
             func = partial(moment_of_entry, monomials=monomials, ineq=ineq,
                            substitutions=self.substitutions)
             if self._parallel:
-                chunksize = max(int(sqrt(len(monomials)*len(monomials)/2) /
+                chunksize = max(int(np.sqrt(len(monomials)*len(monomials)/2) /
                                     multiprocessing.cpu_count()), 1)
                 iter_ = pool.imap(func, ([row, column]
                                          for row in range(len(monomials))
@@ -561,7 +560,7 @@ class SdpRelaxation(Relaxation):
                     raise Exception("An equality constraint has degree %d. "
                                     "Choose a higher level of relaxation."
                                     % eq_order)
-                localization_order = int(floor((2 * self.level - eq_order)/2))
+                localization_order = (2 * self.level - eq_order)//2
                 index = find_variable_set(self.variables, equality)
                 localizing_monomials = \
                     pick_monomials_up_to_degree(self.monomial_sets[index],
