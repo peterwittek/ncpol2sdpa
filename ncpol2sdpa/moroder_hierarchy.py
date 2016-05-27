@@ -62,9 +62,9 @@ class MoroderHierarchy(SdpRelaxation):
     """
 
     def __init__(self, variables, parameters=None, verbose=0, normalized=True,
-                 ppt=False):
+                 ppt=False, parallel=False):
         super(MoroderHierarchy, self).__init__(variables, parameters, verbose,
-                                               normalized)
+                                               normalized, parallel)
         self.ppt = ppt
 
     def _generate_all_moment_matrix_blocks(self, n_vars, block_index):

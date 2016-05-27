@@ -662,6 +662,34 @@ def check_simple_substitution(equality):
     return (0, 0)
 
 
+def moment_of_entry(pos, monomials, ineq, substitutions):
+    row = pos[0]
+    column = pos[1]
+
+    return row, column, simplify_polynomial(
+        monomials[row].adjoint() * ineq *
+        monomials[column], substitutions)
+
+
+def assemble_monomial_and_do_substitutions(arg, monomialsA, monomialsB, ppt,
+                                           substitutions,
+                                           pure_substitution_rules):
+    rowA = arg[0]
+    columnA = arg[1]
+    rowB = arg[2]
+    columnB = arg[3]
+    if (not ppt) or (columnB >= rowB):
+        monomial = monomialsA[rowA].adjoint() * monomialsA[columnA] * \
+            monomialsB[rowB].adjoint() * monomialsB[columnB]
+    else:
+        monomial = monomialsA[rowA].adjoint() * monomialsA[columnA] * \
+            monomialsB[columnB].adjoint() * monomialsB[rowB]
+        # Apply the substitutions if any
+    monomial = apply_substitutions(monomial, substitutions,
+                                   pure_substitution_rules)
+    return rowA, columnA, rowB, columnB, monomial
+
+
 def is_number_type(exp):
     return isinstance(exp, (int, float, complex, Number))
 

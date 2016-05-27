@@ -9,13 +9,18 @@ Created on Sun May 26 15:06:17 2013
 """
 from __future__ import division, print_function
 import sys
+from functools import partial
 from math import floor, sqrt
-from sympy import S, Expr, expand
 import numpy as np
+from sympy import S, Expr, expand
 import time
+
+try:
+    from itertools import imap
+except ImportError:
+    imap = map
 try:
     import multiprocessing
-    from functools import partial
 except ImportError:
     pass
 try:
@@ -23,11 +28,12 @@ try:
     from scipy.sparse import lil_matrix, hstack
 except ImportError:
     from .sparse_utils import lil_matrix
-from .nc_utils import apply_substitutions, build_permutation_matrix, \
+from .nc_utils import apply_substitutions, \
+    assemble_monomial_and_do_substitutions, build_permutation_matrix, \
     check_simple_substitution, convert_relational, find_variable_set, \
     flatten, get_all_monomials, is_number_type, is_pure_substitution_rule, \
-    iscomplex, ncdegree, pick_monomials_up_to_degree, save_monomial_index, \
-    separate_scalar_factor, simplify_polynomial, unique
+    iscomplex, moment_of_entry, ncdegree, pick_monomials_up_to_degree, \
+    save_monomial_index, separate_scalar_factor, simplify_polynomial, unique
 from .solver_common import find_solution_ranks, get_sos_decomposition, \
     get_xmat_value, solve_sdp, extract_dual_value
 from .mosek_utils import convert_to_mosek
@@ -228,6 +234,9 @@ class SdpRelaxation(Relaxation):
             try:
                 multiprocessing
                 self._parallel = parallel
+                if self.verbose > 0:
+                    print("Parallel processing on %d cores" %
+                          multiprocessing.cpu_count())
             except:
                 print("Warning: multiprocessing cannot be imported!")
 
@@ -304,68 +313,56 @@ class SdpRelaxation(Relaxation):
             for block_size in self.block_struct[0:block_index]:
                 row_offset += block_size ** 2
         N = len(monomialsA)*len(monomialsB)
-        if not self._parallel:
-            # We process the M_d(u,w) entries in the moment matrix
-            for rowA in range(len(monomialsA)):
-                for columnA in range(rowA, len(monomialsA)):
-                    for rowB in range(len(monomialsB)):
-                        start_columnB = 0
-                        if rowA == columnA:
-                            start_columnB = rowB
-                        for columnB in range(start_columnB, len(monomialsB)):
-                            processed_entries += 1
-                            if (not ppt) or (columnB >= rowB):
-                                monomial = monomialsA[rowA].adjoint() * \
-                                           monomialsA[columnA] * \
-                                           monomialsB[rowB].adjoint() * \
-                                           monomialsB[columnB]
-                            else:
-                                monomial = monomialsA[rowA].adjoint() * \
-                                           monomialsA[columnA] * \
-                                           monomialsB[columnB].adjoint() * \
-                                           monomialsB[rowB]
-                            # Apply the substitutions if any
-                            n_vars = self._push_monomial(monomial, n_vars,
-                                                         row_offset, rowA,
-                                                         columnA, N, rowB,
-                                                         columnB, len(monomialsB))
-                if self.verbose > 0:
-                    sys.stdout.write("\r\x1b[KCurrent number of SDP variables: {:0}"
-                                     " (done: {:.2%})".format(n_vars, (processed_entries-1)/self.n_vars))
-                    sys.stdout.flush()
-        else:
-            time0 = time.time()
+        time0 = time.time()
+        func = partial(assemble_monomial_and_do_substitutions,
+                       monomialsA=monomialsA, monomialsB=monomialsB, ppt=ppt,
+                       substitutions=self.substitutions,
+                       pure_substitution_rules=self.pure_substitution_rules)
+        if self._parallel:
             pool = multiprocessing.Pool()
-            func = partial(assemble_monomial_and_do_substitutions, monomialsA=monomialsA, monomialsB=monomialsB, ppt=ppt, substitutions=self.substitutions, pure_substitution_rules=self.pure_substitution_rules)
-            chunksize = max(int(sqrt(len(monomialsA)*len(monomialsB)*len(monomialsA)/2)/multiprocessing.cpu_count()),1)#this is just a guess and can be optimized
-            pooliter = pool.imap(func, (
-                (rowA, columnA, rowB)
-                for rowA in range(len(monomialsA))
-                for rowB in range(len(monomialsB))
-                for columnA in range(rowA, len(monomialsA))
-            ), chunksize)
+            # This is just a guess and can be optimized
+            chunksize = max(int(sqrt(len(monomialsA) * len(monomialsB) *
+                                     len(monomialsA) / 2) /
+                            multiprocessing.cpu_count()), 1)
+            iter_ = pool.imap(func, ((rowA, columnA, rowB, columnB)
+                                     for rowA in range(len(monomialsA))
+                                     for rowB in range(len(monomialsB))
+                                     for columnA in range(rowA,
+                                                          len(monomialsA))
+                                     for columnB in range((rowA == columnA)*rowB,
+                                                          len(monomialsB))),
+                              chunksize)
+        else:
+            iter_ = imap(func, ((rowA, columnA, rowB, columnB)
+                                for rowA in range(len(monomialsA))
+                                for columnA in range(rowA, len(monomialsA))
+                                for rowB in range(len(monomialsB))
+                                for columnB in range((rowA == columnA)*rowB,
+                                                     len(monomialsB))))
+        for rowA, columnA, rowB, columnB, monomial in iter_:
+            processed_entries += 1
+            n_vars = self._push_monomial(monomial, n_vars,
+                                         row_offset, rowA,
+                                         columnA, N, rowB,
+                                         columnB, len(monomialsB),
+                                         prevent_substitutions=True)
+            if self.verbose > 0:
+                if self.verbose > 1 and self._parallel:
+                    debug = ", working in {:0} processes for {:0} seconds with a chunksize of {:0}"\
+                            .format(multiprocessing.cpu_count(),
+                                    int(time.time()-time0), chunksize)
+                else:
+                    debug = ""
+                basic = "{:0} (done: {:.2%}".format(n_vars,
+                                                    (processed_entries-1) /
+                                                    self.n_vars)
+                sys.stdout.write("\r\x1b[KCurrent number of SDP variables: " +
+                                 basic + debug + ")")
+                sys.stdout.flush()
 
-            for rowA, columnA, rowB, columnB, monomial in pooliter:
-                processed_entries += 1
-                n_vars = self._push_monomial(monomial, n_vars,
-                                             row_offset, rowA,
-                                             columnA, N, rowB,
-                                             columnB, len(monomialsB),
-                                             prevent_substitutions=True)
-                if self.verbose > 0:
-                    sys.stdout.write("\r\x1b[KCurrent number of SDP variables: {:0}"
-                                     " (done: {:.2%}, working in {:0} "
-                                     "processes for {:0} seconds with a "
-                                     "chunksize of {:0})".format(n_vars,
-                                                                 (processed_entries-1)/self.n_vars,
-                                                                 multiprocessing.cpu_count(),
-                                                                 int(time.time()-time0),
-                                                                 chunksize))
-                    sys.stdout.flush()
-
+        if self._parallel:
             pool.close()
             pool.join()
-
         if self.verbose > 0:
             sys.stdout.write("\r")
         return n_vars, block_index + 1, processed_entries
@@ -504,71 +501,40 @@ class SdpRelaxation(Relaxation):
         for block, block_size in enumerate(self.block_struct):
             row_offsets.append(row_offsets[block] + block_size ** 2)
 
-        if not self._parallel:
-            for k, ineq in enumerate(self.constraints):
-                block_index += 1
-                if isinstance(ineq, str):
-                    self.__parse_expression(ineq, row_offsets[block_index-1])
-                    continue
-                if ineq.is_Relational:
-                    ineq = convert_relational(ineq)
-                monomials = self.localizing_monomial_sets[block_index -
-                                                          initial_block_index-1]
-                # Process M_y(gy)(u,w) entries
-                for row in range(len(monomials)):
-                    for column in range(row, len(monomials)):
-                        # Calculate the moments of polynomial entries
-                        polynomial = \
-                            simplify_polynomial(
-                                monomials[row].adjoint() * expand(ineq) *
-                                monomials[column], self.substitutions)
-                        if k < self._n_inequalities:
-                            self.__push_facvar_sparse(polynomial, block_index,
-                                                      row_offsets[block_index-1],
-                                                      row, column)
-                        else:
-                            self.__push_facvar_sparse(polynomial, block_index,
-                                                      row_offsets[block_index-1],
-                                                      0, 0)
-                            block_index += 1
-                            self.__push_facvar_sparse(-polynomial, block_index,
-                                                      row_offsets[block_index-1],
-                                                      0, 0)
-                            block_index += 1
-                if k >= self._n_inequalities:
-                    block_index -= 1
-                if self.verbose > 0:
-                    sys.stdout.write("\r\x1b[KProcessing %d/%d constraints..." %
-                                     (k+1, len(self.constraints)))
-                    sys.stdout.flush()
-        else:
+        if self._parallel:
             pool = multiprocessing.Pool()
-            for k, ineq in enumerate(self.constraints):
-                block_index += 1
-                if isinstance(ineq, str):
-                    self.__parse_expression(ineq, row_offsets[block_index-1])
-                    continue
-                if ineq.is_Relational:
-                    ineq = convert_relational(ineq)
-                monomials = self.localizing_monomial_sets[block_index -
-                                                          initial_block_index-1]
-                func = partial(moment_of_entry, monomials=monomials, ineq=ineq, substitutions=self.substitutions)
-                chunksize = max(int(sqrt(len(monomials)*len(monomials)/2)/multiprocessing.cpu_count()),1)#this is just a guess and can be optimized
-                pooliter = pool.imap(func,
-                                     ([row,column]
-                                      for row in range(len(monomials))
-                                      for column in range(row, len(monomials))
-                                     ), chunksize)
-
-                for row, column, polynomial in pooliter:
-                    self.__push_facvar_sparse(polynomial, block_index,
-                                              row_offsets[block_index-1],
-                                              row, column)
-                if self.verbose > 0:
-                    sys.stdout.write("\r\x1b[KProcessing %d/%d constraints..." %
-                                     (k+1, len(self.constraints)))
-                    sys.stdout.flush()
-
+        for k, ineq in enumerate(self.constraints):
+            block_index += 1
+            if isinstance(ineq, str):
+                self.__parse_expression(ineq, row_offsets[block_index-1])
+                continue
+            if ineq.is_Relational:
+                ineq = convert_relational(ineq)
+            monomials = self.localizing_monomial_sets[block_index -
+                                                      initial_block_index-1]
+            func = partial(moment_of_entry, monomials=monomials, ineq=ineq,
+                           substitutions=self.substitutions)
+            if self._parallel:
+                chunksize = max(int(sqrt(len(monomials)*len(monomials)/2) /
+                                    multiprocessing.cpu_count()), 1)
+                iter_ = pool.imap(func, ([row, column]
+                                         for row in range(len(monomials))
+                                         for column in range(row,
+                                                             len(monomials))),
+                                  chunksize)
+            else:
+                iter_ = imap(func, ([row, column]
+                                    for row in range(len(monomials))
+                                    for column in range(row, len(monomials))))
+            for row, column, polynomial in iter_:
+                self.__push_facvar_sparse(polynomial, block_index,
+                                          row_offsets[block_index-1],
+                                          row, column)
+            if self.verbose > 0:
+                sys.stdout.write("\r\x1b[KProcessing %d/%d constraints..." %
+                                 (k+1, len(self.constraints)))
+                sys.stdout.flush()
+        if self._parallel:
             pool.close()
             pool.join()
 
@@ -1336,39 +1302,3 @@ class SdpRelaxation(Relaxation):
         self.process_constraints(inequalities, equalities, momentinequalities,
                                  momentequalities, block_index,
                                  removeequalities)
-
-
-def moment_of_entry(pos, monomials, ineq, substitutions):
-    row = pos[0]
-    column = pos[1]
-
-    return row, column, simplify_polynomial(
-        monomials[row].adjoint() * ineq *
-        monomials[column], substitutions)
-
-
-def assemble_monomial_and_do_substitutions(arg, monomialsA, monomialsB, ppt,
-                                           substitutions,
-                                           pure_substitution_rules):
-    rowA = arg[0]
-    columnA = arg[1]
-    rowB = arg[2]
-
-    start_columnB = 0
-    if rowA == columnA:
-        start_columnB = rowB
-    for columnB in range(start_columnB, len(monomialsB)):
-        if (not ppt) or (columnB >= rowB):
-            monomial = monomialsA[rowA].adjoint() * \
-                       monomialsA[columnA] * \
-                       monomialsB[rowB].adjoint() * \
-                       monomialsB[columnB]
-        else:
-            monomial = monomialsA[rowA].adjoint() * \
-                       monomialsA[columnA] * \
-                       monomialsB[columnB].adjoint() * \
-                       monomialsB[rowB]
-            # Apply the substitutions if any
-        monomial = apply_substitutions(monomial, substitutions,
-                                       pure_substitution_rules)
-    return rowA, columnA, rowB, columnB, monomial
