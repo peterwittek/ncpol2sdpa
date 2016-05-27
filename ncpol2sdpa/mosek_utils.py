@@ -44,24 +44,24 @@ def moseksol_to_xmat(vec, block_struct):
     return result
 
 
-def parse_mosek_solution(sdpRelaxation, task):
+def parse_mosek_solution(sdp, task):
     import mosek
     soltype = mosek.soltype.itr
     primal, dual = task.getprimalobj(soltype), task.getdualobj(soltype)
     x_mat, y_mat = [], []
-    size_ = sum(bs for bs in sdpRelaxation.block_struct)
+    size_ = sum(bs for bs in sdp.block_struct)
     primal_solution = np.zeros(size_*(size_+1) // 2)
     task.getbarxj(soltype, 0, primal_solution)
-    y_mat = moseksol_to_xmat(primal_solution, sdpRelaxation.block_struct)
+    y_mat = moseksol_to_xmat(primal_solution, sdp.block_struct)
     dual_solution = np.zeros(size_*(size_+1) // 2)
     task.getbarsj(soltype, 0, dual_solution)
-    x_mat = moseksol_to_xmat(dual_solution, sdpRelaxation.block_struct)
+    x_mat = moseksol_to_xmat(dual_solution, sdp.block_struct)
     status = repr(task.getsolsta(soltype))
     return primal, dual, x_mat, y_mat, status
 
 
-def solve_with_mosek(sdpRelaxation, solverparameters=None):
-    task = convert_to_mosek(sdpRelaxation)
+def solve_with_mosek(sdp, solverparameters=None):
+    task = convert_to_mosek(sdp)
     if solverparameters is not None:
         import mosek
         for par, val in solverparameters.items():
@@ -92,10 +92,10 @@ def solve_with_mosek(sdpRelaxation, solverparameters=None):
             except AttributeError:
                 raise Exception('No mosek parameter found with the name mosek(.iparam|.dparam|.sparam|).'+str(par)+' that takes a value of type '+str(type(val))+'. See the mosek python API manual for valid parameters.')
     task.optimize()
-    primal, dual, x_mat, y_mat, status = parse_mosek_solution(sdpRelaxation,
+    primal, dual, x_mat, y_mat, status = parse_mosek_solution(sdp,
                                                               task)
-    return -primal+sdpRelaxation.constant_term, \
-           -dual+sdpRelaxation.constant_term, x_mat, y_mat, status
+    return -primal+sdp.constant_term, \
+           -dual+sdp.constant_term, x_mat, y_mat, status
 
 
 def convert_to_mosek_index(block_struct, row_offsets, block_offsets, row):
@@ -109,10 +109,10 @@ def convert_to_mosek_index(block_struct, row_offsets, block_offsets, row):
     offset = block_offsets[block_index]
     ci = offset + i
     cj = offset + j
-    return cj, ci  # Note that MOSEK expect lower-triangular matrices
+    return cj, ci  # Note that MOSEK expects lower-triangular matrices
 
 
-def convert_to_mosek_matrix(sdpRelaxation):
+def convert_to_mosek_matrix(sdp):
     """Converts the entire sparse representation of the Fi constraint matrices
     to sparse MOSEK matrices.
     """
@@ -122,7 +122,7 @@ def convert_to_mosek_matrix(sdpRelaxation):
     barai = []
     baraj = []
     baraval = []
-    for k in range(sdpRelaxation.n_vars):
+    for k in range(sdp.n_vars):
         barai.append([])
         baraj.append([])
         baraval.append([])
@@ -130,17 +130,17 @@ def convert_to_mosek_matrix(sdpRelaxation):
     block_offsets = [0]
     cumulative_sum = 0
     cumulative_square_sum = 0
-    for block_size in sdpRelaxation.block_struct:
+    for block_size in sdp.block_struct:
         cumulative_sum += block_size
         cumulative_square_sum += block_size ** 2
         row_offsets.append(cumulative_square_sum)
         block_offsets.append(cumulative_sum)
-    for row in range(len(sdpRelaxation.F.rows)):
-        if len(sdpRelaxation.F.rows[row]) > 0:
+    for row in range(len(sdp.F.rows)):
+        if len(sdp.F.rows[row]) > 0:
             col_index = 0
-            for k in sdpRelaxation.F.rows[row]:
-                value = sdpRelaxation.F.data[row][col_index]
-                i, j = convert_to_mosek_index(sdpRelaxation.block_struct,
+            for k in sdp.F.rows[row]:
+                value = sdp.F.data[row][col_index]
+                i, j = convert_to_mosek_index(sdp.block_struct,
                                               row_offsets, block_offsets, row)
                 if k > 0:
                     barai[k - 1].append(i)
@@ -154,38 +154,38 @@ def convert_to_mosek_matrix(sdpRelaxation):
     return barci, barcj, barcval, barai, baraj, baraval
 
 
-def convert_to_mosek(sdpRelaxation):
+def convert_to_mosek(sdp):
     """Convert an SDP relaxation to a MOSEK task.
 
-    :param sdpRelaxation: The SDP relaxation to convert.
-    :type sdpRelaxation: :class:`ncpol2sdpa.SdpRelaxation`.
+    :param sdp: The SDP relaxation to convert.
+    :type sdp: :class:`ncpol2sdpa.sdp`.
 
     :returns: :class:`mosek.Task`.
     """
     import mosek
     # Cheat when variables are complex and convert with PICOS
-    if sdpRelaxation.complex_matrix:
+    if sdp.complex_matrix:
         from .picos_utils import convert_to_picos
-        Problem = convert_to_picos(sdpRelaxation).to_real()
+        Problem = convert_to_picos(sdp).to_real()
         Problem._make_mosek_instance()
         task = Problem.msk_task
-        if sdpRelaxation.verbose > 0:
+        if sdp.verbose > 0:
             task.set_Stream(mosek.streamtype.log, streamprinter)
         return task
 
     barci, barcj, barcval, barai, baraj, baraval = \
-        convert_to_mosek_matrix(sdpRelaxation)
-    bkc = [mosek.boundkey.fx] * sdpRelaxation.n_vars
-    blc = [-v for v in sdpRelaxation.obj_facvar]
-    buc = [-v for v in sdpRelaxation.obj_facvar]
+        convert_to_mosek_matrix(sdp)
+    bkc = [mosek.boundkey.fx] * sdp.n_vars
+    blc = [-v for v in sdp.obj_facvar]
+    buc = [-v for v in sdp.obj_facvar]
 
     env = mosek.Env()
     task = env.Task(0, 0)
-    if sdpRelaxation.verbose > 0:
+    if sdp.verbose > 0:
         task.set_Stream(mosek.streamtype.log, streamprinter)
     numvar = 0
     numcon = len(bkc)
-    BARVARDIM = [sum(sdpRelaxation.block_struct)]
+    BARVARDIM = [sum(sdp.block_struct)]
 
     task.appendvars(numvar)
     task.appendcons(numcon)

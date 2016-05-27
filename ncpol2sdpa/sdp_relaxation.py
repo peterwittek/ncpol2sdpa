@@ -164,6 +164,8 @@ class SdpRelaxation(Relaxation):
         self.pure_substitution_rules = True
         self.constraints = []
         self._constraint_to_block_index = {}
+        self._moment_equalities = []
+        self._n_inequalities = 0
         self.moment_substitutions = {}
         self.complex_matrix = False
         n_noncommutative_hermitian = 0
@@ -520,9 +522,21 @@ class SdpRelaxation(Relaxation):
                             simplify_polynomial(
                                 monomials[row].adjoint() * expand(ineq) *
                                 monomials[column], self.substitutions)
-                        self.__push_facvar_sparse(polynomial, block_index,
-                                                  row_offsets[block_index-1],
-                                                  row, column)
+                        if k < self._n_inequalities:
+                            self.__push_facvar_sparse(polynomial, block_index,
+                                                      row_offsets[block_index-1],
+                                                      row, column)
+                        else:
+                            self.__push_facvar_sparse(polynomial, block_index,
+                                                      row_offsets[block_index-1],
+                                                      0, 0)
+                            block_index += 1
+                            self.__push_facvar_sparse(-polynomial, block_index,
+                                                      row_offsets[block_index-1],
+                                                      0, 0)
+                            block_index += 1
+                if k >= self._n_inequalities:
+                    block_index -= 1
                 if self.verbose > 0:
                     sys.stdout.write("\r\x1b[KProcessing %d/%d constraints..." %
                                      (k+1, len(self.constraints)))
@@ -779,59 +793,62 @@ class SdpRelaxation(Relaxation):
             self.block_struct = block_struct
         degree_warning = False
         if inequalities is not None:
-            n_inequalities = len(inequalities)
-        else:
-            n_inequalities = 0
-        if removeequalities:
-            constraints = enumerate(flatten([inequalities]))
-        else:
-            constraints = enumerate(flatten([inequalities, equalities]))
+            self._n_inequalities = len(inequalities)
+        constraints = flatten([inequalities])
+        if momentinequalities is not None:
+            self._n_inequalities += len(momentinequalities)
+            constraints += momentinequalities
+        if not removeequalities:
+            constraints += flatten([equalities])
         monomial_sets = []
-        for k, constraint in constraints:
+        for k, constraint in enumerate(constraints):
             # Find the order of the localizing matrix
-            if isinstance(constraint, str):
-                ineq_order = 2 * self.level
+            if k < len(inequalities) or k >= self._n_inequalities:
+                if isinstance(constraint, str):
+                    ineq_order = 2 * self.level
+                else:
+                    if constraint.is_Relational:
+                        constraint = convert_relational(constraint)
+                    ineq_order = ncdegree(constraint)
+                    if iscomplex(constraint):
+                        self.complex_matrix = True
+                if ineq_order > 2 * self.level:
+                    degree_warning = True
+                localization_order = (2*self.level - ineq_order)//2
+                if self.level == -1:
+                    localization_order = 0
+                if self.localizing_monomial_sets is not None and \
+                        self.localizing_monomial_sets[k] is not None:
+                    localizing_monomials = self.localizing_monomial_sets[k]
+                else:
+                    index = find_variable_set(self.variables, constraint)
+                    localizing_monomials = \
+                        pick_monomials_up_to_degree(self.monomial_sets[index],
+                                                    localization_order)
+                ln = len(localizing_monomials)
+                if ln == 0:
+                    localizing_monomials = [S.One]
             else:
-                if constraint.is_Relational:
-                    constraint = convert_relational(constraint)
-                ineq_order = ncdegree(constraint)
-                if iscomplex(constraint):
-                    self.complex_matrix = True
-            if ineq_order > 2 * self.level:
-                degree_warning = True
-            localization_order = int(floor((2 * self.level - ineq_order) / 2))
-            if self.level == -1:
-                localization_order = 0
-            if self.localizing_monomial_sets is not None and \
-                    self.localizing_monomial_sets[k] is not None:
-                localizing_monomials = self.localizing_monomial_sets[k]
-            else:
-                index = find_variable_set(self.variables, constraint)
-                localizing_monomials = \
-                    pick_monomials_up_to_degree(self.monomial_sets[index],
-                                                localization_order)
-            if len(localizing_monomials) == 0:
                 localizing_monomials = [S.One]
+                ln = 1
             localizing_monomials = unique(localizing_monomials)
             monomial_sets.append(localizing_monomials)
-            self.block_struct.append(len(localizing_monomials))
-            if k >= n_inequalities:
-                monomial_sets.append(localizing_monomials)
-                self.block_struct.append(len(localizing_monomials))
+            if k < self._n_inequalities:
+                self.block_struct.append(ln)
+            else:
+                monomial_sets += [None for _ in range(ln*(ln+1)-1)]
+                self.block_struct += [1 for _ in range(ln*(ln+1))]
 
         if degree_warning and self.verbose > 0:
             print("A constraint has degree %d. Either choose a higher level "
                   "relaxation or ensure that a mixed-order relaxation has the"
                   " necessary monomials" % (ineq_order))
 
-        if momentinequalities is not None:
-            for _ in momentinequalities:
-                monomial_sets.append([S.One])
-                self.block_struct.append(1)
         if momentequalities is not None:
             for moment_eq in momentequalities:
                 substitution = check_simple_substitution(moment_eq)
                 if substitution == (0, 0):
+                    self._moment_equalities.append(moment_eq)
                     if not removeequalities:
                         monomial_sets += [[S.One], [S.One]]
                         self.block_struct += [1, 1]
@@ -949,21 +966,21 @@ class SdpRelaxation(Relaxation):
         for constraint in self.constraints:
             self._constraint_to_block_index[constraint] = (block_index, )
             block_index += 1
-        if not (removeequalities or equalities is None):
-            # Equalities are converted to pairs of inequalities
-            for equality in equalities:
-                self._constraint_to_block_index[equality] = (block_index,
-                                                             block_index+1)
-                if equality.is_Relational:
-                    equality = convert_relational(equality)
-                self.constraints.append(equality)
-                self.constraints.append(-equality)
-                block_index += 2
         if momentinequalities is not None:
             for mineq in momentinequalities:
                 self.constraints.append(mineq)
                 self._constraint_to_block_index[constraint] = (block_index, )
                 block_index += 1
+        if not (removeequalities or equalities is None):
+            # Equalities are converted to pairs of inequalities
+            for k, equality in enumerate(equalities):
+                if equality.is_Relational:
+                    equality = convert_relational(equality)
+                self.constraints.append(equality)
+                ln = len(self.localizing_monomial_sets[block_index-1])
+                self._constraint_to_block_index[equality] = (block_index,
+                                                             block_index+ln*(ln+1)//2)
+                block_index += ln*(ln+1)
         reduced_moment_equalities = []
         if momentequalities is not None:
             for meq in momentequalities:
@@ -971,13 +988,6 @@ class SdpRelaxation(Relaxation):
                 if substitution == (0, 0):
                     if not removeequalities:
                         self.constraints.append(meq)
-                        if isinstance(meq, str):
-                            tmp = meq.replace("+", "p")
-                            tmp = tmp.replace("-", "+")
-                            tmp = tmp.replace("p", "-")
-                            self.constraints.append(tmp)
-                        else:
-                            self.constraints.append(-meq)
                         self._constraint_to_block_index[meq] = (block_index,
                                                                 block_index+1)
                         block_index += 2

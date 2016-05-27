@@ -44,7 +44,7 @@ def parse_solution_matrix(iterator):
 
 
 def read_sdpa_out(filename, solutionmatrix=False, status=False,
-                  sdpRelaxation=None):
+                  sdp=None):
     """Helper function to parse the output file of SDPA.
 
     :param filename: The name of the SDPA output file.
@@ -53,9 +53,9 @@ def read_sdpa_out(filename, solutionmatrix=False, status=False,
     :type solutionmatrix: bool.
     :param status: Optional parameter for retrieving the status.
     :type status: bool.
-    :param sdpRelaxation: Optional parameter to add the solution to a
+    :param sdp: Optional parameter to add the solution to a
                           relaxation.
-    :type sdpRelaxation: SdpRelaxation.
+    :type sdp: sdp.
     :returns: tuple of two floats and optionally two lists of `numpy.array` and
               a status string
     """
@@ -80,12 +80,12 @@ def read_sdpa_out(filename, solutionmatrix=False, status=False,
             else:
                 status_string = 'unknown'
     file_.close()
-    if sdpRelaxation is not None:
-        sdpRelaxation.primal = primal
-        sdpRelaxation.dual = dual
-        sdpRelaxation.x_mat = x_mat
-        sdpRelaxation.y_mat = y_mat
-        sdpRelaxation.status = status_string
+    if sdp is not None:
+        sdp.primal = primal
+        sdp.dual = dual
+        sdp.x_mat = x_mat
+        sdp.y_mat = y_mat
+        sdp.status = status_string
     if solutionmatrix and status:
         return primal, dual, x_mat, y_mat, status_string
     elif solutionmatrix:
@@ -122,12 +122,12 @@ def detect_sdpa(solverparameters):
     return which(solverexecutable)
 
 
-def solve_with_sdpa(sdpRelaxation, solverparameters=None):
+def solve_with_sdpa(sdp, solverparameters=None):
     """Helper function to write out the SDP problem to a temporary
     file, call the solver, and parse the output.
 
-    :param sdpRelaxation: The SDP relaxation to be solved.
-    :type sdpRelaxation: :class:`ncpol2sdpa.SdpRelaxation`.
+    :param sdp: The SDP relaxation to be solved.
+    :type sdp: :class:`ncpol2sdpa.sdp`.
     :param solverparameters: Optional parameters to SDPA.
     :type solverparameters: dict of str.
     :returns: tuple of float and list -- the primal and dual solution of the
@@ -143,7 +143,7 @@ def solve_with_sdpa(sdpRelaxation, solverparameters=None):
     tempfile_.close()
     tmp_dats_filename = tmp_filename + ".dat-s"
     tmp_out_filename = tmp_filename + ".out"
-    write_to_sdpa(sdpRelaxation, tmp_dats_filename)
+    write_to_sdpa(sdp, tmp_dats_filename)
     command_line = [solverexecutable, "-ds", tmp_dats_filename,
                     "-o", tmp_out_filename]
     if solverparameters is not None:
@@ -154,18 +154,18 @@ def solve_with_sdpa(sdpRelaxation, solverparameters=None):
                 command_line.extend(["-p", value])
             else:
                 raise Exception("Unknown parameter for SDPA: " + key)
-    if sdpRelaxation.verbose < 1:
+    if sdp.verbose < 1:
         with open(os.devnull, "w") as fnull:
             call(command_line, stdout=fnull, stderr=fnull)
     else:
         call(command_line)
     primal, dual, x_mat, y_mat, status = read_sdpa_out(tmp_out_filename, True,
                                                        True)
-    if sdpRelaxation.verbose < 2:
+    if sdp.verbose < 2:
         os.remove(tmp_dats_filename)
         os.remove(tmp_out_filename)
-    return primal+sdpRelaxation.constant_term, \
-        dual+sdpRelaxation.constant_term, x_mat, y_mat, status
+    return primal+sdp.constant_term, \
+        dual+sdp.constant_term, x_mat, y_mat, status
 
 
 def convert_row_to_sdpa_index(block_struct, row_offsets, row):
@@ -178,39 +178,39 @@ def convert_row_to_sdpa_index(block_struct, row_offsets, row):
     return block_index, i, j
 
 
-def write_to_sdpa(sdpRelaxation, filename):
+def write_to_sdpa(sdp, filename):
     """Write the SDP relaxation to SDPA format.
 
-    :param sdpRelaxation: The SDP relaxation to write.
-    :type sdpRelaxation: :class:`ncpol2sdpa.SdpRelaxation`.
+    :param sdp: The SDP relaxation to write.
+    :type sdp: :class:`ncpol2sdpa.sdp`.
     :param filename: The name of the file. It must have the suffix ".dat-s"
     :type filename: str.
     """
     # Coefficient matrices
     row_offsets = [0]
     cumulative_sum = 0
-    for block_size in sdpRelaxation.block_struct:
+    for block_size in sdp.block_struct:
         cumulative_sum += block_size ** 2
         row_offsets.append(cumulative_sum)
     multiplier = 1
-    if sdpRelaxation.F.dtype == np.complex128:
+    if sdp.F.dtype == np.complex128:
         multiplier = 2
-    lines = [[] for _ in range(multiplier*sdpRelaxation.n_vars+1)]
-    for row in range(len(sdpRelaxation.F.rows)):
-        if len(sdpRelaxation.F.rows[row]) > 0:
+    lines = [[] for _ in range(multiplier*sdp.n_vars+1)]
+    for row in range(len(sdp.F.rows)):
+        if len(sdp.F.rows[row]) > 0:
             col_index = 0
-            for k in sdpRelaxation.F.rows[row]:
-                value = sdpRelaxation.F.data[row][col_index]
+            for k in sdp.F.rows[row]:
+                value = sdp.F.data[row][col_index]
                 col_index += 1
                 block_index, i, j = convert_row_to_sdpa_index(
-                    sdpRelaxation.block_struct, row_offsets, row)
+                    sdp.block_struct, row_offsets, row)
                 if k == 0:
                     value *= -1
-                if sdpRelaxation.F.dtype == np.float64:
+                if sdp.F.dtype == np.float64:
                     lines[k].append('{0}\t{1}\t{2}\t{3}\n'.format(
                         block_index + 1, i + 1, j + 1, value))
                 else:
-                    bs = sdpRelaxation.block_struct[block_index]
+                    bs = sdp.block_struct[block_index]
                     if value.real != 0:
                         lines[k].append('{0}\t{1}\t{2}\t{3}\n'.format(
                             block_index + 1, i + 1, j + 1, value.real))
@@ -218,27 +218,27 @@ def write_to_sdpa(sdpRelaxation, filename):
                             block_index + 1, i + bs + 1, j + bs + 1,
                             value.real))
                     if value.imag != 0:
-                        lines[k + sdpRelaxation.n_vars].append(
+                        lines[k + sdp.n_vars].append(
                             '{0}\t{1}\t{2}\t{3}\n'.format(
                                 block_index + 1, i + 1, j + bs + 1,
                                 value.imag))
-                        lines[k + sdpRelaxation.n_vars].append(
+                        lines[k + sdp.n_vars].append(
                             '{0}\t{1}\t{2}\t{3}\n'.format(
                                 block_index + 1, j + 1, i + bs + 1,
                                 -value.imag))
     file_ = open(filename, 'w')
     file_.write('"file ' + filename + ' generated by ncpol2sdpa"\n')
-    file_.write(str(multiplier*sdpRelaxation.n_vars) + ' = number of vars\n')
-    file_.write(str(len(sdpRelaxation.block_struct)) + ' = number of blocs\n')
+    file_.write(str(multiplier*sdp.n_vars) + ' = number of vars\n')
     # bloc structure
     block_struct = [multiplier*blk_size
-                    for blk_size in sdpRelaxation.block_struct]
+                    for blk_size in sdp.block_struct]
+    file_.write(str(len(block_struct)) + ' = number of blocs\n')
     file_.write(str(block_struct).replace('[', '(')
                 .replace(']', ')'))
     file_.write(' = BlocStructure\n')
     # c vector (objective)
     objective = \
-        str(list(sdpRelaxation.obj_facvar)).replace('[', '').replace(']', '')
+        str(list(sdp.obj_facvar)).replace('[', '').replace(']', '')
     if multiplier == 2:
         objective += ', ' + objective
     file_.write('{'+objective+'}\n')
@@ -250,20 +250,20 @@ def write_to_sdpa(sdpRelaxation, filename):
     file_.close()
 
 
-def convert_to_human_readable(sdpRelaxation):
+def convert_to_human_readable(sdp):
     """Convert the SDP relaxation to a human-readable format.
 
-    :param sdpRelaxation: The SDP relaxation to write.
-    :type sdpRelaxation: :class:`ncpol2sdpa.SdpRelaxation`.
+    :param sdp: The SDP relaxation to write.
+    :type sdp: :class:`ncpol2sdpa.sdp`.
     :returns: tuple of the objective function in a string and a matrix of
               strings as the symbolic representation of the moment matrix
     """
 
     objective = ""
     indices_in_objective = []
-    for i, tmp in enumerate(sdpRelaxation.obj_facvar):
+    for i, tmp in enumerate(sdp.obj_facvar):
         candidates = [key for key, v in
-                      sdpRelaxation.monomial_index.items() if v == i+1]
+                      sdp.monomial_index.items() if v == i+1]
         if len(candidates) > 0:
             monomial = convert_monomial_to_string(candidates[0])
         else:
@@ -279,7 +279,7 @@ def convert_to_human_readable(sdpRelaxation):
     cumulative_sum = 0
     row_offsets = [0]
     block_offset = [0]
-    for bs in sdpRelaxation.block_struct:
+    for bs in sdp.block_struct:
         matrix_size += abs(bs)
         cumulative_sum += bs ** 2
         row_offsets.append(cumulative_sum)
@@ -290,16 +290,16 @@ def convert_to_human_readable(sdpRelaxation):
         matrix_line = ["0"] * matrix_size
         matrix.append(matrix_line)
 
-    for row in range(len(sdpRelaxation.F.rows)):
-        if len(sdpRelaxation.F.rows[row]) > 0:
+    for row in range(len(sdp.F.rows)):
+        if len(sdp.F.rows[row]) > 0:
             col_index = 0
-            for k in sdpRelaxation.F.rows[row]:
-                value = sdpRelaxation.F.data[row][col_index]
+            for k in sdp.F.rows[row]:
+                value = sdp.F.data[row][col_index]
                 col_index += 1
                 block_index, i, j = convert_row_to_sdpa_index(
-                    sdpRelaxation.block_struct, row_offsets, row)
+                    sdp.block_struct, row_offsets, row)
                 candidates = [key for key, v in
-                              sdpRelaxation.monomial_index.items()
+                              sdp.monomial_index.items()
                               if v == k]
                 if len(candidates) > 0:
                     monomial = convert_monomial_to_string(candidates[0])
@@ -318,15 +318,15 @@ def convert_to_human_readable(sdpRelaxation):
     return objective, matrix
 
 
-def write_to_human_readable(sdpRelaxation, filename):
+def write_to_human_readable(sdp, filename):
     """Write the SDP relaxation to a human-readable format.
 
-    :param sdpRelaxation: The SDP relaxation to write.
-    :type sdpRelaxation: :class:`ncpol2sdpa.SdpRelaxation`.
+    :param sdp: The SDP relaxation to write.
+    :type sdp: :class:`ncpol2sdpa.sdp`.
     :param filename: The name of the file.
     :type filename: str.
     """
-    objective, matrix = convert_to_human_readable(sdpRelaxation)
+    objective, matrix = convert_to_human_readable(sdp)
     f = open(filename, 'w')
     f.write("Objective:" + objective + "\n")
     for matrix_line in matrix:
