@@ -64,12 +64,13 @@ class SteeringHierarchy(SdpRelaxation):
     hierarchy_types = ["npa", "npa_chordal", "moroder"]
 
     def __init__(self, variables, verbose=0, matrix_var_dim=None,
-                 mark_conjugate=False):
+                 mark_conjugate=False, parallel=False):
         """Constructor for the class.
         """
         if matrix_var_dim is None and not mark_conjugate:
             raise Exception("Invalid steering hierarchy requested!")
-        super(SteeringHierarchy, self).__init__(variables, verbose=verbose)
+        super(SteeringHierarchy, self).__init__(variables, verbose=verbose,
+                                                parallel=parallel)
         if matrix_var_dim is not None:
             self.complex_matrix = True
             self.normalized = False

@@ -64,9 +64,10 @@ class RdmHierarchy(SdpRelaxation):
       - `status`: The solution status of the relaxation.
     """
 
-    def __init__(self, variables, parameters=None, verbose=0, circulant=False):
+    def __init__(self, variables, parameters=None, verbose=0, circulant=False,
+                 parallel=False):
         super(RdmHierarchy, self).__init__(variables, parameters, verbose,
-                                           False)
+                                           False, parallel)
         self.circulant = circulant
         self.correspondence = {}
         self.m_block = 0
