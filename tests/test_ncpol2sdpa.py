@@ -296,7 +296,7 @@ class MaxCut(unittest.TestCase):
                                      equalities=equalities,
                                      removeequalities=True)
         sdpRelaxation.solve()
-        self.assertTrue(abs(sdpRelaxation.primal + 4.5) < 10e-5)
+        self.assertTrue(abs(sdpRelaxation.primal + 13.5) < 10e-5)
 
 
 class Moroder(unittest.TestCase):
