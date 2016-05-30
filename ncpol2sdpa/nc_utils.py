@@ -665,8 +665,12 @@ def check_simple_substitution(equality):
 def moment_of_entry(pos, monomials, ineq, substitutions):
     row = pos[0]
     column = pos[1]
-    return row, column, simplify_polynomial(monomials[row].adjoint() * ineq *
-                                            monomials[column], substitutions)
+    if isinstance(ineq, str):
+        return row, column, ineq
+    else:
+        return row, column, simplify_polynomial(monomials[row].adjoint() *
+                                                ineq * monomials[column],
+                                                substitutions)
 
 
 def assemble_monomial_and_do_substitutions(arg, monomialsA, monomialsB, ppt,

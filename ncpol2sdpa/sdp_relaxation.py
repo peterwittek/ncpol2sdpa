@@ -503,6 +503,7 @@ class SdpRelaxation(Relaxation):
             block_index += 1
             monomials = self.localizing_monomial_sets[block_index -
                                                       initial_block_index-1]
+            lm = len(monomials)
             if isinstance(ineq, str):
                 self.__parse_expression(ineq, row_offsets[block_index-1])
                 continue
@@ -510,21 +511,18 @@ class SdpRelaxation(Relaxation):
                 ineq = convert_relational(ineq)
             func = partial(moment_of_entry, monomials=monomials, ineq=ineq,
                            substitutions=self.substitutions)
-            if self._parallel:
-                chunksize = max(int(np.sqrt(len(monomials)*len(monomials)/2) /
+            if self._parallel and lm > 1:
+                chunksize = max(int(np.sqrt(lm*lm/2) /
                                     multiprocessing.cpu_count()), 1)
-                iter_ = pool.imap(func, ([row, column]
-                                         for row in range(len(monomials))
-                                         for column in range(row,
-                                                             len(monomials))),
+                iter_ = pool.imap(func, ([row, column] for row in range(lm)
+                                         for column in range(row, lm)),
                                   chunksize)
             else:
-                iter_ = imap(func, ([row, column]
-                                    for row in range(len(monomials))
-                                    for column in range(row, len(monomials))))
+                iter_ = imap(func, ([row, column] for row in range(lm)
+                                    for column in range(row, lm)))
             if block_index > self.constraint_starting_block + \
-                     self._n_inequalities and len(monomials) > 1:
-                         is_equality = True
+                    self._n_inequalities and lm > 1:
+                is_equality = True
             else:
                 is_equality = False
             for row, column, polynomial in iter_:
@@ -558,8 +556,10 @@ class SdpRelaxation(Relaxation):
         """
         monomial_sets = []
         n_rows = 0
+        le = 0
         if equalities is not None:
             for equality in equalities:
+                le += 1
                 # Find the order of the localizing matrix
                 if equality.is_Relational:
                     equality = convert_relational(equality)
@@ -581,34 +581,45 @@ class SdpRelaxation(Relaxation):
                     (len(localizing_monomials) + 1) // 2
         if momentequalities is not None:
             for _ in momentequalities:
+                le += 1
                 monomial_sets.append([S.One])
                 n_rows += 1
         A = np.zeros((n_rows, self.n_vars + 1), dtype=self.F.dtype)
         n_rows = 0
+        if self._parallel:
+            pool = multiprocessing.Pool()
         for i, equality in enumerate(flatten([equalities, momentequalities])):
+            func = partial(moment_of_entry, monomials=monomial_sets[i],
+                           ineq=equality, substitutions=self.substitutions)
+            lm = len(monomial_sets[i])
+            if self._parallel and lm > 1:
+                chunksize = max(int(np.sqrt(lm*lm/2) /
+                                    multiprocessing.cpu_count()), 1)
+                iter_ = pool.imap(func, ([row, column] for row in range(lm)
+                                         for column in range(row, lm)),
+                                  chunksize)
+            else:
+                iter_ = imap(func, ([row, column] for row in range(lm)
+                                    for column in range(row, lm)))
             # Process M_y(gy)(u,w) entries
-            for row in range(len(monomial_sets[i])):
-                for column in range(row, len(monomial_sets[i])):
-                    # Calculate the moments of polynomial entries
-                    if isinstance(equality, str):
-                        self.__parse_expression(equality, -1, A[n_rows])
-                    else:
-                        poly = \
-                         simplify_polynomial(monomial_sets[i][row].adjoint() *
-                                             equality*monomial_sets[i][column],
-                                             self.substitutions)
-                        A[n_rows] = self._get_facvar(poly)
-                    # This is something really weird: we want the constant
-                    # terms in equalities to be positive. Otherwise funny
-                    # things happen in the QR decomposition and the basis
-                    # transformation.
-                    if A[n_rows, 0] < 0:
-                        A[n_rows] = -A[n_rows]
-                    n_rows += 1
-        return A
+            for row, column, polynomial in iter_:
+                # Calculate the moments of polynomial entries
+                if isinstance(polynomial, str):
+                    self.__parse_expression(equality, -1, A[n_rows])
+                else:
+                    A[n_rows] = self._get_facvar(polynomial)
+                n_rows += 1
+                if self.verbose > 0:
+                    sys.stdout.write("\r\x1b[KProcessing %d/%d equalities..." %
+                                     (i+1, le))
+                    sys.stdout.flush()
+        if self._parallel:
+            pool.close()
+            pool.join()
 
-    def debug_equalities(self, equalities):
-        return self.__process_equalities(equalities, None), self.F
+        if self.verbose > 0:
+            sys.stdout.write("\n")
+        return A
 
     def __remove_equalities(self, equalities, momentequalities):
         """Attempt to remove equalities by solving the linear equations.
@@ -632,6 +643,9 @@ class SdpRelaxation(Relaxation):
         new_F[:, 1:] = self.F[:, 1:self.n_vars+1].dot(H)
         self.F = new_F
         self.n_vars = H.shape[1]
+        if self.verbose > 0:
+            print("Number of variables after solving the linear equations: %d"
+                  % self.n_vars)
 
     def __duplicate_momentmatrix(self, original_n_vars, n_vars, block_index):
         self.var_offsets.append(n_vars)
