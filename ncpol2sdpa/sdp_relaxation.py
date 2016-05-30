@@ -23,16 +23,15 @@ try:
 except ImportError:
     pass
 try:
-    from scipy.linalg import qr
-    from scipy.sparse import lil_matrix, hstack
+    from scipy.sparse import lil_matrix
 except ImportError:
     from .sparse_utils import lil_matrix
 from .nc_utils import apply_substitutions, \
-    assemble_monomial_and_do_substitutions, build_permutation_matrix, \
-    check_simple_substitution, convert_relational, find_variable_set, \
-    flatten, get_all_monomials, is_number_type, is_pure_substitution_rule, \
-    iscomplex, moment_of_entry, ncdegree, pick_monomials_up_to_degree, \
-    save_monomial_index, separate_scalar_factor, simplify_polynomial, unique
+    assemble_monomial_and_do_substitutions, check_simple_substitution, \
+    convert_relational, find_variable_set, flatten, get_all_monomials, \
+    is_number_type, is_pure_substitution_rule, iscomplex, moment_of_entry, \
+    ncdegree, pick_monomials_up_to_degree, save_monomial_index, \
+    separate_scalar_factor, simplify_polynomial, unique
 from .solver_common import find_solution_ranks, get_sos_decomposition, \
     get_xmat_value, solve_sdp, extract_dual_value
 from .mosek_utils import convert_to_mosek
@@ -346,17 +345,15 @@ class SdpRelaxation(Relaxation):
                                          columnB, len(monomialsB),
                                          prevent_substitutions=True)
             if self.verbose > 0:
+                msg = ""
                 if self.verbose > 1 and self._parallel:
-                    debug = ", working in {:0} processes for {:0} seconds with a chunksize of {:0}"\
-                            .format(multiprocessing.cpu_count(),
-                                    int(time.time()-time0), chunksize)
-                else:
-                    debug = ""
-                basic = "{:0} (done: {:.2%}".format(n_vars,
-                                                    (processed_entries-1) /
-                                                    self.n_vars)
-                sys.stdout.write("\r\x1b[KCurrent number of SDP variables: " +
-                                 basic + debug + ")")
+                    msg = ", working in {:0} processes for {:0} seconds with a chunksize of {:0}"\
+                          .format(multiprocessing.cpu_count(),
+                                  time.time()-time0, chunksize)
+                msg = "{:0} (done: {:.2%}".format(n_vars, (processed_entries-1) /
+                                                  self.n_vars) + msg
+                msg = "\r\x1b[KCurrent number of SDP variables: " + msg + ")"
+                sys.stdout.write(msg)
                 sys.stdout.flush()
 
         if self._parallel:
@@ -504,13 +501,13 @@ class SdpRelaxation(Relaxation):
             pool = multiprocessing.Pool()
         for k, ineq in enumerate(self.constraints):
             block_index += 1
+            monomials = self.localizing_monomial_sets[block_index -
+                                                      initial_block_index-1]
             if isinstance(ineq, str):
                 self.__parse_expression(ineq, row_offsets[block_index-1])
                 continue
             if ineq.is_Relational:
                 ineq = convert_relational(ineq)
-            monomials = self.localizing_monomial_sets[block_index -
-                                                      initial_block_index-1]
             func = partial(moment_of_entry, monomials=monomials, ineq=ineq,
                            substitutions=self.substitutions)
             if self._parallel:
@@ -525,10 +522,21 @@ class SdpRelaxation(Relaxation):
                 iter_ = imap(func, ([row, column]
                                     for row in range(len(monomials))
                                     for column in range(row, len(monomials))))
+            if block_index > self.constraint_starting_block + \
+                     self._n_inequalities and len(monomials) > 1:
+                         is_equality = True
+            else:
+                is_equality = False
             for row, column, polynomial in iter_:
+                if is_equality:
+                    row, column = 0, 0
                 self.__push_facvar_sparse(polynomial, block_index,
                                           row_offsets[block_index-1],
                                           row, column)
+                if is_equality:
+                    block_index += 1
+            if is_equality:
+                block_index -= 1
             if self.verbose > 0:
                 sys.stdout.write("\r\x1b[KProcessing %d/%d constraints..." %
                                  (k+1, len(self.constraints)))
@@ -599,6 +607,9 @@ class SdpRelaxation(Relaxation):
                     n_rows += 1
         return A
 
+    def debug_equalities(self, equalities):
+        return self.__process_equalities(equalities, None), self.F
+
     def __remove_equalities(self, equalities, momentequalities):
         """Attempt to remove equalities by solving the linear equations.
         """
@@ -606,21 +617,21 @@ class SdpRelaxation(Relaxation):
         if A.shape[0] == 0:
             return
         c = np.array(self.obj_facvar)
-        Q, R, P = qr(np.transpose(A[:, 1:]), pivoting=True)
-        E = build_permutation_matrix(P)
+        Q, R = np.linalg.qr(A[:, 1:].T, mode='complete')
         n = np.max(np.nonzero(np.sum(np.abs(R), axis=1) > 0)) + 1
-        x = np.dot(Q[:, :n], np.linalg.solve(np.transpose(R[:n, :]),
-                                             E.T.dot(-A[:, 0])))
-        x = np.append(1, x)
+        x = np.dot(Q[:, :n], np.linalg.solve(np.transpose(R[:n, :]), -A[:, 0]))
         H = lil_matrix(Q[:, n:])  # New basis
         # Transforming the objective function
         self.obj_facvar = H.T.dot(c)
+        self.constant_term += c.dot(x)
+        x = np.append(1, x)
         # Transforming the moment matrix and localizing matrices
-        self.F = self.F[:, :self.n_vars+1]
-        new_constant_column = lil_matrix(self.F.dot(x))
-        self.F = hstack([new_constant_column.T, self.F[:, 1:].dot(H)])
-        self.F = self.F.tolil()
-        self.n_vars = self.F.shape[1] - 1
+        new_F = lil_matrix((self.F.shape[0], H.shape[1] + 1))
+        new_F[:, 0] = self.F[:, :self.n_vars+1].dot(x).reshape((new_F.shape[0],
+                                                                1))
+        new_F[:, 1:] = self.F[:, 1:self.n_vars+1].dot(H)
+        self.F = new_F
+        self.n_vars = H.shape[1]
 
     def __duplicate_momentmatrix(self, original_n_vars, n_vars, block_index):
         self.var_offsets.append(n_vars)
@@ -759,6 +770,10 @@ class SdpRelaxation(Relaxation):
         degree_warning = False
         if inequalities is not None:
             self._n_inequalities = len(inequalities)
+            n_tmp_inequalities = len(inequalities)
+        else:
+            self._n_inequalities = 0
+            n_tmp_inequalities = 0
         constraints = flatten([inequalities])
         if momentinequalities is not None:
             self._n_inequalities += len(momentinequalities)
@@ -768,7 +783,7 @@ class SdpRelaxation(Relaxation):
         monomial_sets = []
         for k, constraint in enumerate(constraints):
             # Find the order of the localizing matrix
-            if k < len(inequalities) or k >= self._n_inequalities:
+            if k < n_tmp_inequalities or k >= self._n_inequalities:
                 if isinstance(constraint, str):
                     ineq_order = 2 * self.level
                 else:
@@ -801,7 +816,9 @@ class SdpRelaxation(Relaxation):
             if k < self._n_inequalities:
                 self.block_struct.append(ln)
             else:
-                monomial_sets += [None for _ in range(ln*(ln+1)-1)]
+                monomial_sets += [None for _ in range(ln*(ln+1)//2-1)]
+                monomial_sets.append(localizing_monomials)
+                monomial_sets += [None for _ in range(ln*(ln+1)//2-1)]
                 self.block_struct += [1 for _ in range(ln*(ln+1))]
 
         if degree_warning and self.verbose > 0:
@@ -942,6 +959,7 @@ class SdpRelaxation(Relaxation):
                 if equality.is_Relational:
                     equality = convert_relational(equality)
                 self.constraints.append(equality)
+                self.constraints.append(-equality)
                 ln = len(self.localizing_monomial_sets[block_index-1])
                 self._constraint_to_block_index[equality] = (block_index,
                                                              block_index+ln*(ln+1)//2)
@@ -953,6 +971,13 @@ class SdpRelaxation(Relaxation):
                 if substitution == (0, 0):
                     if not removeequalities:
                         self.constraints.append(meq)
+                        if isinstance(meq, str):
+                            tmp = meq.replace("+", "p")
+                            tmp = tmp.replace("-", "+")
+                            tmp = tmp.replace("p", "-")
+                            self.constraints.append(tmp)
+                        else:
+                            self.constraints.append(-meq)
                         self._constraint_to_block_index[meq] = (block_index,
                                                                 block_index+1)
                         block_index += 2
