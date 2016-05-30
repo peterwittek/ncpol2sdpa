@@ -172,6 +172,9 @@ class SdpRelaxation(Relaxation):
         self._n_inequalities = 0
         self.moment_substitutions = {}
         self.complex_matrix = False
+        self.original_F = None
+        self.original_obj_facvar = 0
+        self.original_constant_term = 0
         n_noncommutative_hermitian = 0
         n_noncommutative_nonhermitian = 0
         n_commutative_hermitian = 0
@@ -633,6 +636,8 @@ class SdpRelaxation(Relaxation):
         x = np.dot(Q[:, :n], np.linalg.solve(np.transpose(R[:n, :]), -A[:, 0]))
         H = lil_matrix(Q[:, n:])  # New basis
         # Transforming the objective function
+        self.original_obj_facvar = self.obj_facvar
+        self.original_constant_term = self.constant_term
         self.obj_facvar = H.T.dot(c)
         self.constant_term += c.dot(x)
         x = np.append(1, x)
@@ -641,6 +646,7 @@ class SdpRelaxation(Relaxation):
         new_F[:, 0] = self.F[:, :self.n_vars+1].dot(x).reshape((new_F.shape[0],
                                                                 1))
         new_F[:, 1:] = self.F[:, 1:self.n_vars+1].dot(H)
+        self.original_F = self.F
         self.F = new_F
         self.n_vars = H.shape[1]
         if self.verbose > 0:
@@ -951,10 +957,11 @@ class SdpRelaxation(Relaxation):
         """
         self.status = "unsolved"
         if block_index == 0:
-            if equalities is not None and removeequalities:
-                raise Exception("The moment matrix has to be generated again "
-                                "when equality constraints are removed by "
-                                "solving the equations.")
+            if self.original_F is not None:
+                self.F = self.original_F
+                self.obj_facvar = self.original_obj_facvar
+                self.constant_term = self.original_constant_term
+                self.n_vars = len(self.obj_facvar)
             block_index = self.constraint_starting_block
             self.__wipe_F_from_constraints()
         self.constraints = flatten([inequalities])
