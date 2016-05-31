@@ -5,7 +5,7 @@ Examples
 Example 1: Max-cut
 ======================================================
 This is a polynomial optimization problem of commutative variables mentioned in
-Section 5.12 of Henrion et. al (2009). We rely on NumPy and SciPy to remove the equality constraints from the problem
+Section 5.12 of Henrion et. al (2009). We rely on NumPy to remove the equality constraints from the problem
 
 ::
 
@@ -22,10 +22,10 @@ Section 5.12 of Henrion et. al (2009). We rely on NumPy and SciPy to remove the 
 
     objective = -np.dot(x, np.dot(Q, np.transpose(x)))
 
-    sdpRelaxation = SdpRelaxation(x)
-    sdpRelaxation.get_relaxation(1, objective=objective, equalities=equalities,
-                                 removeequalities=True)
-    sdpRelaxation.solve()
+    sdp = SdpRelaxation(x)
+    sdp.get_relaxation(1, objective=objective, equalities=equalities,
+                       removeequalities=True)
+    sdp.solve()
 
 Example 2: Parametric Polynomial Optimization Problems
 ======================================================
@@ -84,11 +84,11 @@ simple example:
     obj = X[1] - 2*X[0]*X[1] + X[1]*X[2]
     inequalities = [1-X[0]**2-X[1]**2, 1-X[1]**2-X[2]**2]
 
-    sdpRelaxation = SdpRelaxation(X)
-    sdpRelaxation.get_relaxation(level, objective=obj, 
-                                 inequalities=inequalities, chordal_extension=True)
-    sdpRelaxation.solve()
-    print(sdpRelaxation.primal, sdpRelaxation.dual)
+    sdp = SdpRelaxation(X)
+    sdp.get_relaxation(level, objective=obj, inequalities=inequalities,
+                       chordal_extension=True)
+    sdp.solve()
+    print(sdp.primal, sdp.dual)
 
 
 Example 4: Mixed-Level Relaxation of a Bell Inequality
@@ -145,12 +145,12 @@ only need to provide the strings we would like to see -- this time it is AB:
 
 ::
 
-    sdpRelaxation = SdpRelaxation(P.get_all_operators())
-    sdpRelaxation.get_relaxation(level, objective=objective,
-                                 substitutions=P.substitutions,
-                                 extramonomials=P.get_extra_monomials('AB'))
-    sdpRelaxation.solve()
-    print(sdpRelaxation.primal)
+    sdp = SdpRelaxation(P.get_all_operators())
+    sdp.get_relaxation(level, objective=objective,
+                       substitutions=P.substitutions,
+                       extramonomials=P.get_extra_monomials('AB'))
+    sdp.solve()
+    print(sdp.primal)
 
 Example 5: Additional manipulation of the generated SDPs with PICOS
 ===================================================================
@@ -163,7 +163,7 @@ the relevant function call to:
 
 ::
 
-    P = sdpRelaxation.convert_to_picos()
+    P = sdp.convert_to_picos()
 
 This returns a PICOS problem. For instance, we can manually define the value
 of certain elements of the moment matrix before solving the SDP:
@@ -224,10 +224,10 @@ interpret.
     hamiltonian = sum(hbar*omega*(Dagger(ai)*ai+0.5) for ai in a)
     substitutions = bosonic_constraints(a)
 
-    sdpRelaxation = SdpRelaxation(a)
-    sdpRelaxation.get_relaxation(level, objective=hamiltonian,
-                                 substitutions=substitutions)
-    sdpRelaxation.solve()
+    sdp = SdpRelaxation(a)
+    sdp.get_relaxation(level, objective=hamiltonian,
+                       substitutions=substitutions)
+    sdp.solve()
 
 The result is very close to two. The result is similarly precise for arbitrary numbers 
 of oscillators.
@@ -293,13 +293,12 @@ From here, the solution follows the usual pathway:
 ::
 
     level = 1
-    sdpRelaxation = SdpRelaxation(P.get_all_operators(), 
-                                  normalized=False, verbose=1)
-    sdpRelaxation.get_relaxation(level, objective=-P([0],[0],'A'), 
-                                 momentequalities=behaviour_constraints,
-                                 substitutions=P.substitutions)
-    sdpRelaxation.solve()
-    print(sdpRelaxation.primal, sdpRelaxation.dual)
+    sdp = SdpRelaxation(P.get_all_operators(), normalized=False, verbose=1)
+    sdp.get_relaxation(level, objective=-P([0],[0],'A'), 
+                       momentequalities=behaviour_constraints,
+                       substitutions=P.substitutions)
+    sdp.solve()
+    print(sdp.primal, sdp.dual)
 
 
 Example 8: Using the Moroder Hierarchy
@@ -334,21 +333,21 @@ this constraint set a priori. Hence we write:
 ::
     
     level = 1
-    sdpRelaxation = MoroderHierarchy([flatten(P.parties[0]), flatten(P.parties[1])], 
-                                     verbose=1, normalized=False)
-    sdpRelaxation.get_relaxation(level, objective=objective,
-                                 substitutions=P.substitutions)
+    sdp = MoroderHierarchy([flatten(P.parties[0]), flatten(P.parties[1])], 
+                           verbose=1, normalized=False)
+    sdp.get_relaxation(level, objective=objective,
+                       substitutions=P.substitutions)
 
     
 We can further process the moment matrix, for instance, to impose partial positivity, or a matrix decomposition. To do these operations, we rely on PICOS:
 
 ::
 
-    Problem = sdpRelaxation.convert_to_picos(duplicate_moment_matrix=True)
+    Problem = sdp.convert_to_picos(duplicate_moment_matrix=True)
     X = Problem.get_variable('X')
     Y = Problem.get_variable('Y')
-    Z = Problem.add_variable('Z', (sdpRelaxation.block_struct[0],
-                             sdpRelaxation.block_struct[0]))
+    Z = Problem.add_variable('Z', (sdp.block_struct[0],
+                             sdp.block_struct[0]))
     Problem.add_constraint(Y.partial_transpose()>>0)
     Problem.add_constraint(Z.partial_transpose()>>0)
     Problem.add_constraint(X - Y + Z == 0)
@@ -360,13 +359,13 @@ Alternatively, with SeDuMi’s ``fromsdpa`` function (Sturm 1999), we can also 
 
 ::
 
-    sdpRelaxation.write_to_file("chsh-moroder.dat-s")
+    sdp.write_to_file("chsh-moroder.dat-s")
 
 If all we need is the partial positivity of the moment matrix, that is actually nothing but an extra symmetry. We can request this condition by passing an argument to the constructor, leading to a sparser SDP:
 
 ::
 
-    sdpRelaxation = MoroderHierarchy([flatten(P.parties[0]), flatten(P.parties[1])], 
-                                     verbose=1, ppt=True)
-    sdpRelaxation.get_relaxation(level, objective=objective,
-                                 substitutions=P.substitutions)
+    sdp = MoroderHierarchy([flatten(P.parties[0]), flatten(P.parties[1])], 
+                           verbose=1, ppt=True)
+    sdp.get_relaxation(level, objective=objective,
+                       substitutions=P.substitutions)

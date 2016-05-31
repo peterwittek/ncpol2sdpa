@@ -117,9 +117,9 @@ with the variables, and request generating the relaxation given the constraints:
 
 ::
 
-    sdpRelaxation = SdpRelaxation(x)
-    sdpRelaxation.get_relaxation(level, objective=obj, inequalities=inequalities,
-                                 substitutions=substitutions)
+    sdp = SdpRelaxation(x)
+    sdp.get_relaxation(level, objective=obj, inequalities=inequalities,
+                       substitutions=substitutions)
 
 For large problems, getting the relaxation can take a long time. Once we have
 the relaxation, we can try to solve it solve it. Currently three solvers are
@@ -128,8 +128,8 @@ obtain the solution by calling the ``solve`` method:
 
 ::
 
-    sdpRelaxation.solve()
-    print(sdpRelaxation.primal, sdpRelaxation.dual, sdpRelaxation.status)
+    sdp.solve()
+    print(sdp.primal, sdp.dual, sdp.status)
 
 This gives a solution close to the optimum around -0.7321. The solution and some
 status information and the time it takes to solve it become part of the
@@ -141,7 +141,7 @@ relaxation to SDPA format:
 
 ::
 
-    sdpRelaxation.write_to_file('example.dat-s')
+    sdp.write_to_file('example.dat-s')
 
 You can also specify a solver if you wish. For instance, if you want to use
 the arbitrary-precision solver that you have available in the path, along with a
@@ -149,23 +149,23 @@ matching parameter file, you can call
 
 ::
 
-    sdpRelaxation.solve(solver='sdpa',
-      solverparameters={"executable":"sdpa_gmp", "paramsfile"="params.gmp.sdpa"})
+    sdp.solve(solver='sdpa', solverparameters={"executable":"sdpa_gmp",
+                                               "paramsfile"="params.gmp.sdpa"})
 
 If you have multiple solvers available, you might want to specify which exactly
 you want to use. For CVXOPT, call
 
 ::
 
-    sdpRelaxation.solve(solver='cvxopt')
-    print(sdpRelaxation.primal, sdpRelaxation.dual)
+    sdp.solve(solver='cvxopt')
+    print(sdp.primal, sdp.dual)
 
 This solution also requires PICOS on top of CXOPT. Alternatively, if you have
 MOSEK installed and it is callable from your Python distribution, you can
 request to use it:
 
-    sdpRelaxation.solve(solver='mosek')
-    print(sdpRelaxation.primal, sdpRelaxation.dual)
+    sdp.solve(solver='mosek')
+    print(sdp.primal, sdp.dual)
 
 
 Analyzing the Solution
@@ -175,13 +175,13 @@ we are interested in. For example:
 
 ::
 
-    sdpRelaxation[X[0]*X[1]]
+    sdp[X[0]*X[1]]
 
 The sums-of-square (SOS) decomposition is extracted from the dual solution:
 
 ::
 
-    sigma = sdpRelaxation.get_sos_decomposition()
+    sigma = sdp.get_sos_decomposition()
 
 If we solve the SDP with the arbitrary-precision solver ``sdpa_gmp``,
 we can find a rank loop at level two, indicating that convergence has
@@ -189,9 +189,9 @@ been achieved.
 
 ::
 
-    sdpRelaxation.solve(solver='sdpa',
-      solverparameters={"executable":"sdpa_gmp", "paramsfile"="params.gmp.sdpa"})
-    sdpRelaxation.find_solution_ranks()
+    sdp.solve(solver='sdpa', solverparameters={"executable":"sdpa_gmp",
+                                               "paramsfile"="params.gmp.sdpa"})
+    sdp.find_solution_ranks()
 
 The output for this problem is ``[2, 3]``, not showing a rank loop at this level
 of relaxation.
@@ -206,14 +206,14 @@ respective monomials. The first line of the file is the objective function.
 
 ::
 
-    sdpRelaxation.write_to_file("examples.csv")
+    sdp.write_to_file("examples.csv")
 
 Furthermore, the library can write out which SDP variable corresponds to which
 monomial by calling
 
 ::
 
-    sdpRelaxation.save_monomial_index("monomials.txt")
+    sdp.save_monomial_index("monomials.txt")
 
 Defining and Solving an Optimization Problem of Noncommuting Variables
 ======================================================================
@@ -238,11 +238,10 @@ pattern, but we request operators instead of variables.
     obj_nc = X[0] * X[1] + X[1] * X[0]
     inequalities_nc = [-X[1] ** 2 + X[1] + 0.5]
     substitutions_nc = {X[0]**2 : X[0]}
-    sdpRelaxation_nc = SdpRelaxation(X)
-    sdpRelaxation_nc.get_relaxation(level, objective=obj_nc,
-                                    inequalities=inequalities_nc,
-                                    substitutions=substitutions_nc)
-    sdpRelaxation_nc.solve()
+    sdp_nc = SdpRelaxation(X)
+    sdp_nc.get_relaxation(level, objective=obj_nc, inequalities=inequalities_nc,
+                          substitutions=substitutions_nc)
+    sdp_nc.solve()
 
 
 This gives a solution very close to the analytical -3/4. Let us export the
@@ -250,15 +249,15 @@ problem again:
 
 ::
 
-    sdpRelaxation.write_to_file("examplenc.dat-s")
+    sdp.write_to_file("examplenc.dat-s")
 
 Solving this with the arbitrary-precision solver, we discover a rank loop:
 
 ::
 
-    sdpRelaxation.solve(solver='sdpa',
-      solverparameters={"executable":"sdpa_gmp", "paramsfile"="params.gmp.sdpa"})
-    sdpRelaxation.find_solution_ranks()
+    sdp.solve(solver='sdpa', solverparameters={"executable":"sdpa_gmp",
+                                               "paramsfile"="params.gmp.sdpa"})
+    sdp.find_solution_ranks()
 
 The output is ``[2, 2]``, indicating a rank loop and showing that the
 noncommutative case of the relaxation converges faster.
