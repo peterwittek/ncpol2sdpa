@@ -294,6 +294,7 @@ def get_xmat_value(monomial, sdp, x_mat=None):
                 A = np.zeros((len(intersect), len(intersect)))
                 b = np.zeros((len(intersect), ))
                 in_ = 0
+                rank0 = 0
                 for row2 in range(row,
                                   row_offsets[sdp.constraint_starting_block]):
                     block, i, j = convert_row_to_sdpa_index(sdp.block_struct,
@@ -302,13 +303,13 @@ def get_xmat_value(monomial, sdp, x_mat=None):
                                          np.nonzero(linear_combination)[0])
                     if len(is2) == len(intersect):
                         col = 0
-                        rank0 = np.linalg.matrix_rank(A)
                         for it in intersect:
                             A[in_, col] = sdp.F[row2, it]
                             col += 1
                         rank1 = np.linalg.matrix_rank(A)
                         b[in_] = x_mat[block][i, j]
                         if rank1 > rank0:
+                            rank0 = rank1
                             if in_ == len(intersect) - 1:
                                 break
                             in_ += 1
