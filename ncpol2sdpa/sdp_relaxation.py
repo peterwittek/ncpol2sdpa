@@ -152,29 +152,37 @@ class SdpRelaxation(Relaxation):
         """Constructor for the class.
         """
         super(SdpRelaxation, self).__init__()
-        self.substitutions = {}
 
-        #: Dictionary that maps monomials to SDP variables.
+        self.verbose = verbose
+
+        # Dictionary that maps monomials to SDP variables.
         self.monomial_index = {}
 
+        # Variables related to generating the moment matrix
         self.var_offsets = [0]
         self.variables = []
-        self.verbose = verbose
-        self.localizing_monomial_sets = None
         self.normalized = normalized
-        self.constraint_starting_block = 0
-        self.level = 0
-        self.monomial_sets = []
+        self.substitutions = {}
         self.pure_substitution_rules = True
+        self.monomial_sets = []
+        self.level = 0
+        self.moment_substitutions = {}
+        self.complex_matrix = False
+
+        # Variables related to processing constraints
+        self.localizing_monomial_sets = None
+        self.constraint_starting_block = 0
         self.constraints = []
         self._constraint_to_block_index = {}
         self._moment_equalities = []
         self._n_inequalities = 0
-        self.moment_substitutions = {}
-        self.complex_matrix = False
-        self.original_F = None
-        self.original_obj_facvar = 0
-        self.original_constant_term = 0
+
+        # Variables related to basis transformation
+        self._original_F = None
+        self._original_obj_facvar = 0
+        self._original_constant_term = 0
+        self._new_basis = None
+
         n_noncommutative_hermitian = 0
         n_noncommutative_nonhermitian = 0
         n_commutative_hermitian = 0
@@ -634,21 +642,22 @@ class SdpRelaxation(Relaxation):
         Q, R = np.linalg.qr(A[:, 1:].T, mode='complete')
         n = np.max(np.nonzero(np.sum(np.abs(R), axis=1) > 0)) + 1
         x = np.dot(Q[:, :n], np.linalg.solve(np.transpose(R[:n, :]), -A[:, 0]))
-        H = lil_matrix(Q[:, n:])  # New basis
+        self._new_basis = lil_matrix(Q[:, n:])
         # Transforming the objective function
-        self.original_obj_facvar = self.obj_facvar
-        self.original_constant_term = self.constant_term
-        self.obj_facvar = H.T.dot(c)
+        self._original_obj_facvar = self.obj_facvar
+        self._original_constant_term = self.constant_term
+        self.obj_facvar = self._new_basis.T.dot(c)
         self.constant_term += c.dot(x)
         x = np.append(1, x)
         # Transforming the moment matrix and localizing matrices
-        new_F = lil_matrix((self.F.shape[0], H.shape[1] + 1))
+        new_F = lil_matrix((self.F.shape[0], self._new_basis.shape[1] + 1))
         new_F[:, 0] = self.F[:, :self.n_vars+1].dot(x).reshape((new_F.shape[0],
                                                                 1))
-        new_F[:, 1:] = self.F[:, 1:self.n_vars+1].dot(H)
-        self.original_F = self.F
+        new_F[:, 1:] = self.F[:, 1:self.n_vars+1].\
+            dot(self._new_basis)
+        self._original_F = self.F
         self.F = new_F
-        self.n_vars = H.shape[1]
+        self.n_vars = self._new_basis.shape[1]
         if self.verbose > 0:
             print("Number of variables after solving the linear equations: %d"
                   % self.n_vars)
@@ -957,11 +966,12 @@ class SdpRelaxation(Relaxation):
         """
         self.status = "unsolved"
         if block_index == 0:
-            if self.original_F is not None:
-                self.F = self.original_F
-                self.obj_facvar = self.original_obj_facvar
-                self.constant_term = self.original_constant_term
+            if self._original_F is not None:
+                self.F = self._original_F
+                self.obj_facvar = self._original_obj_facvar
+                self.constant_term = self._original_constant_term
                 self.n_vars = len(self.obj_facvar)
+                self._new_basis = None
             block_index = self.constraint_starting_block
             self.__wipe_F_from_constraints()
         self.constraints = flatten([inequalities])

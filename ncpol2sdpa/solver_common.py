@@ -213,7 +213,8 @@ def get_sos_decomposition(sdp, y_mat=None, threshold=0.0):
 
 
 def get_index_of_monomial(monomial, row_offsets, sdp):
-    k = sdp._get_index_of_monomial(monomial)[0][0]
+    results = sdp._get_index_of_monomial(monomial)
+    k = results[0][0]
     Fk = sdp.F.getcol(k)
     if not isinstance(Fk, lil_matrix):
         Fk = Fk.tolil()
@@ -222,6 +223,22 @@ def get_index_of_monomial(monomial, row_offsets, sdp):
             block, i, j = convert_row_to_sdpa_index(sdp.block_struct,
                                                     row_offsets, row)
             return row, k, block, i, j
+
+
+def get_facvar_of_monomial(monomial, sdp):
+    results = sdp._get_index_of_monomial(monomial)
+    if sdp._new_basis is None:
+        facvar = np.zeros((sdp.n_vars + 1,))
+    else:
+        facvar = np.zeros((len(sdp._original_obj_facvar) + 1,))
+    for (k, coeff) in results:
+        facvar[k] += coeff
+    if sdp._new_basis is not None:
+        new_facvar = np.zeros((sdp.n_vars + 1,))
+        new_facvar[0] = facvar[0]
+        new_facvar[1:] = sdp._new_basis.T.dot(facvar[1:])
+        facvar = new_facvar
+    return facvar
 
 
 def get_recursive_xmat_value(k, row_offsets, sdp, x_mat):
@@ -240,6 +257,82 @@ def get_recursive_xmat_value(k, row_offsets, sdp, x_mat):
 
 
 def get_xmat_value(monomial, sdp, x_mat=None):
+    if sdp.status == "unsolved" and x_mat is None:
+        raise Exception("The SDP relaxation is unsolved and no primal " +
+                        "solution is provided!")
+    elif sdp.status != "unsolved" and x_mat is None:
+        x_mat = sdp.x_mat
+    polynomial = expand(simplify_polynomial(monomial,
+                                            sdp.substitutions))
+    if polynomial.is_Mul:
+        elements = [polynomial]
+    else:
+        elements = polynomial.as_coeff_mul()[1][0].as_coeff_add()[1]
+    row_offsets = [0]
+    cumulative_sum = 0
+    for block_size in sdp.block_struct:
+        cumulative_sum += block_size ** 2
+        row_offsets.append(cumulative_sum)
+    linear_combination = get_facvar_of_monomial(0, sdp)
+    for element in elements:
+        element, coeff = separate_scalar_factor(element)
+        element = apply_substitutions(element, sdp.substitutions)
+        linear_combination += coeff*get_facvar_of_monomial(element, sdp)
+    row_offsets = [0]
+    cumulative_sum = 0
+    for block_size in sdp.block_struct:
+        cumulative_sum += block_size ** 2
+        row_offsets.append(cumulative_sum)
+    value = linear_combination[0]
+    linear_combination[0] = 0
+    while len(np.nonzero(linear_combination)[0]) > 0:
+        # print(len(np.nonzero(linear_combination)[0]))
+        for row in range(row_offsets[sdp.constraint_starting_block]):
+            intersect = np.intersect1d(sdp.F.rows[row],
+                                       np.nonzero(linear_combination)[0])
+            if len(intersect) == 0:
+                continue
+            elif len(intersect) == 1:
+                block, i, j = convert_row_to_sdpa_index(sdp.block_struct,
+                                                        row_offsets, row)
+                value += linear_combination[intersect[0]]*x_mat[block][i, j]
+                linear_combination[intersect[0]] = 0
+                for index in sdp.F.rows[row]:
+                    if index not in intersect:
+                        value -= sdp.F[row, index] * \
+                            get_recursive_xmat_value(index, row_offsets,
+                                                     sdp, x_mat)
+            else:
+                # This can only happen because we changed the basis
+                A = np.zeros((len(intersect), len(intersect)))
+                b = np.zeros((len(intersect), ))
+                in_ = 0
+                for row2 in range(row,
+                                  row_offsets[sdp.constraint_starting_block]):
+                    block, i, j = convert_row_to_sdpa_index(sdp.block_struct,
+                                                            row_offsets, row2)
+                    is2 = np.intersect1d(sdp.F.rows[row2],
+                                         np.nonzero(linear_combination)[0])
+                    if len(is2) == len(intersect):
+                        col = 0
+                        rank0 = np.linalg.matrix_rank(A)
+                        for it in intersect:
+                            A[in_, col] = sdp.F[row2, it]
+                            col += 1
+                        rank1 = np.linalg.matrix_rank(A)
+                        b[in_] = x_mat[block][i, j]
+                        if rank1 > rank0:
+                            if in_ == len(intersect) - 1:
+                                break
+                            in_ += 1
+                x = np.linalg.solve(A, b)
+                for k, it in enumerate(intersect):
+                    value += x[k]*linear_combination[it]
+                    linear_combination[it] = 0
+    return value
+
+
+def get_xmat_value_old(monomial, sdp, x_mat=None):
     """Given a solution of the primal problem and a monomial, it returns the
     value for the monomial in the solution matrix.
 
