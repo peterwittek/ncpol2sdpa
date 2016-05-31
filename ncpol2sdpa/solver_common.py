@@ -212,19 +212,6 @@ def get_sos_decomposition(sdp, y_mat=None, threshold=0.0):
     return sos
 
 
-def get_index_of_monomial(monomial, row_offsets, sdp):
-    results = sdp._get_index_of_monomial(monomial)
-    k = results[0][0]
-    Fk = sdp.F.getcol(k)
-    if not isinstance(Fk, lil_matrix):
-        Fk = Fk.tolil()
-    for row in range(len(Fk.rows)):
-        if Fk.rows[row] != []:
-            block, i, j = convert_row_to_sdpa_index(sdp.block_struct,
-                                                    row_offsets, row)
-            return row, k, block, i, j
-
-
 def get_facvar_of_monomial(monomial, sdp):
     results = sdp._get_index_of_monomial(monomial)
     if sdp._new_basis is None:
@@ -330,56 +317,6 @@ def get_xmat_value(monomial, sdp, x_mat=None):
                     value += x[k]*linear_combination[it]
                     linear_combination[it] = 0
     return value
-
-
-def get_xmat_value_old(monomial, sdp, x_mat=None):
-    """Given a solution of the primal problem and a monomial, it returns the
-    value for the monomial in the solution matrix.
-
-    :param monomial: The monomial for which the value is requested.
-    :type monomial: :class:`sympy.core.exp.Expr`.
-    :param sdp: The SDP relaxation.
-    :type sdp: :class:`ncpol2sdpa.sdp`.
-    :param x_mat: Optional parameter providing the primal solution of the
-                  moment matrix. If not provided, the solution is extracted
-                  from the sdp object.
-    :type x_mat: :class:`numpy.array`.
-    :returns: The value of the monomial in the solved relaxation.
-    :rtype: float.
-    """
-    if sdp.status == "unsolved" and x_mat is None:
-        raise Exception("The SDP relaxation is unsolved and no primal " +
-                        "solution is provided!")
-    elif sdp.status != "unsolved" and x_mat is None:
-        x_mat = sdp.x_mat
-    polynomial = expand(simplify_polynomial(monomial,
-                                            sdp.substitutions))
-    if polynomial.is_Mul:
-        elements = [polynomial]
-    else:
-        elements = polynomial.as_coeff_mul()[1][0].as_coeff_add()[1]
-    row_offsets = [0]
-    cumulative_sum = 0
-    for block_size in sdp.block_struct:
-        cumulative_sum += block_size ** 2
-        row_offsets.append(cumulative_sum)
-    result = 0
-    for element in elements:
-        element, coeff = separate_scalar_factor(element)
-        element = apply_substitutions(element, sdp.substitutions)
-        if is_number_type(element):
-            result += coeff*element
-        else:
-            row, k, block, i, j = get_index_of_monomial(element, row_offsets,
-                                                        sdp)
-            value = x_mat[block][i, j]
-            for index in sdp.F.rows[row]:
-                if k != index:
-                    value -= sdp.F[row, index] * \
-                        get_recursive_xmat_value(index, row_offsets,
-                                                 sdp, x_mat)
-            result += coeff * value / sdp.F[row, k]
-    return result
 
 
 def extract_dual_value(sdp, monomial, blocks=None):
