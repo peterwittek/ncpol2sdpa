@@ -24,11 +24,32 @@ def solve_with_cvxpy(sdp, solverparameters=None):
     problem = convert_to_cvxpy(sdp)
     if solverparameters is not None and 'solver' in solverparameters:
         solver = solverparameters.pop('solver')
-        problem.solve(solver=solver, solver_specific_opts=solverparameters,
-                      verbose=sdp.verbose)
+        v = problem.solve(solver=solver, solver_specific_opts=solverparameters,
+                          verbose=sdp.verbose)
     else:
-        problem.solve(verbose=sdp.verbose)
-    raise NotImplementedError
+        v = problem.solve(verbose=sdp.verbose)
+    if v is None:
+        status = "infeasible"
+        x_mat, y_mat = [], []
+    elif v == float("inf") or v == -float("inf"):
+        status = "unbounded"
+        x_mat, y_mat = [], []
+    else:
+        status = "optimal"
+        x_pre = sdp.F[:, 1:sdp.n_vars+1].dot(problem.variables()[0].value)
+        x_pre += sdp.F[:, 0]
+        row_offsets = [0]
+        cumulative_sum = 0
+        for block_size in sdp.block_struct:
+            cumulative_sum += block_size ** 2
+            row_offsets.append(cumulative_sum)
+        x_mat = []
+        for bi, bs in enumerate(sdp.block_struct):
+            x = x_pre[row_offsets[bi]:row_offsets[bi+1]].reshape((bs, bs))
+            x += x.T - np.diag(np.array(x.diagonal())[0])
+            x_mat.append(x)
+        y_mat = [constraint.dual_value for constraint in problem.constraints]
+    return v+sdp.constant_term, v+sdp.constant_term, x_mat, y_mat, status
 
 
 def convert_to_cvxpy(sdp):
@@ -39,7 +60,7 @@ def convert_to_cvxpy(sdp):
 
     :returns: :class:`cvxpy.Problem`.
     """
-    from cvxpy import Minimize, Problem, Variable, Constant
+    from cvxpy import Minimize, Problem, Variable
     row_offsets = [0]
     cumulative_sum = 0
     for block_size in sdp.block_struct:

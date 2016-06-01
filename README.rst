@@ -32,9 +32,10 @@ By default, Ncpol2sdpa does not require a solver, but then it will not be able t
 Optional dependencies include:
 
 - `SDPA <http://sdpa.sourceforge.net/>`_ is a possible target solver.
-- `SciPy <http://scipy.org/>`_ allows faster execution with the default CPython interpreter.
+- `SciPy <http://scipy.org/>`_ yields faster execution with the default CPython interpreter.
 - `PICOS <http://picos.zib.de/>`_ is necessary for using the Cvxopt solver and for converting the problem to a PICOS instance.
 - `MOSEK <http://www.mosek.com/>`_ Python module is necessary to work with the MOSEK solver.
+- `CVXPY <http://cvxpy.org/>`_ is required for converting the problem to or by solving it by CVXPY.
 - `Cvxopt <http://cvxopt.org/>`_ is required by both Chompack and PICOS.
 - `Chompack <http://chompack.readthedocs.io/en/latest/>`_ improves the sparsity of the chordal graph extension.
 

@@ -158,6 +158,10 @@ class ExampleNoncommutative(unittest.TestCase):
         self.sdpRelaxation.solve(solver="cvxopt")
         self.assertTrue(abs(self.sdpRelaxation.primal + 0.75) < 10e-5)
 
+    def test_solving_with_cvxpy(self):
+        self.sdpRelaxation.solve(solver="cvxpy")
+        self.assertTrue(abs(self.sdpRelaxation.primal + 0.75) < 10e-5)
+
 
 class FastSubstitute(unittest.TestCase):
 
