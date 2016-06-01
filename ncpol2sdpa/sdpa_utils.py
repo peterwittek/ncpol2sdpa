@@ -6,11 +6,12 @@ Created on Fri May 16 13:52:58 2014
 
 @author: Peter Wittek
 """
+from __future__ import division, print_function
 from bisect import bisect_left
+import numpy as np
+import os
 from subprocess import call
 import tempfile
-import os
-import numpy as np
 from .nc_utils import convert_monomial_to_string
 
 
@@ -199,11 +200,11 @@ def write_to_sdpa(sdp, filename):
     for row in range(len(sdp.F.rows)):
         if len(sdp.F.rows[row]) > 0:
             col_index = 0
+            block_index, i, j = convert_row_to_sdpa_index(sdp.block_struct,
+                                                          row_offsets, row)
             for k in sdp.F.rows[row]:
                 value = sdp.F.data[row][col_index]
                 col_index += 1
-                block_index, i, j = convert_row_to_sdpa_index(
-                    sdp.block_struct, row_offsets, row)
                 if k == 0:
                     value *= -1
                 if sdp.F.dtype == np.float64:

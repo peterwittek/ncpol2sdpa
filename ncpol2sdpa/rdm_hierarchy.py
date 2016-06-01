@@ -4,10 +4,11 @@ Created on Wed Nov  10 11:24:48 2015
 
 @author: Peter Wittek
 """
-import sys
+from __future__ import division, print_function
 from math import sqrt
 from sympy import S
 from sympy.physics.quantum.dagger import Dagger
+import sys
 from .sdp_relaxation import SdpRelaxation
 from .nc_utils import apply_substitutions, is_number_type, \
     separate_scalar_factor, ncdegree

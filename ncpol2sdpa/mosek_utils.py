@@ -6,8 +6,9 @@ Created on Tue Nov 18 10:51:14 2014
 
 @author: Peter Wittek
 """
-import sys
+from __future__ import division, print_function
 import numpy as np
+import sys
 from .sdpa_utils import convert_row_to_sdpa_index
 
 

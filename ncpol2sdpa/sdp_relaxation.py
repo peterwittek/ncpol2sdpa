@@ -34,6 +34,7 @@ from .nc_utils import apply_substitutions, \
     separate_scalar_factor, simplify_polynomial, unique
 from .solver_common import find_solution_ranks, get_sos_decomposition, \
     get_xmat_value, solve_sdp, extract_dual_value
+from .cvxpy_utils import convert_to_cvxpy
 from .mosek_utils import convert_to_mosek
 from .picos_utils import convert_to_picos
 from .sdpa_utils import write_to_sdpa, write_to_human_readable
@@ -639,6 +640,8 @@ class SdpRelaxation(Relaxation):
         if A.shape[0] == 0:
             return
         c = np.array(self.obj_facvar)
+        if self.verbose > 0:
+            print("QR decomposition...")
         Q, R = np.linalg.qr(A[:, 1:].T, mode='complete')
         n = np.max(np.nonzero(np.sum(np.abs(R), axis=1) > 0)) + 1
         x = np.dot(Q[:, :n], np.linalg.solve(np.transpose(R[:n, :]), -A[:, 0]))
@@ -1201,6 +1204,13 @@ class SdpRelaxation(Relaxation):
         :type filename: str.
         """
         save_monomial_index(filename, self.monomial_index)
+
+    def convert_to_cvxpy(self):
+        """Convert an SDP relaxation to a CVXPY problem.
+
+        :returns: :class:`cvxpy.Problem`.
+        """
+        return convert_to_cvxpy(self)
 
     def convert_to_picos(self, duplicate_moment_matrix=False):
         """Convert the SDP relaxation to a PICOS problem such that the exported

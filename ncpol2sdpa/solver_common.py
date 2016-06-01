@@ -4,16 +4,14 @@ Created on Fri May 22 18:05:24 2015
 
 @author: Peter Wittek
 """
-import time
+from __future__ import division, print_function
 import numpy as np
 from sympy import expand
-try:
-    from scipy.sparse import lil_matrix
-except ImportError:
-    from .sparse_utils import lil_matrix
+import time
 from .nc_utils import pick_monomials_up_to_degree, simplify_polynomial, \
                       apply_substitutions, separate_scalar_factor, \
                       is_number_type
+from .cvxpy_utils import solve_with_cvxpy
 from .sdpa_utils import solve_with_sdpa, convert_row_to_sdpa_index, detect_sdpa
 from .mosek_utils import solve_with_mosek
 from .picos_utils import solve_with_cvxopt
@@ -23,6 +21,12 @@ def autodetect_solvers(solverparameters):
     solvers = []
     if detect_sdpa(solverparameters) is not None:
         solvers.append("sdpa")
+    try:
+        import cvxpy
+    except ImportError:
+        pass
+    else:
+        solvers.append("cvxpy")
     try:
         import mosek
     except ImportError:
@@ -76,7 +80,7 @@ def solve_sdp(sdp, solver=None, solverparameters=None):
     solver = solver.lower() if solver is not None else solver
     if solvers == []:
         raise Exception("Could not find any SDP solver. Please install SDPA," +
-                        " Mosek, or Picos with Cvxopt")
+                        " Mosek, Cvxpy, or Picos with Cvxopt")
     elif solver is not None and solver not in solvers:
         print("Available solvers: " + str(solvers))
         if solver == "cvxopt":
@@ -95,6 +99,9 @@ def solve_sdp(sdp, solver=None, solverparameters=None):
     if solver == "sdpa":
         primal, dual, x_mat, y_mat, status = \
           solve_with_sdpa(sdp, solverparameters)
+    elif solver == "cvxpy":
+        primal, dual, x_mat, y_mat, status = \
+          solve_with_cvxpy(sdp, solverparameters)
     elif solver == "mosek":
         primal, dual, x_mat, y_mat, status = \
           solve_with_mosek(sdp, solverparameters)

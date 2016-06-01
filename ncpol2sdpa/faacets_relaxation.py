@@ -4,9 +4,10 @@ Created on Tue Jan 27 11:41:52 2015
 
 @author: wittek
 """
+from __future__ import division, print_function
+import glob
 from math import copysign
 import numpy as np
-import glob
 import os
 try:
     from scipy.sparse import lil_matrix

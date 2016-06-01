@@ -6,6 +6,7 @@ Created on Fri May 16 14:27:47 2014
 
 @author: Peter Wittek
 """
+from __future__ import division, print_function
 from sympy.core import S
 from sympy.physics.quantum.dagger import Dagger
 from .nc_utils import generate_operators, flatten

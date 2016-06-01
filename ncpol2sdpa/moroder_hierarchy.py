@@ -4,6 +4,7 @@ Created on Wed Nov  4 11:24:48 2015
 
 @author: Peter Wittek
 """
+from __future__ import division, print_function
 from .sdp_relaxation import SdpRelaxation
 
 

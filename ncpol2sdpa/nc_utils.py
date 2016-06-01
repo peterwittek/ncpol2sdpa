@@ -7,6 +7,7 @@ Created on Thu May  2 16:03:05 2013
 
 @author: Peter Wittek
 """
+from __future__ import division, print_function
 from sympy import adjoint, conjugate, S, Symbol, Pow, Number, expand, I
 from sympy.physics.quantum import HermitianOperator, Operator
 from sympy.physics.quantum.qexpr import split_commutative_parts

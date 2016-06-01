@@ -8,8 +8,9 @@ Created on Sun Nov 30 15:01:13 2014
 
 @author: Peter Wittek
 """
-import random
+from __future__ import division, print_function
 import numpy as np
+import random
 from .nc_utils import get_support, flatten
 
 
