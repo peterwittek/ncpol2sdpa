@@ -6,6 +6,7 @@ Since 1.10.3
   - Changed: Deprecated optional parameter ``bounds`` was removed.
   - Fixed: Moments are correctly returned even if equalities are removed.
   - Fixed: Constants in PICOS conversion are added correctly irrespective of where they are in the matrices.
+  - Fixed: PICOS conversion handles feasibility problems correctly.
   - Fixed: The optional parameter ``removeequalities=True`` handles equalities of SDP variables correctly.
 
 **Version 1.10.3 (2016-02-26)**

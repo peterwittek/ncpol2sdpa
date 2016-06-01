@@ -109,16 +109,17 @@ def convert_to_picos(sdp, duplicate_moment_matrix=False):
                 Y.factors[k] = permutation
         row_offset += block_size**2
         block_idx += 1
-    x, Ix, Jx = [], [], []
-    for k, val in enumerate(sdp.obj_facvar):
-        if val != 0:
-            x.append(val)
-            Ix.append(0)
-            Jx.append(k)
-    permutation = cvx.spmatrix(x, Ix, Jx)
-    objective = X.copy()
-    for k in objective.factors:
-        objective.factors[k] = permutation
-    objective._size = (1, 1)
-    P.set_objective('min', objective)
+    if len(np.nonzero(sdp.obj_facvar)[0]) > 0:
+        x, Ix, Jx = [], [], []
+        for k, val in enumerate(sdp.obj_facvar):
+            if val != 0:
+                x.append(val)
+                Ix.append(0)
+                Jx.append(k)
+        permutation = cvx.spmatrix(x, Ix, Jx)
+        objective = X.copy()
+        for k in objective.factors:
+            objective.factors[k] = permutation
+        objective._size = (1, 1)
+        P.set_objective('min', objective)
     return P
