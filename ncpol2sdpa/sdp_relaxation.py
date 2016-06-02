@@ -994,7 +994,7 @@ class SdpRelaxation(Relaxation):
                     equality = convert_relational(equality)
                 self.constraints.append(equality)
                 self.constraints.append(-equality)
-                ln = len(self.localizing_monomial_sets[block_index-1])
+                ln = len(self.localizing_monomial_sets[block_index])
                 self._constraint_to_block_index[equality] = (block_index,
                                                              block_index+ln*(ln+1)//2)
                 block_index += ln*(ln+1)
