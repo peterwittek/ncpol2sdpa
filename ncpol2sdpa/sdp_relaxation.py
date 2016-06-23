@@ -985,7 +985,7 @@ class SdpRelaxation(Relaxation):
         if momentinequalities is not None:
             for mineq in momentinequalities:
                 self.constraints.append(mineq)
-                self._constraint_to_block_index[constraint] = (block_index, )
+                self._constraint_to_block_index[mineq] = (block_index, )
                 block_index += 1
         if not (removeequalities or equalities is None):
             # Equalities are converted to pairs of inequalities
