@@ -1,6 +1,6 @@
 Revision History
 ****************
-Since 1.10.3
+**Version 1.11.0 (2016-06-23)**
   - New: Experimental new parallel computation of the moment matrix and the constraints.
   - New: CVXPY conversion with ``convert_to_cvxpy``. CVXPY is now also a valid solver.
   - New: The method ``get_dual`` returns the block in the dual solution corresponding to the requested constraint.
