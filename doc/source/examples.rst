@@ -39,6 +39,7 @@ where :math:`x\in\mathbf{X}=\{x\in \mathbb{R}^n: h_k(x)\geq 0, k=r+1,\ldots,t\}`
 
 .. code:: python
 
+    from math import sqrt
     from sympy import integrate, N
     import matplotlib.pyplot as plt
 
@@ -48,26 +49,30 @@ where :math:`x\in\mathbf{X}=\{x\in \mathbb{R}^n: h_k(x)\geq 0, k=r+1,\ldots,t\}`
     def Jk(x, coeffs):
         return sum(ci*x**i for i, ci in enumerate(coeffs))
 
+    level = 4
     x = generate_variables('x')[0]
     y = generate_variables('y', 2)
     f = (1-2*x)*(y[0] + y[1])
 
     gamma = [integrate(x**i, (x, 0, 1)) for i in range(1, 2*level+1)]
-    marginals = [x**i-N(gamma[i-1]) for i in range(1, 2*level+1)]
+    marginals = flatten([[x**i-N(gamma[i-1]), N(gamma[i-1])-x**i]
+                        for i in range(1, 2*level+1)])
 
     inequalities = [x*y[0]**2 + y[1]**2 - x,  - x*y[0]**2 - y[1]**2 + x,
                     y[0]**2 + x*y[1]**2 - x,  - y[0]**2 - x*y[1]**2 + x,
                     1-x, x]
     sdp = SdpRelaxation(flatten([x, y]))
-    sdp.get_relaxation(level, objective=f, momentequalities=marginals,
+    sdp.get_relaxation(level, objective=f, momentinequalities=marginals,
                        inequalities=inequalities)
     sdp.solve()
     coeffs = [sdp.extract_dual_value(0, range(len(inequalities)+1))]
     coeffs += [sdp.y_mat[len(inequalities)+1+2*i][0][0] - sdp.y_mat[len(inequalities)+1+2*i+1][0][0]
-               for i in range(len(marginals))]
+               for i in range(len(marginals)//2)]
+
+    x_domain = [i/100. for i in range(100)]
     plt.plot(x_domain, [J(xi) for xi in x_domain], linewidth=2.5)
     plt.plot(x_domain, [Jk(xi, coeffs) for xi in x_domain], linewidth=2.5)
-    plt.show() 
+    plt.show()
 
 .. image:: figures/jointmarginal.png
 
