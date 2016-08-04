@@ -240,6 +240,8 @@ def fast_substitute(monomial, old_sub, new_sub):
     # This is a temporary hack
     if not isinstance(new_sub, int) and not isinstance(new_sub, float):
         new_comm_factors, _ = split_commutative_parts(new_sub)
+    else:
+        new_comm_factors = [new_sub]
     comm_monomial = 1
     is_constant_term = False
     if len(comm_factors) == 1 and is_number_type(comm_factors[0]):
