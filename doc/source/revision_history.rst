@@ -1,5 +1,9 @@
 Revision History
 ****************
+**Since version 1.11.0**
+  - Fixed: Major bug in generating localizing matrices with the correct monomials.
+  - Fixed: ``fast_substitute`` is able to handle some more extreme forms of commuting monomials.
+
 **Version 1.11.0 (2016-06-23)**
   - New: Experimental new parallel computation of the moment matrix and the constraints.
   - New: CVXPY conversion with ``convert_to_cvxpy``. CVXPY is now also a valid solver.
