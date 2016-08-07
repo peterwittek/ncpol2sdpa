@@ -1,6 +1,6 @@
 Revision History
 ****************
-**Since version 1.11.0**
+**Version 1.11.1 (2016-08-07)**
   - Fixed: Major bug in generating localizing matrices with the correct monomials.
   - Fixed: ``fast_substitute`` is able to handle some more extreme forms of commuting monomials.
 

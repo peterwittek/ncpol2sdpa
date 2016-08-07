@@ -7,7 +7,7 @@ Provides
  2. Helper functions to define physics problems.
 
 """
-__version__ = "1.11.0"
+__version__ = "1.11.1"
 from .faacets_relaxation import FaacetsRelaxation
 from .sdp_relaxation import SdpRelaxation
 from .steering_hierarchy import SteeringHierarchy
