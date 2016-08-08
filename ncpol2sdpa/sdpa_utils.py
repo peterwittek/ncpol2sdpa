@@ -60,27 +60,43 @@ def read_sdpa_out(filename, solutionmatrix=False, status=False,
     :returns: tuple of two floats and optionally two lists of `numpy.array` and
               a status string
     """
-    file_ = open(filename, 'r')
-    for line in file_:
-        if line.find("objValPrimal") > -1:
-            primal = float((line.split())[2])
-        if line.find("objValDual") > -1:
-            dual = float((line.split())[2])
-        if solutionmatrix:
-            if line.find("xMat =") > -1:
-                x_mat = parse_solution_matrix(file_)
-            if line.find("yMat =") > -1:
-                y_mat = parse_solution_matrix(file_)
-        if line.find("phase.value") > -1:
-            if line.find("pdOPT") > -1:
-                status_string = 'optimal'
-            elif line.find("INF") > -1:
-                status_string = 'infeasible'
-            elif line.find("UNBD") > -1:
-                status_string = 'unbounded'
-            else:
-                status_string = 'unknown'
-    file_.close()
+    primal = None
+    dual = None
+    x_mat = None
+    y_mat = None
+    status_string = None
+
+    with open(filename, 'r') as file_:
+        for line in file_:
+            if line.find("objValPrimal") > -1:
+                primal = float((line.split())[2])
+            if line.find("objValDual") > -1:
+                dual = float((line.split())[2])
+            if solutionmatrix:
+                if line.find("xMat =") > -1:
+                    x_mat = parse_solution_matrix(file_)
+                if line.find("yMat =") > -1:
+                    y_mat = parse_solution_matrix(file_)
+            if line.find("phase.value") > -1:
+                if line.find("pdOPT") > -1:
+                    status_string = 'optimal'
+                elif line.find("INF") > -1:
+                    status_string = 'infeasible'
+                elif line.find("UNBD") > -1:
+                    status_string = 'unbounded'
+                else:
+                    status_string = 'unknown'
+
+    for var in [primal, dual, status_string]:
+        if var is None:
+            status_string = 'invalid'
+            break
+    if solutionmatrix:
+        for var in [x_mat, y_mat]:
+            if var is None:
+                status_string = 'invalid'
+                break
+
     if sdp is not None:
         sdp.primal = primal
         sdp.dual = dual
