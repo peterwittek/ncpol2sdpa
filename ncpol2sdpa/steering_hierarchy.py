@@ -8,10 +8,10 @@ Created on Sun May 26 15:06:17 2013
 @author: Peter Wittek
 """
 from __future__ import division, print_function
-import tempfile
 import os
 from sympy import S, zeros
 from sympy.physics.quantum.dagger import Dagger
+import tempfile
 from .nc_utils import apply_substitutions, is_number_type
 from .sdp_relaxation import SdpRelaxation
 from .sdpa_utils import write_to_sdpa
