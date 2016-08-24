@@ -116,7 +116,7 @@ class SdpRelaxation(Relaxation):
                      or a list of list.
     :param verbose: Optional parameter for level of verbosity:
 
-                       * 0: quiet
+                       * 0: quiet (default)
                        * 1: verbose
                        * 2: debug level
     :type verbose: int.
@@ -349,6 +349,7 @@ class SdpRelaxation(Relaxation):
                                 for rowB in range(len(monomialsB))
                                 for columnB in range((rowA == columnA)*rowB,
                                                      len(monomialsB))))
+        last_output_time = 0
         for rowA, columnA, rowB, columnB, monomial in iter_:
             processed_entries += 1
             n_vars = self._push_monomial(monomial, n_vars,
@@ -356,13 +357,16 @@ class SdpRelaxation(Relaxation):
                                          columnA, N, rowB,
                                          columnB, len(monomialsB),
                                          prevent_substitutions=True)
-            if self.verbose > 0:
+            if self.verbose > 0 and (sys.stdout.isatty() or time.time() -
+                                     last_output_time > 10 or processed_entries ==
+                                     self.n_vars):
+                last_output_time = time.time()
                 msg = ""
                 if self.verbose > 1 and self._parallel:
-                    msg = ", working in {:0} processes for {:0} seconds with a chunksize of {:0}"\
-                          .format(multiprocessing.cpu_count(),
+                    msg = ", working on block {:0} with {:0} processes for {:0.3} seconds with a chunksize of {:0}"\
+                          .format(block_index, multiprocessing.cpu_count(),
                                   time.time()-time0, chunksize)
-                msg = "{:0} (done: {:.2%}".format(n_vars, (processed_entries-1) /
+                msg = "{:0} (done: {:.2%}".format(n_vars, processed_entries /
                                                   self.n_vars) + msg
                 msg = "\r\x1b[KCurrent number of SDP variables: " + msg + ")"
                 sys.stdout.write(msg)
