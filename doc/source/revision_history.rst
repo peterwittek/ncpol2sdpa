@@ -1,5 +1,8 @@
 Revision History
 ****************
+Since 1.11.1:
+  - Fixed: Chordal graph extension works with blank objective functions and commuting variables.
+
 **Version 1.11.1 (2016-08-07)**
   - Fixed: Major bug in generating localizing matrices with the correct monomials.
   - Fixed: ``fast_substitute`` is able to handle some more extreme forms of commuting monomials.
