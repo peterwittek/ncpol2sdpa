@@ -1319,7 +1319,9 @@ class SdpRelaxation(Relaxation):
                     self.complex_matrix = True
         if chordal_extension:
             self.variables = find_variable_cliques(self.variables, objective,
-                                                   inequalities, equalities)
+                                                   inequalities, equalities,
+                                                   momentinequalities,
+                                                   momentequalities)
         self.__generate_monomial_sets(extramonomials)
         self.localizing_monomial_sets = localizing_monomials
 

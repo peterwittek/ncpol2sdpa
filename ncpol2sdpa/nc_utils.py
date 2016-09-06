@@ -120,7 +120,7 @@ def get_support(variables, polynomial):
                 tmp_support[variables.index(base)] = s.exp
             elif is_adjoint(s):
                 tmp_support[variables.index(s.adjoint())] = 1
-            elif isinstance(s, Operator):
+            elif isinstance(s, (Operator, Symbol)):
                 tmp_support[variables.index(s)] = 1
         support.append(tmp_support)
     return support

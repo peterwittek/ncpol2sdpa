@@ -30,18 +30,21 @@ def sliding_cliques(k, n):
     return cliques
 
 
-def _generate_clique(variables, obj, inequalities, equalities):
+def _generate_clique(variables, obj, inequalities, equalities,
+                     momentinequalities, momentequalities):
     n_dim = len(variables)
     rmat = np.eye(n_dim)
     # Objective: if x_i & x_j in monomial, rmat_ij = rand
-    for support in get_support(variables, obj):
-        nonzeros = np.nonzero(support)[0]
-        value = random.random()
-        for i in nonzeros:
-            for j in nonzeros:
-                rmat[i, j] = value
+    if obj is not None:
+        for support in get_support(variables, obj):
+            nonzeros = np.nonzero(support)[0]
+            value = random.random()
+            for i in nonzeros:
+                for j in nonzeros:
+                    rmat[i, j] = value
     # Constraints: if x_i & x_j in support, rmat_ij = rand
-    for polynomial in flatten([inequalities, equalities]):
+    for polynomial in flatten([inequalities, equalities, momentinequalities,
+                               momentequalities]):
         support = np.any(get_support(variables, polynomial), axis=0)
         nonzeros = np.nonzero(support)[0]
         value = random.random()
@@ -110,12 +113,14 @@ def find_clique_index(variables, polynomial, clique_set):
 
 
 def find_variable_cliques(variables, objective=0, inequalities=None,
-                          equalities=None):
+                          equalities=None, momentinequalities=None,
+                          momentequalities=None):
     if objective == 0 and inequalities is None and equalities is None:
         raise Exception("There is nothing to extract the chordal structure " +
                         "from!")
     clique_set = generate_clique(variables, objective, inequalities,
-                                 equalities)
+                                 equalities, momentinequalities,
+                                 momentequalities)
     variable_sets = []
     for clique in clique_set:
         variable_sets.append([variables[i] for i in np.nonzero(clique)[0]])

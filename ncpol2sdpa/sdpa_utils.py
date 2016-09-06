@@ -170,7 +170,7 @@ def solve_with_sdpa(sdp, solverparameters=None):
             elif key == "paramsfile":
                 command_line.extend(["-p", value])
             else:
-                raise Exception("Unknown parameter for SDPA: " + key)
+                raise ValueError("Unknown parameter for SDPA: " + key)
     if sdp.verbose < 1:
         with open(os.devnull, "w") as fnull:
             call(command_line, stdout=fnull, stderr=fnull)
