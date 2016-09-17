@@ -26,6 +26,12 @@ try:
     from scipy.sparse import lil_matrix
 except ImportError:
     from .sparse_utils import lil_matrix
+try:
+    from IPython.core.display import clear_output
+    have_ipython = True
+except ImportError:
+    have_ipython = False
+
 from .nc_utils import apply_substitutions, \
     assemble_monomial_and_do_substitutions, check_simple_substitution, \
     convert_relational, find_variable_set, flatten, get_all_monomials, \
