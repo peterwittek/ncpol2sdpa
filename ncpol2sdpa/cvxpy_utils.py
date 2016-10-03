@@ -15,8 +15,8 @@ from .sdpa_utils import convert_row_to_sdpa_index
 
 
 def solve_with_cvxpy(sdp, solverparameters=None):
-    """Helper function to convert the SDP problem to PICOS
-    and call CVXOPT solver, and parse the output.
+    """Helper function to convert the SDP problem to CVXPY
+    and call the solver, and parse the output.
 
     :param sdp: The SDP relaxation to be solved.
     :type sdp: :class:`ncpol2sdpa.sdp`.
@@ -24,8 +24,7 @@ def solve_with_cvxpy(sdp, solverparameters=None):
     problem = convert_to_cvxpy(sdp)
     if solverparameters is not None and 'solver' in solverparameters:
         solver = solverparameters.pop('solver')
-        v = problem.solve(solver=solver, solver_specific_opts=solverparameters,
-                          verbose=sdp.verbose)
+        v = problem.solve(solver=solver, verbose=(sdp.verbose > 0))
     else:
         v = problem.solve(verbose=sdp.verbose)
     if v is None:

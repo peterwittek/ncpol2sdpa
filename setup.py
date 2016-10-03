@@ -22,8 +22,9 @@ setup(
         'noncommuting variable',
         'sdpa'],
     license='LICENSE',
-    description='A converter from polynomial optimization problems of\
-                 noncommutative variables to sparse SDPA input format.',
+    description='Solve global polynomial optimization problems of either\
+                 commutative variables or noncommutative operators through\
+                 a semidefinite programming (SDP) relaxation',
     long_description=open('README.rst').read(),
     classifiers=[
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
