@@ -26,7 +26,7 @@ def solve_with_cvxpy(sdp, solverparameters=None):
         solver = solverparameters.pop('solver')
         v = problem.solve(solver=solver, verbose=(sdp.verbose > 0))
     else:
-        v = problem.solve(verbose=sdp.verbose)
+        v = problem.solve(verbose=(sdp.verbose > 0))
     if v is None:
         status = "infeasible"
         x_mat, y_mat = [], []
