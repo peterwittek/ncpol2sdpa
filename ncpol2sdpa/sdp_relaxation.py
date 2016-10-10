@@ -19,7 +19,7 @@ try:
 except ImportError:
     imap = map
 try:
-    import multiprocessing
+    from multiprocessing import Pool, cpu_count
 except ImportError:
     pass
 try:
@@ -248,11 +248,10 @@ class SdpRelaxation(Relaxation):
         self._parallel = False
         if parallel:
             try:
-                multiprocessing
+                n_cpu = cpu_count()
                 self._parallel = parallel
                 if self.verbose > 0:
-                    print("Parallel processing on %d cores" %
-                          multiprocessing.cpu_count())
+                    print("Parallel processing on %d cores" % n_cpu)
             except:
                 print("Warning: multiprocessing cannot be imported!")
 
@@ -335,11 +334,11 @@ class SdpRelaxation(Relaxation):
                        substitutions=self.substitutions,
                        pure_substitution_rules=self.pure_substitution_rules)
         if self._parallel:
-            pool = multiprocessing.Pool()
+            pool = Pool()
             # This is just a guess and can be optimized
             chunksize = max(int(np.sqrt(len(monomialsA) * len(monomialsB) *
                                         len(monomialsA) / 2) /
-                            multiprocessing.cpu_count()), 1)
+                            cpu_count()), 1)
             iter_ = pool.imap(func, ((rowA, columnA, rowB, columnB)
                                      for rowA in range(len(monomialsA))
                                      for rowB in range(len(monomialsB))
@@ -370,7 +369,7 @@ class SdpRelaxation(Relaxation):
                 msg = ""
                 if self.verbose > 1 and self._parallel:
                     msg = ", working on block {:0} with {:0} processes for {:0.3} seconds with a chunksize of {:0}"\
-                          .format(block_index, multiprocessing.cpu_count(),
+                          .format(block_index, cpu_count(),
                                   time.time()-time0, chunksize)
                 msg = "{:0} (done: {:.2%}".format(n_vars, processed_entries /
                                                   self.n_vars) + msg
@@ -520,7 +519,7 @@ class SdpRelaxation(Relaxation):
             row_offsets.append(row_offsets[block] + block_size ** 2)
 
         if self._parallel:
-            pool = multiprocessing.Pool()
+            pool = Pool()
         for k, ineq in enumerate(self.constraints):
             block_index += 1
             monomials = self.localizing_monomial_sets[block_index -
@@ -535,7 +534,7 @@ class SdpRelaxation(Relaxation):
                            substitutions=self.substitutions)
             if self._parallel and lm > 1:
                 chunksize = max(int(np.sqrt(lm*lm/2) /
-                                    multiprocessing.cpu_count()), 1)
+                                    cpu_count()), 1)
                 iter_ = pool.imap(func, ([row, column] for row in range(lm)
                                          for column in range(row, lm)),
                                   chunksize)
@@ -609,14 +608,14 @@ class SdpRelaxation(Relaxation):
         A = np.zeros((n_rows, self.n_vars + 1), dtype=self.F.dtype)
         n_rows = 0
         if self._parallel:
-            pool = multiprocessing.Pool()
+            pool = Pool()
         for i, equality in enumerate(flatten([equalities, momentequalities])):
             func = partial(moment_of_entry, monomials=monomial_sets[i],
                            ineq=equality, substitutions=self.substitutions)
             lm = len(monomial_sets[i])
             if self._parallel and lm > 1:
                 chunksize = max(int(np.sqrt(lm*lm/2) /
-                                    multiprocessing.cpu_count()), 1)
+                                    cpu_count()), 1)
                 iter_ = pool.imap(func, ([row, column] for row in range(lm)
                                          for column in range(row, lm)),
                                   chunksize)
