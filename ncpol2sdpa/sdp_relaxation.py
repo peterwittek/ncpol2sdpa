@@ -253,7 +253,8 @@ class SdpRelaxation(Relaxation):
                 if self.verbose > 0:
                     print("Parallel processing on %d cores" % n_cpu)
             except:
-                print("Warning: multiprocessing cannot be imported!")
+                print("Warning: multiprocessing cannot be imported!",
+                      file=sys.stderr)
 
     ########################################################################
     # ROUTINES RELATED TO GENERATING THE MOMENT MATRICES                   #
@@ -646,6 +647,9 @@ class SdpRelaxation(Relaxation):
         """Attempt to remove equalities by solving the linear equations.
         """
         A = self.__process_equalities(equalities, momentequalities)
+        if min(A.shape != np.linalg.matrix_rank(A)):
+            print("Warning: equality constraints are linearly dependent! "
+                  "Results might be incorrect.", file=sys.stderr)
         if A.shape[0] == 0:
             return
         c = np.array(self.obj_facvar)
@@ -865,7 +869,7 @@ class SdpRelaxation(Relaxation):
         if degree_warning and self.verbose > 0:
             print("A constraint has degree %d. Either choose a higher level "
                   "relaxation or ensure that a mixed-order relaxation has the"
-                  " necessary monomials" % (ineq_order))
+                  " necessary monomials" % (ineq_order), file=sys.stderr)
 
         if momentequalities is not None:
             for moment_eq in momentequalities:
@@ -1054,7 +1058,7 @@ class SdpRelaxation(Relaxation):
             if self.verbose > 0 and facvar[0] != 0:
                 print("Warning: The objective function has a non-zero %s "
                       "constant term. It is not included in the SDP objective."
-                      % facvar[0])
+                      % facvar[0], file=sys.stderr)
         else:
             self.obj_facvar = self._get_facvar(0)[1:]
         if extraobjexpr is not None:
