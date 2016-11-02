@@ -1,5 +1,4 @@
 import unittest
-from test import test_support
 import numpy as np
 from sympy import S, expand
 from sympy.physics.quantum.dagger import Dagger
@@ -377,12 +376,5 @@ class SparsePop(unittest.TestCase):
         self.assertTrue(abs(sdpRelaxation.primal + 2.2443690631722637) < 10e-5)
 
 
-def test_main():
-    test_support.run_unittest(ApplySubstitutions, Chsh, ChshMixedLevel,
-                              ElegantBell, ExampleCommutative, FastSubstitute,
-                              ExampleNoncommutative, Gloptipoly,
-                              HarmonicOscillator, MaxCut, Magnetization,
-                              Moroder, NietoSilleras, SparsePop)
-
 if __name__ == '__main__':
-    test_main()
+    unittest.main()
