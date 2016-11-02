@@ -1,6 +1,8 @@
 Revision History
 ****************
 Since 1.11.1:
+  - Changed: Warning message is displayed if the equality constraints are linearly dependent.
+  - Changed: CVXPY support improved, solver parameters passed on correctly.
   - Fixed: Chordal graph extension works with blank objective functions and commuting variables.
 
 **Version 1.11.1 (2016-08-07)**
