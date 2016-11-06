@@ -10,7 +10,6 @@ Created on Thu May  2 16:03:05 2013
 from __future__ import division, print_function
 from sympy import adjoint, conjugate, S, Symbol, Pow, Number, expand, I
 from sympy.physics.quantum import HermitianOperator, Operator
-from sympy.physics.quantum.qexpr import split_commutative_parts
 try:
     from scipy.sparse import lil_matrix
 except ImportError:
@@ -238,111 +237,103 @@ def fast_substitute(monomial, old_sub, new_sub):
     comm_factors, ncomm_factors = split_commutative_parts(monomial)
     old_comm_factors, old_ncomm_factors = split_commutative_parts(old_sub)
     # This is a temporary hack
-    if not isinstance(new_sub, int) and not isinstance(new_sub, float):
+    if not isinstance(new_sub, (int, float, complex)):
         new_comm_factors, _ = split_commutative_parts(new_sub)
     else:
         new_comm_factors = [new_sub]
     comm_monomial = 1
     is_constant_term = False
-    if len(comm_factors) == 1 and is_number_type(comm_factors[0]):
-        is_constant_term = True
-        comm_monomial = comm_factors[0]
-    if not is_constant_term and len(comm_factors) > 0:
-        for comm_factor in comm_factors:
-            comm_monomial *= comm_factor
-        if len(old_comm_factors) > 0:
-            comm_old_sub = 1
-            for comm_factor in old_comm_factors:
-                comm_old_sub *= comm_factor
-            comm_new_sub = 1
-            for comm_factor in new_comm_factors:
-                comm_new_sub *= comm_factor
-            # Dummy heuristic to get around retarded SymPy bug
-            if isinstance(comm_old_sub, Pow):
-                # In this case, we are in trouble
-                old_base = comm_old_sub.base
-                if comm_monomial.has(old_base):
-                    old_degree = comm_old_sub.exp
-                    new_monomial = 1
-                    match = False
-                    for factor in comm_monomial.as_ordered_factors():
-                        if factor.has(old_base):
-                            if isinstance(factor, Pow):
-                                degree = factor.exp
-                                if degree >= old_degree:
-                                    match = True
-                                    new_monomial *= \
-                                        old_base**(degree-old_degree) * \
-                                        comm_new_sub
+    if comm_factors != ():
+        if len(comm_factors) == 1 and is_number_type(comm_factors[0]):
+            is_constant_term = True
+            comm_monomial = comm_factors[0]
+        else:
+            for comm_factor in comm_factors:
+                comm_monomial *= comm_factor
+            if old_comm_factors != ():
+                comm_old_sub = 1
+                for comm_factor in old_comm_factors:
+                    comm_old_sub *= comm_factor
+                comm_new_sub = 1
+                for comm_factor in new_comm_factors:
+                    comm_new_sub *= comm_factor
+                # Dummy heuristic to get around retarded SymPy bug
+                if isinstance(comm_old_sub, Pow):
+                    # In this case, we are in trouble
+                    old_base = comm_old_sub.base
+                    if comm_monomial.has(old_base):
+                        old_degree = comm_old_sub.exp
+                        new_monomial = 1
+                        match = False
+                        for factor in comm_monomial.as_ordered_factors():
+                            if factor.has(old_base):
+                                if isinstance(factor, Pow):
+                                    degree = factor.exp
+                                    if degree >= old_degree:
+                                        match = True
+                                        new_monomial *= \
+                                            old_base**(degree-old_degree) * \
+                                            comm_new_sub
 
+                                else:
+                                    new_monomial *= factor
                             else:
                                 new_monomial *= factor
-                        else:
-                            new_monomial *= factor
-                    if match:
-                        comm_monomial = new_monomial
-            else:
-                comm_monomial = comm_monomial.subs(comm_old_sub, comm_new_sub)
-    if len(ncomm_factors) == 0 or len(old_ncomm_factors) == 0:
+                        if match:
+                            comm_monomial = new_monomial
+                else:
+                    comm_monomial = comm_monomial.subs(comm_old_sub,
+                                                       comm_new_sub)
+    if ncomm_factors == () or old_ncomm_factors == ():
         return comm_monomial
     # old_factors = old_sub.as_ordered_factors()
     # factors = monomial.as_ordered_factors()
     new_var_list = []
     new_monomial = 1
-    match = False
     left_remainder = 1
     right_remainder = 1
     for i in range(len(ncomm_factors) - len(old_ncomm_factors) + 1):
-        for j in range(len(old_ncomm_factors)):
-            if isinstance(ncomm_factors[i + j], Number) and \
-                ((not isinstance(old_ncomm_factors[j], Number) or
-                  ncomm_factors[i + j] != old_ncomm_factors[j])):
+        for j, old_ncomm_factor in enumerate(old_ncomm_factors):
+            ncomm_factor = ncomm_factors[i + j]
+            if isinstance(ncomm_factor, Symbol) and \
+                (isinstance(old_ncomm_factor, Operator) or
+                 (isinstance(old_ncomm_factor, Symbol) and
+                  ncomm_factor != old_ncomm_factor)):
                 break
-            if isinstance(ncomm_factors[i + j], Symbol) and \
-                (not isinstance(old_ncomm_factors[j], Operator) or
-                 (isinstance(old_ncomm_factors[j], Symbol) and
-                  ncomm_factors[i + j] != old_ncomm_factors[j])):
+            if isinstance(ncomm_factor, Operator) and \
+                    ((isinstance(old_ncomm_factor, Operator) and
+                      ncomm_factor != old_ncomm_factor) or
+                     isinstance(old_ncomm_factor, Pow)):
                 break
-            if isinstance(ncomm_factors[i + j], Operator) and \
-                isinstance(old_ncomm_factors[j], Operator) and \
-                    ncomm_factors[i + j] != old_ncomm_factors[j]:
-                break
-            if is_adjoint(ncomm_factors[i + j]) and \
-                (not is_adjoint(old_ncomm_factors[j]) or
-                 ncomm_factors[i + j] != old_ncomm_factors[j]):
-                break
-            if not is_adjoint(ncomm_factors[i + j]) and \
-                not isinstance(ncomm_factors[i + j], Pow) and \
-                    is_adjoint(old_ncomm_factors[j]):
-                break
-            if isinstance(ncomm_factors[i + j], Pow):
-                if isinstance(old_ncomm_factors[j], Pow):
-                    old_base = old_ncomm_factors[j].base
-                    old_degree = old_ncomm_factors[j].exp
+            if is_adjoint(ncomm_factor):
+                if not is_adjoint(old_ncomm_factor) or \
+                         ncomm_factor != old_ncomm_factor:
+                    break
+            else:
+                if not isinstance(ncomm_factor, Pow):
+                    if is_adjoint(old_ncomm_factor):
+                        break
                 else:
-                    old_base = old_ncomm_factors[j]
-                    old_degree = 1
-                if old_base != ncomm_factors[i + j].base:
-                    break
-                if old_degree > ncomm_factors[i + j].exp:
-                    break
-                if old_degree < ncomm_factors[i + j].exp:
-                    if j != len(old_ncomm_factors) - 1:
-                        if j != 0:
-                            break
-                        else:
-                            left_remainder = old_base ** (
-                                ncomm_factors[i + j].exp - old_degree)
+                    if isinstance(old_ncomm_factor, Pow):
+                        old_base = old_ncomm_factor.base
+                        old_degree = old_ncomm_factor.exp
                     else:
-                        right_remainder = old_base ** (
-                            ncomm_factors[i + j].exp - old_degree)
-            if isinstance(ncomm_factors[i + j], Operator) and \
-                    isinstance(old_ncomm_factors[j], Pow):
-                break
-        else:
-            match = True
-        if not match:
-            new_var_list.append(ncomm_factors[i])
+                        old_base = old_ncomm_factor
+                        old_degree = 1
+                    if old_base != ncomm_factor.base:
+                        break
+                    if old_degree > ncomm_factor.exp:
+                        break
+                    if old_degree < ncomm_factor.exp:
+                        if j != len(old_ncomm_factors) - 1:
+                            if j != 0:
+                                break
+                            else:
+                                left_remainder = old_base ** (
+                                    ncomm_factor.exp - old_degree)
+                        else:
+                            right_remainder = old_base ** (
+                                ncomm_factor.exp - old_degree)
         else:
             new_monomial = 1
             for var in new_var_list:
@@ -352,8 +343,9 @@ def fast_substitute(monomial, old_sub, new_sub):
                 new_monomial *= ncomm_factors[j]
             new_monomial *= comm_monomial
             break
+        new_var_list.append(ncomm_factors[i])
     else:
-        if not is_constant_term and len(comm_factors) > 0:
+        if not is_constant_term and comm_factors != ():
             new_monomial = comm_monomial
             for factor in ncomm_factors:
                 new_monomial *= factor
@@ -693,6 +685,19 @@ def assemble_monomial_and_do_substitutions(arg, monomialsA, monomialsB, ppt,
     monomial = apply_substitutions(monomial, substitutions,
                                    pure_substitution_rules)
     return rowA, columnA, rowB, columnB, monomial
+
+
+def split_commutative_parts(e):
+    if e.is_Mul:
+        args = e.args
+    else:
+        args = (e,)
+    for i, m in enumerate(args):
+        if not m.is_commutative:
+            break
+    else:
+        i += 1
+    return args[:i], args[i:]
 
 
 def is_number_type(exp):
