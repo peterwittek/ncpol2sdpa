@@ -329,7 +329,6 @@ class SdpRelaxation(Relaxation):
             for block_size in self.block_struct[0:block_index]:
                 row_offset += block_size ** 2
         N = len(monomialsA)*len(monomialsB)
-        time0 = time.time()
         func = partial(assemble_monomial_and_do_substitutions,
                        monomialsA=monomialsA, monomialsB=monomialsB, ppt=ppt,
                        substitutions=self.substitutions,
@@ -337,9 +336,9 @@ class SdpRelaxation(Relaxation):
         if self._parallel:
             pool = Pool()
             # This is just a guess and can be optimized
-            chunksize = max(int(np.sqrt(len(monomialsA) * len(monomialsB) *
-                                        len(monomialsA) / 2) //
-                            cpu_count()), 1)
+            chunksize = int(max(int(np.sqrt(len(monomialsA) * len(monomialsB) *
+                                        len(monomialsA) / 2) / cpu_count()),
+                                1))
             iter_ = pool.imap(func, ((rowA, columnA, rowB, columnB)
                                      for rowA in range(len(monomialsA))
                                      for rowB in range(len(monomialsB))
@@ -364,8 +363,8 @@ class SdpRelaxation(Relaxation):
                                          columnB, len(monomialsB),
                                          prevent_substitutions=True)
             if self.verbose > 0 and (sys.stdout.isatty() or time.time() -
-                                     last_output_time > 10 or processed_entries ==
-                                     self.n_vars):
+                                     last_output_time > 10 or
+                                     processed_entries == self.n_vars):
                 last_output_time = time.time()
                 percentage = processed_entries / self.n_vars
                 time_used = time.time()-self._time0
@@ -376,9 +375,9 @@ class SdpRelaxation(Relaxation):
 
                 msg = ""
                 if self.verbose > 1 and self._parallel:
-                    msg = ", working on block {:0} with {:0} processes with a chunksize of {:0}"\
+                    msg = ", working on block {:0} with {:0} processes with a chunksize of {:0d}"\
                           .format(block_index, cpu_count(),
-                                  time.time()-time0, chunksize)
+                                  chunksize)
                 msg = "{:0} (done: {:.2%}, ETA {:02d}:{:02d}:{:03.1f}"\
                       .format(n_vars, percentage, hours, minutes, seconds) + \
                       msg
