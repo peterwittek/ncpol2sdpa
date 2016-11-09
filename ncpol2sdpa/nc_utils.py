@@ -684,7 +684,8 @@ def assemble_monomial_and_do_substitutions(arg, monomialsA, monomialsB, ppt,
         # Apply the substitutions if any
     monomial = apply_substitutions(monomial, substitutions,
                                    pure_substitution_rules)
-    return rowA, columnA, rowB, columnB, monomial
+
+    return columnA, rowB, columnB, monomial
 
 
 def split_commutative_parts(e):

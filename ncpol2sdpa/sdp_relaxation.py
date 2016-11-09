@@ -263,24 +263,24 @@ class SdpRelaxation(Relaxation):
     def _process_monomial(self, monomial, n_vars):
         """Process a single monomial when building the moment matrix.
         """
-        monomial, coeff = separate_scalar_factor(monomial)
+        processed_monomial, coeff = separate_scalar_factor(monomial)
         k = 0
         # Are we substituting this for a constant?
         try:
-            coeff2 = self.moment_substitutions[monomial]
+            coeff2 = self.moment_substitutions[processed_monomial]
             coeff *= coeff2
         except KeyError:
             # Have we seen this monomial before?
             try:
                 # If yes, then we improve sparsity by reusing the
                 # previous variable to denote this entry in the matrix
-                k = self.monomial_index[monomial]
+                k = self.monomial_index[processed_monomial]
             except KeyError:
                 # Otherwise we define a new entry in the associated
                 # array recording the monomials, and add an entry in
                 # the moment matrix
                 k = n_vars + 1
-                self.monomial_index[monomial] = k
+                self.monomial_index[processed_monomial] = k
         return k, coeff
 
     def _push_monomial(self, monomial, n_vars, row_offset, rowA, columnA, N,
@@ -339,51 +339,50 @@ class SdpRelaxation(Relaxation):
             chunksize = int(max(int(np.sqrt(len(monomialsA) * len(monomialsB) *
                                         len(monomialsA) / 2) / cpu_count()),
                                 1))
-            iter_ = pool.imap(func, ((rowA, columnA, rowB, columnB)
-                                     for rowA in range(len(monomialsA))
-                                     for rowB in range(len(monomialsB))
-                                     for columnA in range(rowA,
-                                                          len(monomialsA))
-                                     for columnB in range((rowA == columnA)*rowB,
-                                                          len(monomialsB))),
-                              chunksize)
-        else:
-            iter_ = imap(func, ((rowA, columnA, rowB, columnB)
-                                for rowA in range(len(monomialsA))
-                                for columnA in range(rowA, len(monomialsA))
-                                for rowB in range(len(monomialsB))
-                                for columnB in range((rowA == columnA)*rowB,
-                                                     len(monomialsB))))
-        last_output_time = 0
-        for rowA, columnA, rowB, columnB, monomial in iter_:
-            processed_entries += 1
-            n_vars = self._push_monomial(monomial, n_vars,
-                                         row_offset, rowA,
-                                         columnA, N, rowB,
-                                         columnB, len(monomialsB),
-                                         prevent_substitutions=True)
-            if self.verbose > 0 and (sys.stdout.isatty() or time.time() -
-                                     last_output_time > 10 or
-                                     processed_entries == self.n_vars):
-                last_output_time = time.time()
-                percentage = processed_entries / self.n_vars
-                time_used = time.time()-self._time0
-                eta = (1.0 / percentage) * time_used - time_used
-                hours = int(eta/3600)
-                minutes = int((eta-3600*hours)/60)
-                seconds = eta-3600*hours-minutes*60
+        for rowA in range(len(monomialsA)):
+            if self._parallel:
+                iter_ = pool.map(func, [(rowA, columnA, rowB, columnB)
+                                        for rowB in range(len(monomialsB))
+                                        for columnA in range(rowA,
+                                                             len(monomialsA))
+                                        for columnB in range((rowA == columnA)*rowB,
+                                                             len(monomialsB))],
+                                 chunksize)
+                print_criterion = processed_entries + len(iter_)
+            else:
+                iter_ = imap(func, [(rowA, columnA, rowB, columnB)
+                                    for columnA in range(rowA, len(monomialsA))
+                                    for rowB in range(len(monomialsB))
+                                    for columnB in range((rowA == columnA)*rowB,
+                                                         len(monomialsB))])
+            for columnA, rowB, columnB, monomial in iter_:
+                processed_entries += 1
+                n_vars = self._push_monomial(monomial, n_vars,
+                                             row_offset, rowA,
+                                             columnA, N, rowB,
+                                             columnB, len(monomialsB),
+                                             prevent_substitutions=True)
+                if self.verbose > 0 and (not self._parallel or
+                                         processed_entries == self.n_vars or
+                                         processed_entries == print_criterion):
+                    percentage = processed_entries / self.n_vars
+                    time_used = time.time()-self._time0
+                    eta = (1.0 / percentage) * time_used - time_used
+                    hours = int(eta/3600)
+                    minutes = int((eta-3600*hours)/60)
+                    seconds = eta-3600*hours-minutes*60
 
-                msg = ""
-                if self.verbose > 1 and self._parallel:
-                    msg = ", working on block {:0} with {:0} processes with a chunksize of {:0d}"\
-                          .format(block_index, cpu_count(),
-                                  chunksize)
-                msg = "{:0} (done: {:.2%}, ETA {:02d}:{:02d}:{:03.1f}"\
-                      .format(n_vars, percentage, hours, minutes, seconds) + \
-                      msg
-                msg = "\r\x1b[KCurrent number of SDP variables: " + msg + ")"
-                sys.stdout.write(msg)
-                sys.stdout.flush()
+                    msg = ""
+                    if self.verbose > 1 and self._parallel:
+                        msg = ", working on block {:0} with {:0} processes with a chunksize of {:0d}"\
+                              .format(block_index, cpu_count(),
+                                      chunksize)
+                    msg = "{:0} (done: {:.2%}, ETA {:02d}:{:02d}:{:03.1f}"\
+                          .format(n_vars, percentage, hours, minutes, seconds) + \
+                          msg
+                    msg = "\r\x1b[KCurrent number of SDP variables: " + msg + ")"
+                    sys.stdout.write(msg)
+                    sys.stdout.flush()
 
         if self._parallel:
             pool.close()
@@ -543,9 +542,9 @@ class SdpRelaxation(Relaxation):
             if self._parallel and lm > 1:
                 chunksize = max(int(np.sqrt(lm*lm/2) /
                                     cpu_count()), 1)
-                iter_ = pool.imap(func, ([row, column] for row in range(lm)
-                                         for column in range(row, lm)),
-                                  chunksize)
+                iter_ = pool.map(func, ([row, column] for row in range(lm)
+                                        for column in range(row, lm)),
+                                 chunksize)
             else:
                 iter_ = imap(func, ([row, column] for row in range(lm)
                                     for column in range(row, lm)))
@@ -624,9 +623,9 @@ class SdpRelaxation(Relaxation):
             if self._parallel and lm > 1:
                 chunksize = max(int(np.sqrt(lm*lm/2) /
                                     cpu_count()), 1)
-                iter_ = pool.imap(func, ([row, column] for row in range(lm)
-                                         for column in range(row, lm)),
-                                  chunksize)
+                iter_ = pool.map(func, ([row, column] for row in range(lm)
+                                        for column in range(row, lm)),
+                                 chunksize)
             else:
                 iter_ = imap(func, ([row, column] for row in range(lm)
                                     for column in range(row, lm)))

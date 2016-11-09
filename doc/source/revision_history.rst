@@ -4,6 +4,7 @@ Since 1.11.1:
   - Changed: Warning message is displayed if the equality constraints are linearly dependent.
   - Changed: CVXPY support improved, solver parameters passed on correctly.
   - Fixed: Chordal graph extension works with blank objective functions and commuting variables.
+  - Fixed: Parallel computations now don't produce weird deadlocks.
 
 **Version 1.11.1 (2016-08-07)**
   - Fixed: Major bug in generating localizing matrices with the correct monomials.
