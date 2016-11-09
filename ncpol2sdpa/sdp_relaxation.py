@@ -189,7 +189,7 @@ class SdpRelaxation(Relaxation):
         self._original_obj_facvar = 0
         self._original_constant_term = 0
         self._new_basis = None
-
+        self._time0 = None
         n_noncommutative_hermitian = 0
         n_noncommutative_nonhermitian = 0
         n_commutative_hermitian = 0
@@ -338,7 +338,7 @@ class SdpRelaxation(Relaxation):
             pool = Pool()
             # This is just a guess and can be optimized
             chunksize = max(int(np.sqrt(len(monomialsA) * len(monomialsB) *
-                                        len(monomialsA) / 2) /
+                                        len(monomialsA) / 2) //
                             cpu_count()), 1)
             iter_ = pool.imap(func, ((rowA, columnA, rowB, columnB)
                                      for rowA in range(len(monomialsA))
@@ -367,13 +367,21 @@ class SdpRelaxation(Relaxation):
                                      last_output_time > 10 or processed_entries ==
                                      self.n_vars):
                 last_output_time = time.time()
+                percentage = processed_entries / self.n_vars
+                time_used = time.time()-self._time0
+                eta = (1.0 / percentage) * time_used - time_used
+                hours = int(eta/3600)
+                minutes = int((eta-3600*hours)/60)
+                seconds = eta-3600*hours-minutes*60
+
                 msg = ""
                 if self.verbose > 1 and self._parallel:
-                    msg = ", working on block {:0} with {:0} processes for {:0.3} seconds with a chunksize of {:0}"\
+                    msg = ", working on block {:0} with {:0} processes with a chunksize of {:0}"\
                           .format(block_index, cpu_count(),
                                   time.time()-time0, chunksize)
-                msg = "{:0} (done: {:.2%}".format(n_vars, processed_entries /
-                                                  self.n_vars) + msg
+                msg = "{:0} (done: {:.2%}, ETA {:02d}:{:02d}:{:03.1f}"\
+                      .format(n_vars, percentage, hours, minutes, seconds) + \
+                      msg
                 msg = "\r\x1b[KCurrent number of SDP variables: " + msg + ")"
                 sys.stdout.write(msg)
                 sys.stdout.flush()
@@ -1362,6 +1370,7 @@ class SdpRelaxation(Relaxation):
             print('Generating moment matrix...')
         # Generate moment matrices
         new_n_vars, block_index = self.__add_parameters()
+        self._time0 = time.time()
         new_n_vars, block_index = \
             self._generate_all_moment_matrix_blocks(new_n_vars, block_index)
         if extramomentmatrices is not None:

@@ -701,7 +701,7 @@ def split_commutative_parts(e):
 
 
 def is_number_type(exp):
-    return isinstance(exp, (int, float, complex, Number))
+    return isinstance(exp, (int, float, complex)) or exp.is_number
 
 
 def is_adjoint(exp):
