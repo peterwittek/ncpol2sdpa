@@ -802,7 +802,7 @@ class SdpRelaxation(Relaxation):
                 print("Calculating block structure...")
             self.block_struct = []
             if self.parameters is not None:
-                self.block_struct.append(-len(self.parameters))
+                self.block_struct += [1 for _ in self.parameters]
             for monomials in self.monomial_sets:
                 if len(monomials) > 0 and isinstance(monomials[0], list):
                     self.block_struct.append(len(monomials[0]))
