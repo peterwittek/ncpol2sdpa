@@ -11,7 +11,7 @@ from __future__ import division, print_function
 import sys
 from functools import partial
 import numpy as np
-from sympy import S, Expr
+from sympy import S, Expr, Add
 import time
 
 try:
@@ -264,11 +264,27 @@ class SdpRelaxation(Relaxation):
         """Process a single monomial when building the moment matrix.
         """
         processed_monomial, coeff = separate_scalar_factor(monomial)
-        k = 0
-        # Are we substituting this for a constant?
+        # Are we substituting this moment?
         try:
-            coeff2 = self.moment_substitutions[processed_monomial]
-            coeff *= coeff2
+            substitute = self.moment_substitutions[processed_monomial]
+            if not isinstance(substitute, (int, float, complex)):
+                result = []
+                if not isinstance(substitute, Add):
+                    args = [substitute]
+                else:
+                    args = substitute.args
+                for arg in args:
+                    if is_number_type(arg):
+                        if iscomplex(arg):
+                            result.append((0, coeff*complex(arg)))
+                        else:
+                            result.append((0, coeff*float(arg)))
+                    else:
+                        result += [(k, coeff*c2)
+                                   for k, c2 in self._process_monomial(arg,
+                                                                       n_vars)]
+            else:
+                result = [(0, coeff*substitute)]
         except KeyError:
             # Have we seen this monomial before?
             try:
@@ -281,7 +297,8 @@ class SdpRelaxation(Relaxation):
                 # the moment matrix
                 k = n_vars + 1
                 self.monomial_index[processed_monomial] = k
-        return k, coeff
+            result = [(k, coeff)]
+        return result
 
     def _push_monomial(self, monomial, n_vars, row_offset, rowA, columnA, N,
                        rowB, columnB, lenB, prevent_substitutions=False):
@@ -307,12 +324,14 @@ class SdpRelaxation(Relaxation):
                                              rowA, columnA, N,
                                              rowB, columnB, lenB, True)
         elif monomial != 0:
-            k, coeff = self._process_monomial(monomial, n_vars)
-            # We push the entry to the moment matrix
-            self.F[row_offset + rowA * N*lenB + rowB * N +
-                   columnA * lenB + columnB, k] = coeff
-            if k > n_vars:
-                n_vars = k
+            entries = self._process_monomial(monomial, n_vars)
+            for entry in entries:
+                k, coeff = entry
+                # We push the entry to the moment matrix
+                self.F[row_offset + rowA * N*lenB + rowB * N +
+                       columnA * lenB + columnB, k] = coeff
+                if k > n_vars:
+                    n_vars = k
         return n_vars
 
     def _generate_moment_matrix(self, n_vars, block_index, processed_entries,
@@ -1261,6 +1280,7 @@ class SdpRelaxation(Relaxation):
     def get_relaxation(self, level, objective=None, inequalities=None,
                        equalities=None, substitutions=None,
                        momentinequalities=None, momentequalities=None,
+                       momentsubstitutions=None,
                        removeequalities=False, extramonomials=None,
                        extramomentmatrices=None, extraobjexpr=None,
                        localizing_monomials=None, chordal_extension=False):
@@ -1286,6 +1306,9 @@ class SdpRelaxation(Relaxation):
         :param momentequalities: Optional parameter of equalities defined
                                  on moments.
         :type momentequalities: list of :class:`sympy.core.exp.Expr`.
+        :param momentsubstitutions: Optional parameter containing moments that
+                                    can be replaced.
+        :type momentsubstitutions: dict of :class:`sympy.core.exp.Expr`.
         :param removeequalities: Optional parameter to attempt removing the
                                  equalities by solving the linear equations.
         :type removeequalities: bool.
@@ -1332,6 +1355,8 @@ class SdpRelaxation(Relaxation):
                     self.pure_substitution_rules = False
                 if iscomplex(lhs) or iscomplex(rhs):
                     self.complex_matrix = True
+        if momentsubstitutions is not None:
+            self.moment_substitutions = momentsubstitutions.copy()
         if chordal_extension:
             self.variables = find_variable_cliques(self.variables, objective,
                                                    inequalities, equalities,
