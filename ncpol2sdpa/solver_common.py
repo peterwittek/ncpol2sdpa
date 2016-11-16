@@ -27,6 +27,7 @@ def autodetect_solvers(solverparameters):
         pass
     else:
         solvers.append("cvxpy")
+        solvers.append("scs")
     try:
         import mosek
     except ImportError:
@@ -45,13 +46,13 @@ def autodetect_solvers(solverparameters):
 def solve_sdp(sdp, solver=None, solverparameters=None):
     """Call a solver on the SDP relaxation. Upon successful solution, it
     returns the primal and dual objective values along with the solution
-    matrices. It also sets these values in the `sdp` object, along
-    with some status information.
+    matrices.
 
-    :param sdp: The SDP relaxation to be solved.
-    :type sdp: :class:`ncpol2sdpa.sdp`.
-    :param solver: The solver to be called, either `None`, "sdpa", "mosek", or
-                   "cvxopt". The default is `None`, which triggers autodetect.
+    :param sdpRelaxation: The SDP relaxation to be solved.
+    :type sdpRelaxation: :class:`ncpol2sdpa.SdpRelaxation`.
+    :param solver: The solver to be called, either `None`, "sdpa", "mosek",
+                   "cvxpy", "scs", or "cvxopt". The default is `None`,
+                   which triggers autodetect.
     :type solver: str.
     :param solverparameters: Parameters to be passed to the solver. Actual
                              options depend on the solver:
@@ -62,15 +63,23 @@ def solve_sdp(sdp, solver=None, solverparameters=None):
                                  Specify the executable for SDPA. E.g.,
                                  `"executable":"/usr/local/bin/sdpa"`, or
                                  `"executable":"sdpa_gmp"`
-                               - `"paramsfile"`: Specify the parameter file.
+                               - `"paramsfile"`: Specify the parameter file
 
                              Mosek:
-                             Refer to the Mosek documentation. All arguments
-                             are passed on.
+                             Refer to the Mosek documentation. All
+                             arguments are passed on.
 
                              Cvxopt:
-                             Refer to the PICOS documentation. All arguments
-                             are passed on.
+                             Refer to the PICOS documentation. All
+                             arguments are passed on.
+
+                             Cvxpy:
+                             Refer to the Cvxpy documentation. All
+                             arguments are passed on.
+
+                             SCS:
+                             Refer to the Cvxpy documentation. All
+                             arguments are passed on.
     :type solverparameters: dict of str.
     :returns: tuple of the primal and dual optimum, and the solutions for the
               primal and dual.
@@ -102,6 +111,14 @@ def solve_sdp(sdp, solver=None, solverparameters=None):
     elif solver == "cvxpy":
         primal, dual, x_mat, y_mat, status = \
           solve_with_cvxpy(sdp, solverparameters)
+    elif solver == "scs":
+        if solverparameters is None:
+            solverparameters_ = {"solver": "SCS"}
+        else:
+            solverparameters_ = solverparameters.copy()
+            solverparameters_["solver"] = "SCS"
+        primal, dual, x_mat, y_mat, status = \
+          solve_with_cvxpy(sdp, solverparameters_)
     elif solver == "mosek":
         primal, dual, x_mat, y_mat, status = \
           solve_with_mosek(sdp, solverparameters)

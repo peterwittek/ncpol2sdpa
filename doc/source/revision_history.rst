@@ -3,7 +3,7 @@ Revision History
 Since 1.11.1:
   - New: Pass the optional `momentsubstitutions=` parameter to the `get_relaxation` method to substitute out specific moments.
   - Changed: Warning message is displayed if the equality constraints are linearly dependent.
-  - Changed: CVXPY support improved, solver parameters passed on correctly.
+  - Changed: CVXPY support improved, solver parameters passed on correctly. SCS can directly be requested as a solver.
   - Fixed: Chordal graph extension works with blank objective functions and commuting variables.
   - Fixed: Parallel computations produce weird deadlocks less frequently.
 

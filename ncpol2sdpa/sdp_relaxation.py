@@ -74,8 +74,8 @@ class Relaxation(object):
         :param sdpRelaxation: The SDP relaxation to be solved.
         :type sdpRelaxation: :class:`ncpol2sdpa.SdpRelaxation`.
         :param solver: The solver to be called, either `None`, "sdpa", "mosek",
-                       or "cvxopt". The default is `None`, which triggers
-                       autodetect.
+                       "cvxpy", "scs", or "cvxopt". The default is `None`,
+                       which triggers autodetect.
         :type solver: str.
         :param solverparameters: Parameters to be passed to the solver. Actual
                                  options depend on the solver:
@@ -95,6 +95,15 @@ class Relaxation(object):
                                  Cvxopt:
                                  Refer to the PICOS documentation. All
                                  arguments are passed on.
+
+                                 Cvxpy:
+                                 Refer to the Cvxpy documentation. All
+                                 arguments are passed on.
+
+                                 SCS:
+                                 Refer to the Cvxpy documentation. All
+                                 arguments are passed on.
+
         :type solverparameters: dict of str.
         """
         if self.F is None:
