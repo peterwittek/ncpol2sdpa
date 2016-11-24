@@ -19,9 +19,9 @@ The module was used for calculations in the following papers:
 
 - Antonio Acín, Stefano Pironio, Tamás Vértesi, and Peter Wittek. Optimal randomness certification from one entangled bit. *Physical Review A*, 93, 040102, 2016. DOI:`10.1103/PhysRevA.93.040102 <https://dx.doi.org/10.1103/PhysRevA.93.040102>`_.  arXiv:`1505.03837 <http://arxiv.org/abs/1505.03837>`_. `Notebook <https://nbviewer.ipython.org/github/peterwittek/ipython-notebooks/blob/master/Optimal%20randomness%20generation%20from%20entangled%20quantum%20states.ipynb>`__.
 
-- Ivan Šupić, Matty J. Hoban. Self-testing through EPR-steering. arXiv:`1601.01552 <http://arxiv.org/abs/1601.01552>`_.
+- Ivan Šupić, Matty J. Hoban. Self-testing through EPR-steering. DOI:`10.1088/1367-2630/18/7/075006 <https://dx.doi.org/10.1088/1367-2630/18/7/075006>`_. arXiv:`1601.01552 <http://arxiv.org/abs/1601.01552>`_.
 
-- Peter Wittek, Sándor Darányi, Gustaf Nelhans. Ruling Out Static Latent Homophily in Citation Networks. arXiv:`1605.08185 <http://arxiv.org/abs/1605.08185>`_. `Notebook <https://nbviewer.jupyter.org/github/peterwittek/ipython-notebooks/blob/master/Citation_Network_SDP.ipynb>`__.
+- Peter Wittek, Sándor Darányi, Gustaf Nelhans. Ruling Out Static Latent Homophily in Citation Networks. arXiv:`1605.08185 <http://arxiv.org/abs/1605.08185>`_. `Notebook. <https://nbviewer.jupyter.org/github/peterwittek/ipython-notebooks/blob/master/Citation_Network_SDP.ipynb>`__
 
 Dependencies
 ============
