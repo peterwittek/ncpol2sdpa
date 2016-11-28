@@ -89,37 +89,14 @@ class RdmHierarchy(SdpRelaxation):
                 coeff += coeff1
 
         elif monomial0 != 0:
-            k1, coeff1 = self._process_monomial(monomial0, n_vars)
-            if isinstance(k1, list):
-                k += k1
-                coeff.append(coeff1)
-            else:
+            entries = self._process_monomial(monomial0, n_vars)
+            for entry in entries:
+                k1, coeff1 = entry
                 k.append(k1)
                 coeff.append(coeff1)
         for rowA, columnA in coords:
             for ki, coeffi in zip(k, coeff):
                 self.F[row_offset + rowA * N + columnA, ki] = coeffi
-        '''
-        for monomial in monomials[1:]:
-            monomial = apply_substitutions(monomial, self.substitutions,
-                                           self.pure_substitution_rules)
-            if is_number_type(monomial):
-                continue
-            elif monomial.is_Add:
-                for element in monomial.as_ordered_terms():
-                    if is_number_type(element):
-                        continue
-                    else:
-                        element, coeff = separate_scalar_factor(element)
-                        remainder = monomial - coeff*element
-                        if element not in self.correspondence:
-                            self.correspondence[element] = expand((monomial0 -
-                                                              remainder)/coeff)
-            elif monomial != 0:
-                monomial, coeff = separate_scalar_factor(monomial)
-                if monomial not in self.correspondence:
-                    self.correspondence[monomial] = monomial0/coeff
-        '''
         if max(k) > n_vars:
             n_vars = max(k)
         return n_vars, k, coeff
@@ -223,39 +200,6 @@ class RdmHierarchy(SdpRelaxation):
                                             processed_entries,
                                             monomialsA, [S.One])
 
-    def __generate_semisymmetric_moment_matrix(self, n_vars, block_index,
-                                               processed_entries, monomialsA,
-                                               monomialsB):
-        """Generate the moment matrix of monomials.
-
-        Arguments:
-        n_vars -- current number of variables
-        block_index -- current block index in the SDP matrix
-        monomials -- |W_d| set of words of length up to the relaxation level
-        """
-        row_offset = 0
-        if block_index > 0:
-            for block_size in self.block_struct[0:block_index]:
-                row_offset += block_size ** 2
-        N = len(monomialsA)
-        for rowB in range(len(monomialsB)):
-            for columnA in range(rowB, len(monomialsA)):
-                processed_entries += 1
-                monomial = monomialsB[rowB].adjoint() * \
-                    monomialsA[columnA]
-                n_vars = self._push_monomial(monomial, n_vars, row_offset,
-                                             rowB, columnA, N, 0, 0, 1)
-            if self.verbose > 0:
-                percentage = \
-                    "{0:.0f}%".format(float(processed_entries-1)/self.n_vars *
-                                      100)
-                sys.stdout.write("\r\x1b[KCurrent number of SDP variables: %d"
-                                 " (done: %s)" % (n_vars, percentage))
-                sys.stdout.flush()
-        if self.verbose > 0:
-            sys.stdout.write("\r")
-        return n_vars, block_index + 1, processed_entries
-
     def _generate_moment_matrix(self, n_vars, block_index, processed_entries,
                                 monomialsA, monomialsB, ppt=False):
         if self.circulant:
@@ -271,73 +215,10 @@ class RdmHierarchy(SdpRelaxation):
                                 " terms.")
 
         else:
-            if len(monomialsB) == 1 and monomialsB[0] == S.One:
-                return super(RdmHierarchy, self).\
-                        _generate_moment_matrix(n_vars, block_index,
-                                                processed_entries,
-                                                monomialsA, monomialsB)
-            else:
-                return \
-                  self.__generate_semisymmetric_moment_matrix(n_vars,
-                                                              block_index,
-                                                              processed_entries,
-                                                              monomialsA,
-                                                              monomialsB)
-
-    def _get_index_of_monomial(self, element, enablesubstitution=True,
-                               daggered=False):
-        """Returns the index of a monomial.
-        """
-        processed_element, coeff1 = separate_scalar_factor(element)
-        if enablesubstitution:
-            processed_element = \
-                apply_substitutions(processed_element, self.substitutions,
-                                    self.pure_substitution_rules)
-        if processed_element.is_Number:
-            return [(0, coeff1)]
-        elif processed_element.is_Add:
-            monomials = \
-                processed_element.as_coeff_mul()[1][0].as_coeff_add()[1]
-        else:
-            monomials = [processed_element]
-        result = []
-        for monomial in monomials:
-            monomial, coeff2 = separate_scalar_factor(monomial)
-            coeff = coeff1*coeff2
-            if monomial.is_Number:
-                result.append((0, coeff))
-                continue
-            k = -1
-            if monomial != 0:
-                if monomial.as_coeff_Mul()[0] < 0:
-                    monomial = -monomial
-                    coeff = -1.0 * coeff
-            if monomial in self.correspondence:
-                match = self.correspondence[monomial]
-                if is_number_type(match):
-                    result.append((0, coeff))
-                    continue
-                elif match.is_Mul:
-                    elements = [match]
-                else:
-                    elements = match.as_coeff_mul()[1][0].as_coeff_add()[1]
-                for el in elements:
-                    sub_result = self._get_index_of_monomial(el)
-                for (ki, coeffi) in sub_result:
-                    result.append((ki, coeffi*coeff))
-                continue
-            try:
-                k = self.monomial_index[monomial]
-                result.append((k, coeff))
-            except KeyError:
-                if not daggered:
-                    dag_result = self._get_index_of_monomial(Dagger(monomial),
-                                                             daggered=True)
-                    result += [(k, coeff0*coeff) for k, coeff0 in dag_result]
-                else:
-                    raise RuntimeError("The requested monomial " +
-                                       str(monomial) + " could not be found.")
-        return result
+            return super(RdmHierarchy, self).\
+                    _generate_moment_matrix(n_vars, block_index,
+                                            processed_entries,
+                                            monomialsA, monomialsB)
 
     def _get_facvar(self, polynomial):
         """Return dense vector representation of a polynomial. This function is
