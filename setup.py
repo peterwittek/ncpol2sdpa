@@ -9,7 +9,7 @@ except ImportError:
     from distutils.core import setup
 setup(
     name='ncpol2sdpa',
-    version='1.11.1',
+    version='1.12.0',
     author='Peter Wittek',
     author_email='peterwittek@users.noreply.github.com',
     packages=['ncpol2sdpa'],

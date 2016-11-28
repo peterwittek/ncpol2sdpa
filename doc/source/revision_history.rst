@@ -1,6 +1,6 @@
 Revision History
 ****************
-Since 1.11.1:
+**Version 1.12.0 (2016-11-28)**
   - New: Pass the optional `momentsubstitutions=` parameter to the `get_relaxation` method to substitute out specific moments.
   - Changed: Warning message is displayed if the equality constraints are linearly dependent.
   - Changed: CVXPY support improved, solver parameters passed on correctly. SCS can directly be requested as a solver.
