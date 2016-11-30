@@ -287,6 +287,8 @@ def get_xmat_value(monomial, sdp, x_mat=None):
     linear_combination = get_facvar_of_monomial(0, sdp)
     for element in elements:
         element, coeff = separate_scalar_factor(element)
+        if element in sdp.moment_substitutions:
+            element = sdp.moment_substitutions[element]
         element = apply_substitutions(element, sdp.substitutions)
         linear_combination += coeff*get_facvar_of_monomial(element, sdp)
     row_offsets = [0]
@@ -296,49 +298,50 @@ def get_xmat_value(monomial, sdp, x_mat=None):
         row_offsets.append(cumulative_sum)
     value = linear_combination[0]
     linear_combination[0] = 0
-    for row in range(row_offsets[sdp.constraint_starting_block]):
-        intersect = np.intersect1d(sdp.F.rows[row],
-                                   np.nonzero(linear_combination)[0])
-        if len(intersect) == 0:
-            continue
-        elif len(intersect) == 1:
-            block, i, j = convert_row_to_sdpa_index(sdp.block_struct,
-                                                    row_offsets, row)
-            value += linear_combination[intersect[0]]*x_mat[block][i, j]
-            linear_combination[intersect[0]] = 0
-            for index in sdp.F.rows[row]:
-                if index not in intersect:
-                    value -= sdp.F[row, index] * \
-                        get_recursive_xmat_value(index, row_offsets,
-                                                 sdp, x_mat)
-        else:
-            # This can only happen because we changed the basis
-            A = np.zeros((len(intersect), len(intersect)))
-            b = np.zeros((len(intersect), ))
-            in_ = 0
-            rank0 = 0
-            for row2 in range(row,
-                              row_offsets[sdp.constraint_starting_block]):
+    if len(sdp.block_struct) > sdp.constraint_starting_block:
+        for row in range(row_offsets[sdp.constraint_starting_block]):
+            intersect = np.intersect1d(sdp.F.rows[row],
+                                       np.nonzero(linear_combination)[0])
+            if len(intersect) == 0:
+                continue
+            elif len(intersect) == 1:
                 block, i, j = convert_row_to_sdpa_index(sdp.block_struct,
-                                                        row_offsets, row2)
-                is2 = np.intersect1d(sdp.F.rows[row2],
-                                     np.nonzero(linear_combination)[0])
-                if len(is2) == len(intersect):
-                    col = 0
-                    for it in intersect:
-                        A[in_, col] = sdp.F[row2, it]
-                        col += 1
-                    rank1 = np.linalg.matrix_rank(A)
-                    b[in_] = x_mat[block][i, j]
-                    if rank1 > rank0:
-                        rank0 = rank1
-                        if in_ == len(intersect) - 1:
-                            break
-                        in_ += 1
-            x = np.linalg.solve(A, b)
-            for k, it in enumerate(intersect):
-                value += x[k]*linear_combination[it]
-                linear_combination[it] = 0
+                                                        row_offsets, row)
+                value += linear_combination[intersect[0]]*x_mat[block][i, j]
+                linear_combination[intersect[0]] = 0
+                for index in sdp.F.rows[row]:
+                    if index not in intersect:
+                        value -= sdp.F[row, index] * \
+                            get_recursive_xmat_value(index, row_offsets,
+                                                     sdp, x_mat)
+            else:
+                # This can only happen because we changed the basis
+                A = np.zeros((len(intersect), len(intersect)))
+                b = np.zeros((len(intersect), ))
+                in_ = 0
+                rank0 = 0
+                for row2 in range(row,
+                                  row_offsets[sdp.constraint_starting_block]):
+                    block, i, j = convert_row_to_sdpa_index(sdp.block_struct,
+                                                            row_offsets, row2)
+                    is2 = np.intersect1d(sdp.F.rows[row2],
+                                         np.nonzero(linear_combination)[0])
+                    if len(is2) == len(intersect):
+                        col = 0
+                        for it in intersect:
+                            A[in_, col] = sdp.F[row2, it]
+                            col += 1
+                        rank1 = np.linalg.matrix_rank(A)
+                        b[in_] = x_mat[block][i, j]
+                        if rank1 > rank0:
+                            rank0 = rank1
+                            if in_ == len(intersect) - 1:
+                                break
+                            in_ += 1
+                x = np.linalg.solve(A, b)
+                for k, it in enumerate(intersect):
+                    value += x[k]*linear_combination[it]
+                    linear_combination[it] = 0
     return value
 
 

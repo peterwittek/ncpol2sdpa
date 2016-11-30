@@ -8,10 +8,9 @@ from __future__ import division, print_function
 from math import sqrt
 from sympy import S
 from sympy.physics.quantum.dagger import Dagger
-import sys
 from .sdp_relaxation import SdpRelaxation
-from .nc_utils import apply_substitutions, is_number_type, \
-    separate_scalar_factor, ncdegree
+from .nc_utils import apply_substitutions, is_number_type, ncdegree, \
+    separate_scalar_factor
 
 
 class RdmHierarchy(SdpRelaxation):
@@ -70,12 +69,13 @@ class RdmHierarchy(SdpRelaxation):
         super(RdmHierarchy, self).__init__(variables, parameters, verbose,
                                            False, parallel)
         self.circulant = circulant
-        self.correspondence = {}
         self.m_block = 0
 
     def _push_monomials(self, monomials, n_vars, row_offset, coords, N):
         monomial0 = apply_substitutions(monomials[0], self.substitutions,
                                         self.pure_substitution_rules)
+        for mon1 in monomials[1:]:
+            self.moment_substitutions[mon1] = monomial0
         k, coeff = [], []
         if is_number_type(monomial0):
             coeff = [monomial0]
@@ -124,7 +124,6 @@ class RdmHierarchy(SdpRelaxation):
         for mon, coord in zip(mons, coords):
             n_vars, _, _ = self._push_monomials(mon, n_vars, row_offset,
                                                 coord, len(monomialsA))
-        self.correspondence = {}
         return n_vars, block_index + 1, processed_entries
 
     def __fourth_moments(self, n_vars, monomialsA, block_index,
@@ -147,7 +146,6 @@ class RdmHierarchy(SdpRelaxation):
                         n_vars, _, _ = self._push_monomials(mon, n_vars,
                                                             row_offset,
                                                             coord, N**2)
-            self.correspondence = {}
             return n_vars, block_index + 1, processed_entries
         elif self.m_block == 2:
             N = int(sqrt(len(monomialsA)//2))
@@ -192,7 +190,6 @@ class RdmHierarchy(SdpRelaxation):
                         n_vars, _, _ = self._push_monomials(mon, n_vars,
                                                             row_offset,
                                                             coord, 2*N**2)
-            self.correspondence = {}
             return n_vars, block_index + 1, processed_entries
         else:
             return super(RdmHierarchy, self).\
@@ -219,31 +216,6 @@ class RdmHierarchy(SdpRelaxation):
                     _generate_moment_matrix(n_vars, block_index,
                                             processed_entries,
                                             monomialsA, monomialsB)
-
-    def _get_facvar(self, polynomial):
-        """Return dense vector representation of a polynomial. This function is
-        nearly identical to __push_facvar_sparse, but instead of pushing
-        sparse entries to the constraint matrices, it returns a dense
-        vector.
-        """
-        facvar = [0] * (self.n_vars + 1)
-        # Preprocess the polynomial for uniform handling later
-        if is_number_type(polynomial):
-            facvar[0] = polynomial
-            return facvar
-        polynomial = polynomial.expand()
-        if polynomial.is_Mul:
-            elements = [polynomial]
-        else:
-            elements = polynomial.as_coeff_mul()[1][0].as_coeff_add()[1]
-        for element in elements:
-            results = self._get_index_of_monomial(element)
-            for (k, coeff) in results:
-                if not isinstance(k, list):
-                    k = [k]
-                    for ki in k:
-                        facvar[ki] += coeff
-        return facvar
 
 
 def generate_block_coords(monomialsA, monomialsB, col0, colN, row0, rowN,

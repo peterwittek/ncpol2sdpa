@@ -311,9 +311,10 @@ class SdpRelaxation(Relaxation):
 
     def _push_monomial(self, monomial, n_vars, row_offset, rowA, columnA, N,
                        rowB, columnB, lenB, prevent_substitutions=False):
-        if not prevent_substitutions:
-            monomial = apply_substitutions(monomial, self.substitutions,
-                                           self.pure_substitution_rules)
+        if monomial in self.moment_substitutions:
+            return self._push_monomial(self.moment_substitutions[monomial], n_vars, row_offset,
+                                       rowA, columnA, N,
+                                       rowB, columnB, lenB, prevent_substitutions)
         if is_number_type(monomial):
             if rowA == 0 and columnA == 0 and rowB == 0 and columnB == 0 and \
                     monomial == 1.0:
@@ -328,7 +329,7 @@ class SdpRelaxation(Relaxation):
                 self.F[row_offset + rowA * N*lenB + rowB * N +
                        columnA * lenB + columnB, 0] = monomial
         elif monomial.is_Add:
-            for element in monomial.as_ordered_terms():
+            for element in monomial.args:
                 n_vars = self._push_monomial(element, n_vars, row_offset,
                                              rowA, columnA, N,
                                              rowB, columnB, lenB, True)
@@ -451,25 +452,27 @@ class SdpRelaxation(Relaxation):
                                daggered=False):
         """Returns the index of a monomial.
         """
+        result = []
         processed_element, coeff1 = separate_scalar_factor(element)
+        if processed_element in self.moment_substitutions:
+            r = self._get_index_of_monomial(self.moment_substitutions[processed_element], enablesubstitution)
+            return [(k, coeff*coeff1) for k, coeff in r]
         if enablesubstitution:
             processed_element = \
                 apply_substitutions(processed_element, self.substitutions,
                                     self.pure_substitution_rules)
         # Given the monomial, we need its mapping L_y(w) to push it into
         # a corresponding constraint matrix
-        if processed_element.is_Number:
+        if is_number_type(processed_element):
             return [(0, coeff1)]
         elif processed_element.is_Add:
-            monomials = \
-                processed_element.as_coeff_mul()[1][0].as_coeff_add()[1]
+            monomials = processed_element.args
         else:
             monomials = [processed_element]
-        result = []
         for monomial in monomials:
             monomial, coeff2 = separate_scalar_factor(monomial)
             coeff = coeff1*coeff2
-            if monomial.is_Number:
+            if is_number_type(monomial):
                 result.append((0, coeff))
                 continue
             k = -1
@@ -478,8 +481,9 @@ class SdpRelaxation(Relaxation):
                     monomial = -monomial
                     coeff = -1.0 * coeff
             try:
-                coeff0 = self.moment_substitutions[monomial]
-                result.append((0, coeff0*coeff))
+                new_element = self.moment_substitutions[monomial]
+                r = self._get_index_of_monomial(self.moment_substitutions[new_element], enablesubstitution)
+                result += [(k, coeff*coeff3) for k, coeff3 in r]
             except KeyError:
                 try:
                     k = self.monomial_index[monomial]
