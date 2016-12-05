@@ -1,5 +1,8 @@
 Revision History
 ****************
+**Version 1.12.1**
+  - Changed: Better handling of monomial substitutions.
+
 **Version 1.12.0 (2016-11-28)**
   - New: Pass the optional `momentsubstitutions=` parameter to the `get_relaxation` method to substitute out specific moments.
   - Changed: Warning message is displayed if the equality constraints are linearly dependent.
