@@ -33,11 +33,11 @@ except ImportError:
     have_ipython = False
 
 from .nc_utils import apply_substitutions, \
-    assemble_monomial_and_do_substitutions, check_simple_substitution, \
-    convert_relational, find_variable_set, flatten, get_all_monomials, \
-    is_number_type, is_pure_substitution_rule, iscomplex, moment_of_entry, \
-    ncdegree, pick_monomials_up_to_degree, save_monomial_index, \
-    separate_scalar_factor, simplify_polynomial, unique
+    assemble_monomial_and_do_substitutions, convert_relational, \
+    find_variable_set, flatten, get_all_monomials, is_number_type, \
+    is_pure_substitution_rule, iscomplex, moment_of_entry, ncdegree, \
+    pick_monomials_up_to_degree, save_monomial_index, separate_scalar_factor, \
+    simplify_polynomial, unique
 from .solver_common import find_solution_ranks, get_sos_decomposition, \
     get_xmat_value, solve_sdp, extract_dual_value
 from .cvxpy_utils import convert_to_cvxpy
@@ -911,15 +911,10 @@ class SdpRelaxation(Relaxation):
 
         if momentequalities is not None:
             for moment_eq in momentequalities:
-                substitution = check_simple_substitution(moment_eq)
-                if substitution == (0, 0):
-                    self._moment_equalities.append(moment_eq)
-                    if not removeequalities:
-                        monomial_sets += [[S.One], [S.One]]
-                        self.block_struct += [1, 1]
-                else:
-                    self.moment_substitutions[substitution[0]] = \
-                        substitution[1]
+                self._moment_equalities.append(moment_eq)
+                if not removeequalities:
+                    monomial_sets += [[S.One], [S.One]]
+                    self.block_struct += [1, 1]
         self.localizing_monomial_sets = monomial_sets
 
     def __generate_monomial_sets(self, extramonomials):
@@ -1050,31 +1045,24 @@ class SdpRelaxation(Relaxation):
                 self._constraint_to_block_index[equality] = (block_index,
                                                              block_index+ln*(ln+1)//2)
                 block_index += ln*(ln+1)
-        reduced_moment_equalities = []
         if momentequalities is not None:
             for meq in momentequalities:
-                substitution = check_simple_substitution(meq)
-                if substitution == (0, 0):
-                    if not removeequalities:
-                        self.constraints.append(meq)
-                        if isinstance(meq, str):
-                            tmp = meq.replace("+", "p")
-                            tmp = tmp.replace("-", "+")
-                            tmp = tmp.replace("p", "-")
-                            self.constraints.append(tmp)
-                        else:
-                            self.constraints.append(-meq)
-                        self._constraint_to_block_index[meq] = (block_index,
-                                                                block_index+1)
-                        block_index += 2
+                if not removeequalities:
+                    self.constraints.append(meq)
+                    if isinstance(meq, str):
+                        tmp = meq.replace("+", "p")
+                        tmp = tmp.replace("-", "+")
+                        tmp = tmp.replace("p", "-")
+                        self.constraints.append(tmp)
                     else:
-                        reduced_moment_equalities.append(meq)
+                        self.constraints.append(-meq)
+                    self._constraint_to_block_index[meq] = (block_index,
+                                                            block_index+1)
+                    block_index += 2
         block_index = self.constraint_starting_block
         self.__process_inequalities(block_index)
-        if reduced_moment_equalities == []:
-            reduced_moment_equalities = None
         if removeequalities:
-            self.__remove_equalities(equalities, reduced_moment_equalities)
+            self.__remove_equalities(equalities, momentequalities)
 
     def set_objective(self, objective, extraobjexpr=None):
         """Set or change the objective function of the polynomial optimization

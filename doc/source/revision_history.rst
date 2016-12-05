@@ -1,6 +1,7 @@
 Revision History
 ****************
 **Version 1.12.1**
+  - Changed: Removed automated detection of simple moment substitutions.
   - Changed: Better handling of monomial substitutions.
 
 **Version 1.12.0 (2016-11-28)**
