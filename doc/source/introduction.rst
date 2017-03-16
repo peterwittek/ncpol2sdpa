@@ -16,16 +16,6 @@ The implementation has an intuitive syntax for entering problems and it scales f
 
 - Peter Wittek. Algorithm 950: Ncpol2sdpa---Sparse Semidefinite Programming Relaxations for Polynomial Optimization Problems of Noncommuting Variables. *ACM Transactions on Mathematical Software*, 41(3), 21, 2015. DOI: `10.1145/2699464 <http://dx.doi.org/10.1145/2699464>`_. arXiv:`1308.6029 <http://arxiv.org/abs/1308.6029>`_.
 
-The module was used for calculations in the following papers:
-
-- Antonio Acín, Stefano Pironio, Tamás Vértesi, and Peter Wittek. Optimal randomness certification from one entangled bit. *Physical Review A*, 93, 040102, 2016. DOI:`10.1103/PhysRevA.93.040102 <https://dx.doi.org/10.1103/PhysRevA.93.040102>`_.  arXiv:`1505.03837 <http://arxiv.org/abs/1505.03837>`_. `Notebook <https://nbviewer.ipython.org/github/peterwittek/ipython-notebooks/blob/master/Optimal%20randomness%20generation%20from%20entangled%20quantum%20states.ipynb>`__.
-
-- Florian J. Curchod, Markus Johansson, Remigiusz Augusiak, Matty J. Hoban, and Peter Wittek, and Antonio Acín. Unbounded randomness certification using sequences of measurements. arXiv:`1510.03394 <https://arxiv.org/abs/1510.03394>`_.
-
-- Ivan Šupić and Matty J. Hoban. Self-testing through EPR-steering. *New Journal of Physics*, 18, 075006, 2016. DOI:`10.1088/1367-2630/18/7/075006 <https://dx.doi.org/10.1088/1367-2630/18/7/075006>`_. arXiv:`1601.01552 <http://arxiv.org/abs/1601.01552>`_.
-
-- Peter Wittek, Sándor Darányi, and Gustaf Nelhans. Ruling Out Static Latent Homophily in Citation Networks. arXiv:`1605.08185 <http://arxiv.org/abs/1605.08185>`_. `Notebook. <https://nbviewer.jupyter.org/github/peterwittek/ipython-notebooks/blob/master/Citation_Network_SDP.ipynb>`_
-
 Copyright and License
 =====================
 Ncpol2sdpa is free software; you can redistribute it and/or modify it under the terms of the `GNU General Public License <http://www.gnu.org/licenses/gpl-3.0.html>`_ as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.
