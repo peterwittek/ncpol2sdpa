@@ -1,4 +1,4 @@
-include *.py
+include setup.py
 include LICENSE
 include README.rst
 include doc/Makefile
