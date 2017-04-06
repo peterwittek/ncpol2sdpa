@@ -82,7 +82,7 @@ def _generate_clique_alt(variables, obj, inequalities, equalities,
         value = random.random()
         for i in nonzeros:
             for j in nonzeros:
-                rmat[i, j] = value
+                rmat[int(i), int(j)] = value
     for polynomial in flatten([inequalities, equalities, momentinequalities,
                                momentequalities]):
         support = np.any(get_support(variables, polynomial), axis=0)
@@ -90,7 +90,7 @@ def _generate_clique_alt(variables, obj, inequalities, equalities,
         value = random.random()
         for i in nonzeros:
             for j in nonzeros:
-                rmat[i, j] = value
+                rmat[int(i), int(j)] = value
     rmat = rmat + 5*n_dim*spmatrix(1.0, range(n_dim), range(n_dim))
     # compute symbolic factorization using AMD ordering
     symb = cp.symbolic(rmat, p=amd.order)
