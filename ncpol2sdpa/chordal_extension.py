@@ -73,7 +73,8 @@ def _generate_clique(variables, obj, inequalities, equalities,
     return clique_set
 
 
-def _generate_clique_alt(variables, obj, inequalities, equalities):
+def _generate_clique_alt(variables, obj, inequalities, equalities,
+                         momentinequalities, momentequalities):
     n_dim = len(variables)
     rmat = spmatrix(1.0, range(n_dim), range(n_dim))
     for support in get_support(variables, obj):
@@ -82,7 +83,8 @@ def _generate_clique_alt(variables, obj, inequalities, equalities):
         for i in nonzeros:
             for j in nonzeros:
                 rmat[i, j] = value
-    for polynomial in flatten([inequalities, equalities]):
+    for polynomial in flatten([inequalities, equalities, momentinequalities,
+                               momentequalities]):
         support = np.any(get_support(variables, polynomial), axis=0)
         nonzeros = np.nonzero(support)[0]
         value = random.random()
@@ -130,6 +132,6 @@ def find_variable_cliques(variables, objective=0, inequalities=None,
 try:
     from cvxopt import spmatrix, amd
     import chompack as cp
-    generate_clique = _generate_clique
+    generate_clique = _generate_clique_alt
 except ImportError:
     generate_clique = _generate_clique
