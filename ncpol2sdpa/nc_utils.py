@@ -106,11 +106,10 @@ def get_support(variables, polynomial):
     if is_number_type(polynomial):
         support.append([0] * len(variables))
         return support
-    polynomial = polynomial.expand()
-    for monomial in polynomial.as_coefficients_dict():
+    for monomial in polynomial.expand().as_coefficients_dict():
         tmp_support = [0] * len(variables)
-        monomial, _ = __separate_scalar_factor(monomial)
-        symbolic_support = flatten(split_commutative_parts(monomial))
+        mon, _ = __separate_scalar_factor(monomial)
+        symbolic_support = flatten(split_commutative_parts(mon))
         for s in symbolic_support:
             if isinstance(s, Pow):
                 base = s.base
@@ -131,10 +130,9 @@ def get_support_variables(polynomial):
     support = []
     if is_number_type(polynomial):
         return support
-    polynomial = polynomial.expand()
-    for monomial in polynomial.as_coefficients_dict():
-        monomial, _ = __separate_scalar_factor(monomial)
-        symbolic_support = flatten(split_commutative_parts(monomial))
+    for monomial in polynomial.expand().as_coefficients_dict():
+        mon, _ = __separate_scalar_factor(monomial)
+        symbolic_support = flatten(split_commutative_parts(mon))
         for s in symbolic_support:
             if isinstance(s, Pow):
                 base = s.base

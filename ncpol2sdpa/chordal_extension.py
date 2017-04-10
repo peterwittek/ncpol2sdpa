@@ -77,12 +77,13 @@ def _generate_clique_alt(variables, obj, inequalities, equalities,
                          momentinequalities, momentequalities):
     n_dim = len(variables)
     rmat = spmatrix(1.0, range(n_dim), range(n_dim))
-    for support in get_support(variables, obj):
-        nonzeros = np.nonzero(support)[0]
-        value = random.random()
-        for i in nonzeros:
-            for j in nonzeros:
-                rmat[int(i), int(j)] = value
+    if obj is not None:
+        for support in get_support(variables, obj):
+            nonzeros = np.nonzero(support)[0]
+            value = random.random()
+            for i in nonzeros:
+                for j in nonzeros:
+                    rmat[int(i), int(j)] = value
     for polynomial in flatten([inequalities, equalities, momentinequalities,
                                momentequalities]):
         support = np.any(get_support(variables, polynomial), axis=0)
@@ -93,10 +94,10 @@ def _generate_clique_alt(variables, obj, inequalities, equalities,
                 rmat[int(i), int(j)] = value
     rmat = rmat + 5*n_dim*spmatrix(1.0, range(n_dim), range(n_dim))
     # compute symbolic factorization using AMD ordering
-    symb = cp.symbolic(rmat, p=amd.order)
-    ip = symb.ip
-    # symb = cp.symbolic(rmat)
-    # ip = range(n_dim)
+    # symb = cp.symbolic(rmat, p=amd.order)
+    # ip = symb.ip
+    symb = cp.symbolic(rmat)
+    ip = range(n_dim)
     cliques = symb.cliques()
     R = np.zeros((len(cliques), n_dim))
     for i, clique in enumerate(cliques):
@@ -114,10 +115,11 @@ def find_clique_index(variables, polynomial, clique_set):
     return -1
 
 
-def find_variable_cliques(variables, objective=0, inequalities=None,
+def find_variable_cliques(variables, objective=None, inequalities=None,
                           equalities=None, momentinequalities=None,
                           momentequalities=None):
-    if objective == 0 and inequalities is None and equalities is None:
+    if objective is None and inequalities is None and equalities is None and \
+            momentinequalities is None and momentequalities is None:
         raise Exception("There is nothing to extract the chordal structure " +
                         "from!")
     clique_set = generate_clique(variables, objective, inequalities,
