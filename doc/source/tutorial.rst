@@ -150,7 +150,7 @@ matching parameter file, you can call
 ::
 
     sdp.solve(solver='sdpa', solverparameters={"executable":"sdpa_gmp",
-                                               "paramsfile"="params.gmp.sdpa"})
+                                               "paramsfile":"params.gmp.sdpa"})
 
 If you have multiple solvers available, you might want to specify which exactly
 you want to use. For CVXOPT, call
