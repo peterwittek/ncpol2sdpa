@@ -790,6 +790,7 @@ class SdpRelaxation(Relaxation):
             sexprs = [sexpr for sexpr in expr.split(']') if len(sexpr)>0]
             for sexpr in sexprs:
                 startindex = 0
+                asterix_position = -1
                 if sexpr.startswith('-') or sexpr.startswith('+'):
                     asterix_position = sexpr.find('*')
                     if asterix_position > -1:
