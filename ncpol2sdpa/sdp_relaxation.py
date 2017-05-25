@@ -787,19 +787,23 @@ class SdpRelaxation(Relaxation):
 
     def __parse_expression(self, expr, row_offset, line=None):
         if expr.find("]") > -1:
-            sub_exprs = expr.split(']')
-            for sub_expr in sub_exprs:
+            sexprs = [sexpr for sexpr in expr.split(']') if len(sexpr)>0]
+            for sexpr in sexprs:
                 startindex = 0
-                if sub_expr.startswith('-') or sub_expr.startswith('+'):
-                    startindex = 1
-                ind = sub_expr.find('[')
+                if sexpr.startswith('-') or sexpr.startswith('+'):
+                    asterix_position = sexpr.find('*')
+                    if asterix_position > -1:
+                        startindex = asterix_position + 1
+                    else:
+                        startindex = 1
+                ind = sexpr.find('[')
                 if ind > -1:
-                    idx = sub_expr[ind+1:].split(",")
+                    idx = sexpr[ind+1:].split(",")
                     i, j = int(idx[0]), int(idx[1])
-                    mm_ind = int(sub_expr[startindex:ind])
-                    if sub_expr.find('*') > -1:
-                        value = float(sub_expr[:sub_expr.find('*')])
-                    elif sub_expr.startswith('-'):
+                    mm_ind = int(sexpr[startindex:ind])
+                    if asterix_position > -1:
+                        value = float(sexpr[:asterix_position])
+                    elif sexpr.startswith('-'):
                         value = -1.0
                     else:
                         value = 1.0
@@ -813,7 +817,7 @@ class SdpRelaxation(Relaxation):
                         line += value*self.F[base_row_offset + i*width + j,
                                              :self.n_vars+1].toarray()[0]
                 else:
-                    value = float(sub_expr)
+                    value = float(sexpr)
                     if row_offset > -1:
                         self.F[row_offset, 0] += value
                     else:
