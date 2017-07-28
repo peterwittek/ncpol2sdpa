@@ -1,5 +1,8 @@
 Revision History
 ****************
+**Version 1.12.3**
+  - No changes yet.
+
 **Version 1.12.2 (2017-07-28)**
   - Changed: Symbolic expression parsing improved.
   - Fixed: Chompack-based chordal extension works.
