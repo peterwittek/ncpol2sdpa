@@ -1,7 +1,9 @@
 Revision History
 ****************
-**Version 1.12.2**
-  - Nothing changed.
+**Version 1.12.2 (2017-07-28)**
+  - Changed: Symbolic expression parsing improved.
+  - Fixed: Chompack-based chordal extension works.
+  - Fixed: get_item works for cases of moment substitutions.
 
 **Version 1.12.1 (2017-03-16)**
   - Changed: Removed automated detection of simple moment substitutions.
