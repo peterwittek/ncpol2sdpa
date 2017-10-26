@@ -80,6 +80,12 @@ def read_sdpa_out(filename, solutionmatrix=False, status=False,
             if line.find("phase.value") > -1:
                 if line.find("pdOPT") > -1:
                     status_string = 'optimal'
+                elif line.find("pFEAS") > -1:
+                    status_string = 'primal feasible'
+                elif line.find("pdFEAS") > -1:
+                    status_string = 'primal-dual feasible'
+                elif line.find("dFEAS") > -1:
+                    status_string = 'dual feasible'
                 elif line.find("INF") > -1:
                     status_string = 'infeasible'
                 elif line.find("UNBD") > -1:
