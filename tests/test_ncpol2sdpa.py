@@ -328,7 +328,7 @@ class Moroder(unittest.TestCase):
         Problem.add_constraint(X - Y + Z == 0)
         Problem.add_constraint(Z[0, 0] == 1)
         solution = Problem.solve(verbose=0)
-        self.assertTrue(abs(solution["obj"] - 0.1236) < 10e-3)
+        self.assertTrue(abs(solution["obj"] + 0.1236) < 10e-3)
 
 
 class NietoSilleras(unittest.TestCase):
