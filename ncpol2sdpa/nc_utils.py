@@ -10,10 +10,7 @@ Created on Thu May  2 16:03:05 2013
 from __future__ import division, print_function
 from sympy import adjoint, conjugate, S, Symbol, Pow, Number, expand, I
 from sympy.physics.quantum import HermitianOperator, Operator
-try:
-    from scipy.sparse import lil_matrix
-except ImportError:
-    from .sparse_utils import lil_matrix
+from scipy.sparse import lil_matrix
 
 
 def flatten(lol):

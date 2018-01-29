@@ -9,10 +9,7 @@ import glob
 from math import copysign
 import numpy as np
 import os
-try:
-    from scipy.sparse import lil_matrix
-except ImportError:
-    from .sparse_utils import lil_matrix
+from scipy.sparse import lil_matrix
 from .sdp_relaxation import Relaxation
 
 
