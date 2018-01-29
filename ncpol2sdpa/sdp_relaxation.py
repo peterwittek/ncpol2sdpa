@@ -11,6 +11,7 @@ from __future__ import division, print_function
 import sys
 from functools import partial
 import numpy as np
+from scipy.sparse import lil_matrix
 from sympy import S, Expr, Add
 import time
 
@@ -22,10 +23,6 @@ try:
     from multiprocessing import Pool, cpu_count
 except ImportError:
     pass
-try:
-    from scipy.sparse import lil_matrix
-except ImportError:
-    from .sparse_utils import lil_matrix
 try:
     from IPython.core.display import clear_output
     have_ipython = True

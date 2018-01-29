@@ -29,15 +29,16 @@ setup(
     classifiers=[
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Operating System :: OS Independent',
-        'Development Status :: 4 - Beta',
+        'Development Status :: 5 - Production/Stable',
         'Topic :: Scientific/Engineering :: Mathematics',
         'Topic :: Scientific/Engineering :: Physics',
         'Intended Audience :: Science/Research',
         'Programming Language :: Python'
     ],
     install_requires=[
-        "sympy >= 0.7.2",
-        "numpy"
+        "sympy >= 1.0",
+        "numpy",
+        "scipy"
     ],
     test_suite="tests"
 )

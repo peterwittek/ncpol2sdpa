@@ -7,10 +7,7 @@ Created on Wed Jun  1 10:39:15 2016
 
 from __future__ import division, print_function
 import numpy as np
-try:
-    from scipy.sparse import lil_matrix
-except ImportError:
-    from .sparse_utils import lil_matrix
+from scipy.sparse import lil_matrix
 from .sdpa_utils import convert_row_to_sdpa_index
 
 
