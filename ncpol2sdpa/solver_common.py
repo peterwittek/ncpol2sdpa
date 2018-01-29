@@ -291,11 +291,6 @@ def get_xmat_value(monomial, sdp, x_mat=None):
             element = sdp.moment_substitutions[element]
         element = apply_substitutions(element, sdp.substitutions)
         linear_combination += coeff*get_facvar_of_monomial(element, sdp)
-    row_offsets = [0]
-    cumulative_sum = 0
-    for block_size in sdp.block_struct:
-        cumulative_sum += block_size ** 2
-        row_offsets.append(cumulative_sum)
     value = linear_combination[0]
     linear_combination[0] = 0
     # This used to be a conditional when moments were never substituted:

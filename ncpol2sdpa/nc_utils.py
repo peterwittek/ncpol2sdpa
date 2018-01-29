@@ -681,3 +681,17 @@ def is_adjoint(exp):
 
 def is_hermitian(exp):
     return exp.is_hermitian or (exp.is_hermitian is None and exp.is_complex)
+
+
+def flip_sign(exp):
+    if isinstance(exp, str):
+        if not exp.startswith("+") and not exp.startswith("+"):
+            tmp = "+" + exp
+        else:
+            tmp = exp
+        tmp = tmp.replace("+", "p")
+        tmp = tmp.replace("-", "+")
+        tmp = tmp.replace("p", "-")
+        return tmp
+    else:
+        return -exp

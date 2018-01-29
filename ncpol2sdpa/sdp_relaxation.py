@@ -34,7 +34,7 @@ except ImportError:
 
 from .nc_utils import apply_substitutions, \
     assemble_monomial_and_do_substitutions, convert_relational, \
-    find_variable_set, flatten, get_all_monomials, is_number_type, \
+    find_variable_set, flatten, flip_sign, get_all_monomials, is_number_type, \
     is_pure_substitution_rule, iscomplex, moment_of_entry, ncdegree, \
     pick_monomials_up_to_degree, save_monomial_index, separate_scalar_factor, \
     simplify_polynomial, unique
@@ -1050,20 +1050,12 @@ class SdpRelaxation(Relaxation):
                 self._constraint_to_block_index[equality] = (block_index,
                                                              block_index+ln*(ln+1)//2)
                 block_index += ln*(ln+1)
-        if momentequalities is not None:
+        if momentequalities is not None and not removeequalities:
             for meq in momentequalities:
-                if not removeequalities:
-                    self.constraints.append(meq)
-                    if isinstance(meq, str):
-                        tmp = meq.replace("+", "p")
-                        tmp = tmp.replace("-", "+")
-                        tmp = tmp.replace("p", "-")
-                        self.constraints.append(tmp)
-                    else:
-                        self.constraints.append(-meq)
-                    self._constraint_to_block_index[meq] = (block_index,
-                                                            block_index+1)
-                    block_index += 2
+                self.constraints += [meq, flip_sign(meq)]
+                self._constraint_to_block_index[meq] = (block_index,
+                                                        block_index+1)
+                block_index += 2
         block_index = self.constraint_starting_block
         self.__process_inequalities(block_index)
         if removeequalities:
