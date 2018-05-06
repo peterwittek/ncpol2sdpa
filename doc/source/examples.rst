@@ -291,7 +291,7 @@ We also have to define normalization of the subalgebras, in this case, only one:
 
 ::
 
-    behaviour_constraints.append("-0[0,0]+1.0")
+    behaviour_constraints.append("0[0,0]-1")
     
 From here, the solution follows the usual pathway:
 
