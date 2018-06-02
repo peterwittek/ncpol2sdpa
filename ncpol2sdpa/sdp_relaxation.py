@@ -181,6 +181,7 @@ class SdpRelaxation(Relaxation):
         self.level = 0
         self.moment_substitutions = {}
         self.complex_matrix = False
+        self.hermitian_substitutions = {}
 
         # Variables related to processing constraints
         self.localizing_monomial_sets = None
@@ -239,7 +240,7 @@ class SdpRelaxation(Relaxation):
         if n_noncommutative_nonhermitian > 0:
             if len(info) > 0:
                 info += ", "
-            info += str(n_commutative_nonhermitian) + \
+            info += str(n_noncommutative_nonhermitian) + \
                 " noncommuting nonhermitian"
         if len(info) > 0:
             info += " variables"
@@ -298,11 +299,26 @@ class SdpRelaxation(Relaxation):
                 # previous variable to denote this entry in the matrix
                 k = self.monomial_index[processed_monomial]
             except KeyError:
-                # Otherwise we define a new entry in the associated
-                # array recording the monomials, and add an entry in
-                # the moment matrix
-                k = n_vars + 1
-                self.monomial_index[processed_monomial] = k
+                # If no, it still may be possible that we have already seen its
+                # conjugate. If the problem is real-valued, a monomial and its
+                # conjugate should be equal (Hermiticity becomes symmetry)
+                if not self.complex_matrix:
+                    try:
+                    # If we have seen the conjugate before, we just use the
+                    # conjugate monomial instead
+                        processed_monomial_adjoint = \
+                              apply_substitutions(processed_monomial.adjoint(),
+                                                  self.substitutions)
+                        k = self.monomial_index[processed_monomial_adjoint]
+                    except KeyError:
+                        # Otherwise we define a new entry in the associated
+                        # array recording the monomials, and add an entry in
+                        # the moment matrix
+                        k = n_vars + 1
+                        self.monomial_index[processed_monomial] = k
+                else:
+                    k = n_vars + 1
+                    self.monomial_index[processed_monomial] = k
             result = [(k, coeff)]
         return result
 
@@ -1352,6 +1368,11 @@ class SdpRelaxation(Relaxation):
                     self.complex_matrix = True
         if momentsubstitutions is not None:
             self.moment_substitutions = momentsubstitutions.copy()
+            # If we have a real-valued problem, the moment matrix is symmetric
+            # and moment substitutions also apply to the conjugate monomials
+            if not self.complex_matrix:
+                for key, val in self.moment_substitutions.copy().items():
+                    self.moment_substitutions[key.adjoint()] = val
         if chordal_extension:
             self.variables = find_variable_cliques(self.variables, objective,
                                                    inequalities, equalities,
