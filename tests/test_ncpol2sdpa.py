@@ -349,7 +349,7 @@ class NietoSilleras(unittest.TestCase):
           P([0, 0], [0, 1])-p[5],
           P([0, 0], [1, 0])-p[6],
           P([0, 0], [1, 1])-p[7]]
-        behaviour_constraint.append("-0[0,0]+1.0")
+        behaviour_constraint.append("+0[0,0]-1.0")
         sdpRelaxation = SdpRelaxation(P.get_all_operators(),
                                       normalized=False, verbose=0)
         sdpRelaxation.get_relaxation(1, objective=-P([0], [0], 'A'),
